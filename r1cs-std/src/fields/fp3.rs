@@ -1,43 +1,37 @@
 use algebra::{
     fields::{
-        fp6_3over2::{Fp6, Fp6Parameters},
-        Field, Fp2Parameters,
+        fp3::{Fp3, Fp3Parameters},
+        Field,
     },
-    PrimeField,
+    PrimeField, SquareRootField,
 };
 use core::{borrow::Borrow, marker::PhantomData};
 use r1cs_core::{ConstraintSystem, ConstraintVar, SynthesisError};
 
-use crate::{prelude::*, Assignment, Vec};
-
-type Fp2Gadget<P, ConstraintF> =
-    super::fp2::Fp2Gadget<<P as Fp6Parameters>::Fp2Params, ConstraintF>;
+use crate::{fields::fp::FpGadget, prelude::*, Assignment, Vec};
 
 #[derive(Derivative)]
-#[derivative(Debug(bound = "ConstraintF: PrimeField"))]
+#[derivative(Debug(
+    bound = "P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField"
+))]
 #[must_use]
-pub struct Fp6Gadget<P, ConstraintF: PrimeField>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+pub struct Fp3Gadget<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
 {
-    pub c0:  Fp2Gadget<P, ConstraintF>,
-    pub c1:  Fp2Gadget<P, ConstraintF>,
-    pub c2:  Fp2Gadget<P, ConstraintF>,
+    pub c0:  FpGadget<ConstraintF>,
+    pub c1:  FpGadget<ConstraintF>,
+    pub c2:  FpGadget<ConstraintF>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
-impl<P, ConstraintF: PrimeField> Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    Fp3Gadget<P, ConstraintF>
 {
     #[inline]
     pub fn new(
-        c0: Fp2Gadget<P, ConstraintF>,
-        c1: Fp2Gadget<P, ConstraintF>,
-        c2: Fp2Gadget<P, ConstraintF>,
+        c0: FpGadget<ConstraintF>,
+        c1: FpGadget<ConstraintF>,
+        c2: FpGadget<ConstraintF>,
     ) -> Self {
         Self {
             c0,
@@ -46,118 +40,58 @@ where
             _params: PhantomData,
         }
     }
-    /// Multiply a Fp2Gadget by cubic nonresidue P::NONRESIDUE.
+    /// Multiply a FpGadget by quadratic nonresidue P::NONRESIDUE.
     #[inline]
-    pub fn mul_fp2_gadget_by_nonresidue<CS: ConstraintSystem<ConstraintF>>(
+    pub fn mul_fp_gadget_by_nonresidue<CS: ConstraintSystem<ConstraintF>>(
         cs: CS,
-        fe: &Fp2Gadget<P, ConstraintF>,
-    ) -> Result<Fp2Gadget<P, ConstraintF>, SynthesisError> {
+        fe: &FpGadget<ConstraintF>,
+    ) -> Result<FpGadget<ConstraintF>, SynthesisError> {
         fe.mul_by_constant(cs, &P::NONRESIDUE)
     }
 
+    /// Multiply a Fp3Gadget by an element of fp.
     #[inline]
-    pub fn mul_by_0_c1_0<CS: ConstraintSystem<ConstraintF>>(
-        &self,
+    pub fn mul_by_fp_constant_in_place<CS: ConstraintSystem<ConstraintF>>(
+        &mut self,
         mut cs: CS,
-        c1: &Fp2Gadget<P, ConstraintF>,
-    ) -> Result<Self, SynthesisError> {
-        // Karatsuba multiplication
-        // v0 = a0 * b0 = 0
-
-        // v1 = a1 * b1
-        let v1 = self.c1.mul(cs.ns(|| "first mul"), c1)?;
-
-        // v2 = a2 * b2 = 0
-
-        let a1_plus_a2 = self.c1.add(cs.ns(|| "a1 + a2"), &self.c2)?;
-        let b1_plus_b2 = c1.clone();
-
-        let a0_plus_a1 = self.c0.add(cs.ns(|| "a0 + a1"), &self.c1)?;
-
-        // c0 = (NONRESIDUE * ((a1 + a2)*(b1 + b2) - v1 - v2)) + v0
-        //    = NONRESIDUE * ((a1 + a2) * b1 - v1)
-        let c0 = a1_plus_a2
-            .mul(cs.ns(|| "second mul"), &b1_plus_b2)?
-            .sub(cs.ns(|| "first sub"), &v1)?
-            .mul_by_constant(cs.ns(|| "mul_by_nonresidue"), &P::NONRESIDUE)?;
-
-        // c1 = (a0 + a1) * (b0 + b1) - v0 - v1 + NONRESIDUE * v2
-        //    = (a0 + a1) * b1 - v1
-        let c1 = a0_plus_a1
-            .mul(cs.ns(|| "third mul"), &c1)?
-            .sub(cs.ns(|| "second sub"), &v1)?;
-        // c2 = (a0 + a2) * (b0 + b2) - v0 - v2 + v1
-        //    = v1
-        let c2 = v1;
-        Ok(Self::new(c0, c1, c2))
+        fe: &P::Fp,
+    ) -> Result<&mut Self, SynthesisError> {
+        self.c0.mul_by_constant_in_place(cs.ns(|| "c0"), fe)?;
+        self.c1.mul_by_constant_in_place(cs.ns(|| "c1"), fe)?;
+        self.c2.mul_by_constant_in_place(cs.ns(|| "c2"), fe)?;
+        Ok(self)
     }
 
-    // #[inline]
-    pub fn mul_by_c0_c1_0<CS: ConstraintSystem<ConstraintF>>(
+    /// Multiply a Fp3Gadget by an element of fp.
+    #[inline]
+    pub fn mul_by_fp_constant<CS: ConstraintSystem<ConstraintF>>(
         &self,
-        mut cs: CS,
-        c0: &Fp2Gadget<P, ConstraintF>,
-        c1: &Fp2Gadget<P, ConstraintF>,
+        cs: CS,
+        fe: &P::Fp,
     ) -> Result<Self, SynthesisError> {
-        let v0 = self.c0.mul(cs.ns(|| "v0"), c0)?;
-        let v1 = self.c1.mul(cs.ns(|| "v1"), c1)?;
-        // v2 = 0.
-
-        let a1_plus_a2 = self.c1.add(cs.ns(|| "a1 + a2"), &self.c2)?;
-        let a0_plus_a1 = self.c0.add(cs.ns(|| "a0 + a1"), &self.c1)?;
-        let a0_plus_a2 = self.c0.add(cs.ns(|| "a0 + a2"), &self.c2)?;
-
-        let b1_plus_b2 = c1.clone();
-        let b0_plus_b1 = c0.add(cs.ns(|| "b0 + b1"), &c1)?;
-        let b0_plus_b2 = c0.clone();
-
-        let c0 = {
-            let cs = &mut cs.ns(|| "c0");
-            a1_plus_a2
-                .mul(cs.ns(|| "(a1 + a2) * (b1 + b2)"), &b1_plus_b2)?
-                .sub(cs.ns(|| "sub v1"), &v1)?
-                .mul_by_constant(cs.ns(|| "First mul_by_nonresidue"), &P::NONRESIDUE)?
-                .add(cs.ns(|| "add v0"), &v0)?
-        };
-
-        let c1 = {
-            let cs = &mut cs.ns(|| "c1");
-            a0_plus_a1
-                .mul(cs.ns(|| "(a0 + a1) * (b0 + b1)"), &b0_plus_b1)?
-                .sub(cs.ns(|| "sub v0"), &v0)?
-                .sub(cs.ns(|| "sub v1"), &v1)?
-        };
-
-        let c2 = {
-            a0_plus_a2
-                .mul(cs.ns(|| "(a0 + a2) * (b0 + b2)"), &b0_plus_b2)?
-                .sub(cs.ns(|| "sub v0"), &v0)?
-                .add(cs.ns(|| "add v1"), &v1)?
-        };
-
-        Ok(Self::new(c0, c1, c2))
+        let mut result = self.clone();
+        result.mul_by_fp_constant_in_place(cs, fe)?;
+        Ok(result)
     }
 }
 
-impl<P, ConstraintF: PrimeField> FieldGadget<Fp6<P>, ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    FieldGadget<Fp3<P>, ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     type Variable = (
-        (ConstraintVar<ConstraintF>, ConstraintVar<ConstraintF>),
-        (ConstraintVar<ConstraintF>, ConstraintVar<ConstraintF>),
-        (ConstraintVar<ConstraintF>, ConstraintVar<ConstraintF>),
+        ConstraintVar<ConstraintF>,
+        ConstraintVar<ConstraintF>,
+        ConstraintVar<ConstraintF>,
     );
 
     #[inline]
-    fn get_value(&self) -> Option<Fp6<P>> {
+    fn get_value(&self) -> Option<Fp3<P>> {
         match (
             self.c0.get_value(),
             self.c1.get_value(),
             self.c2.get_value(),
         ) {
-            (Some(c0), Some(c1), Some(c2)) => Some(Fp6::new(c0, c1, c2)),
+            (Some(c0), Some(c1), Some(c2)) => Some(Fp3::new(c0, c1, c2)),
             (..) => None,
         }
     }
@@ -173,17 +107,17 @@ where
 
     #[inline]
     fn zero<CS: ConstraintSystem<ConstraintF>>(mut cs: CS) -> Result<Self, SynthesisError> {
-        let c0 = Fp2Gadget::<P, ConstraintF>::zero(cs.ns(|| "c0"))?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::zero(cs.ns(|| "c1"))?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::zero(cs.ns(|| "c2"))?;
+        let c0 = FpGadget::<ConstraintF>::zero(cs.ns(|| "c0"))?;
+        let c1 = FpGadget::<ConstraintF>::zero(cs.ns(|| "c1"))?;
+        let c2 = FpGadget::<ConstraintF>::zero(cs.ns(|| "c2"))?;
         Ok(Self::new(c0, c1, c2))
     }
 
     #[inline]
     fn one<CS: ConstraintSystem<ConstraintF>>(mut cs: CS) -> Result<Self, SynthesisError> {
-        let c0 = Fp2Gadget::<P, ConstraintF>::one(cs.ns(|| "c0"))?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::zero(cs.ns(|| "c1"))?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::zero(cs.ns(|| "c2"))?;
+        let c0 = FpGadget::<ConstraintF>::one(cs.ns(|| "c0"))?;
+        let c1 = FpGadget::<ConstraintF>::zero(cs.ns(|| "c1"))?;
+        let c2 = FpGadget::<ConstraintF>::zero(cs.ns(|| "c2"))?;
         Ok(Self::new(c0, c1, c2))
     }
 
@@ -192,7 +126,7 @@ where
         &self,
         mut cs: CS,
         bit: &Boolean,
-        coeff: Fp6<P>,
+        coeff: Fp3<P>,
     ) -> Result<Self, SynthesisError> {
         let c0 = self
             .c0
@@ -340,16 +274,16 @@ where
         // v4 = a(∞)b(∞)   = a2 * b2
         let v4 = self.c2.mul(cs.ns(|| "v2: a2 * b2"), &other.c2)?;
 
-        let two = <P::Fp2Params as Fp2Parameters>::Fp::one().double();
+        let two = P::Fp::one().double();
         let six = two.double() + &two;
         let mut two_and_six = [two, six];
         algebra::fields::batch_inversion(&mut two_and_six);
         let (two_inverse, six_inverse) = (two_and_six[0], two_and_six[1]);
 
-        let half_v0 = v0.mul_by_fp_constant(cs.ns(|| "half_v0"), &two_inverse)?;
-        let half_v1 = v1.mul_by_fp_constant(cs.ns(|| "half_v1"), &two_inverse)?;
-        let one_sixth_v2 = v2.mul_by_fp_constant(cs.ns(|| "v2_by_six"), &six_inverse)?;
-        let one_sixth_v3 = v3.mul_by_fp_constant(cs.ns(|| "v3_by_six"), &six_inverse)?;
+        let half_v0 = v0.mul_by_constant(cs.ns(|| "half_v0"), &two_inverse)?;
+        let half_v1 = v1.mul_by_constant(cs.ns(|| "half_v1"), &two_inverse)?;
+        let one_sixth_v2 = v2.mul_by_constant(cs.ns(|| "v2_by_six"), &six_inverse)?;
+        let one_sixth_v3 = v3.mul_by_constant(cs.ns(|| "v3_by_six"), &six_inverse)?;
         let two_v4 = v4.double(cs.ns(|| "2 * v4"))?;
 
         // c0 = v0 + β((1/2)v0 − (1/2)v1 − (1/6)v2 + (1/6)v3 − 2v4)
@@ -387,7 +321,7 @@ where
         // -v0 + (1/2)v1 + (1/2)v2 −v4
         let c2 = {
             let c2_cs = &mut cs.ns(|| "c2");
-            let half_v2 = v2.mul_by_fp_constant(&mut c2_cs.ns(|| "mul1"), &two_inverse)?;
+            let half_v2 = v2.mul_by_constant(&mut c2_cs.ns(|| "mul1"), &two_inverse)?;
             let result = half_v1
                 .add(c2_cs.ns(|| "add1"), &half_v2)?
                 .sub(c2_cs.ns(|| "sub1"), &v4)?
@@ -446,16 +380,16 @@ where
         // v4 = a(∞)^2 = a2^2
         let v4 = self.c2.square(&mut cs.ns(|| "a2^2"))?;
 
-        let two = <P::Fp2Params as Fp2Parameters>::Fp::one().double();
+        let two = P::Fp::one().double();
         let six = two.double() + &two;
         let mut two_and_six = [two, six];
         algebra::fields::batch_inversion(&mut two_and_six);
         let (two_inverse, six_inverse) = (two_and_six[0], two_and_six[1]);
 
-        let half_v0 = v0.mul_by_fp_constant(cs.ns(|| "half_v0"), &two_inverse)?;
-        let half_v1 = v1.mul_by_fp_constant(cs.ns(|| "half_v1"), &two_inverse)?;
-        let one_sixth_v2 = v2.mul_by_fp_constant(cs.ns(|| "one_sixth_v2"), &six_inverse)?;
-        let one_sixth_v3 = v3.mul_by_fp_constant(cs.ns(|| "one_sixth_v3"), &six_inverse)?;
+        let half_v0 = v0.mul_by_constant(cs.ns(|| "half_v0"), &two_inverse)?;
+        let half_v1 = v1.mul_by_constant(cs.ns(|| "half_v1"), &two_inverse)?;
+        let one_sixth_v2 = v2.mul_by_constant(cs.ns(|| "one_sixth_v2"), &six_inverse)?;
+        let one_sixth_v3 = v3.mul_by_constant(cs.ns(|| "one_sixth_v3"), &six_inverse)?;
         let two_v4 = v4.double(cs.ns(|| "double_v4"))?;
 
         // c0 = v0 + β((1/2)v0 − (1/2)v1 − (1/6)v2 + (1/6)v3 − 2v4)
@@ -490,7 +424,7 @@ where
         // -v0 + (1/2)v1 + (1/2)v2 −v4
         let c2 = {
             let mut c2_cs = cs.ns(|| "c2");
-            let half_v2 = v2.mul_by_fp_constant(c2_cs.ns(|| "half_v2"), &two_inverse)?;
+            let half_v2 = v2.mul_by_constant(c2_cs.ns(|| "half_v2"), &two_inverse)?;
             half_v1
                 .add(c2_cs.ns(|| "add1"), &half_v2)?
                 .sub(c2_cs.ns(|| "sub1"), &v4)?
@@ -518,7 +452,7 @@ where
     fn add_constant<CS: ConstraintSystem<ConstraintF>>(
         &self,
         mut cs: CS,
-        other: &Fp6<P>,
+        other: &Fp3<P>,
     ) -> Result<Self, SynthesisError> {
         let c0 = self.c0.add_constant(cs.ns(|| "c0"), &other.c0)?;
         let c1 = self.c1.add_constant(cs.ns(|| "c1"), &other.c1)?;
@@ -531,7 +465,7 @@ where
     fn add_constant_in_place<CS: ConstraintSystem<ConstraintF>>(
         &mut self,
         mut cs: CS,
-        other: &Fp6<P>,
+        other: &Fp3<P>,
     ) -> Result<&mut Self, SynthesisError> {
         self.c0.add_constant_in_place(cs.ns(|| "c0"), &other.c0)?;
         self.c1.add_constant_in_place(cs.ns(|| "c1"), &other.c1)?;
@@ -544,7 +478,7 @@ where
     fn mul_by_constant<CS: ConstraintSystem<ConstraintF>>(
         &self,
         mut cs: CS,
-        other: &Fp6<P>,
+        other: &Fp3<P>,
     ) -> Result<Self, SynthesisError> {
         // Uses Toom-Cook-3x multiplication from
         //
@@ -613,16 +547,16 @@ where
         // v4 = a(∞)b(∞)   = a2 * b2
         let v4 = self.c2.mul_by_constant(cs.ns(|| "v4"), &other.c2)?;
 
-        let two = <P::Fp2Params as Fp2Parameters>::Fp::one().double();
+        let two = P::Fp::one().double();
         let six = two.double() + &two;
         let mut two_and_six = [two, six];
         algebra::fields::batch_inversion(&mut two_and_six);
         let (two_inverse, six_inverse) = (two_and_six[0], two_and_six[1]);
 
-        let mut half_v0 = v0.mul_by_fp_constant(cs.ns(|| "half_v0"), &two_inverse)?;
-        let half_v1 = v1.mul_by_fp_constant(cs.ns(|| "half_v1"), &two_inverse)?;
-        let mut one_sixth_v2 = v2.mul_by_fp_constant(cs.ns(|| "v2_by_6"), &six_inverse)?;
-        let one_sixth_v3 = v3.mul_by_fp_constant_in_place(cs.ns(|| "v3_by_6"), &six_inverse)?;
+        let mut half_v0 = v0.mul_by_constant(cs.ns(|| "half_v0"), &two_inverse)?;
+        let half_v1 = v1.mul_by_constant(cs.ns(|| "half_v1"), &two_inverse)?;
+        let mut one_sixth_v2 = v2.mul_by_constant(cs.ns(|| "v2_by_6"), &six_inverse)?;
+        let one_sixth_v3 = v3.mul_by_constant_in_place(cs.ns(|| "v3_by_6"), &six_inverse)?;
         let two_v4 = v4.double(cs.ns(|| "2v4"))?;
 
         // c0 = v0 + β((1/2)v0 − (1/2)v1 − (1/6)v2 + (1/6)v3 − 2v4)
@@ -659,7 +593,7 @@ where
         // -v0 + (1/2)v1 + (1/2)v2 −v4
         let c2 = {
             let mut c2_cs = cs.ns(|| "c2");
-            let half_v2 = v2.mul_by_fp_constant_in_place(c2_cs.ns(|| "half_v2"), &two_inverse)?;
+            let half_v2 = v2.mul_by_constant_in_place(c2_cs.ns(|| "half_v2"), &two_inverse)?;
             half_v1
                 .add(c2_cs.ns(|| "add1"), half_v2)?
                 .sub(c2_cs.ns(|| "sub2"), &v4)?
@@ -684,24 +618,20 @@ where
         mut cs: CS,
         power: usize,
     ) -> Result<&mut Self, SynthesisError> {
-        self.c0.frobenius_map_in_place(&mut cs.ns(|| "c0"), power)?;
-        self.c1.frobenius_map_in_place(&mut cs.ns(|| "c1"), power)?;
-        self.c2.frobenius_map_in_place(&mut cs.ns(|| "c2"), power)?;
-
         self.c1.mul_by_constant_in_place(
             cs.ns(|| "c1_power"),
-            &P::FROBENIUS_COEFF_FP6_C1[power % 6],
+            &P::FROBENIUS_COEFF_FP3_C1[power % 3],
         )?;
         self.c2.mul_by_constant_in_place(
             cs.ns(|| "c2_power"),
-            &P::FROBENIUS_COEFF_FP6_C2[power % 6],
+            &P::FROBENIUS_COEFF_FP3_C2[power % 3],
         )?;
 
         Ok(self)
     }
 
     fn cost_of_mul() -> usize {
-        5 * Fp2Gadget::<P, ConstraintF>::cost_of_mul()
+        5 * FpGadget::<ConstraintF>::cost_of_mul()
     }
 
     fn cost_of_inv() -> usize {
@@ -709,34 +639,26 @@ where
     }
 }
 
-impl<P, ConstraintF: PrimeField> PartialEq for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField> PartialEq
+    for Fp3Gadget<P, ConstraintF>
 {
     fn eq(&self, other: &Self) -> bool {
         self.c0 == other.c0 && self.c1 == other.c1 && self.c2 == other.c2
     }
 }
 
-impl<P, ConstraintF: PrimeField> Eq for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField> Eq
+    for Fp3Gadget<P, ConstraintF>
 {
 }
 
-impl<P, ConstraintF: PrimeField> EqGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    EqGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
 }
 
-impl<P, ConstraintF: PrimeField> ConditionalEqGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    ConditionalEqGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     #[inline]
     fn conditional_enforce_equal<CS: ConstraintSystem<ConstraintF>>(
@@ -755,14 +677,12 @@ where
     }
 
     fn cost() -> usize {
-        3 * <Fp2Gadget<P, ConstraintF> as ConditionalEqGadget<ConstraintF>>::cost()
+        3 * <FpGadget<ConstraintF> as ConditionalEqGadget<ConstraintF>>::cost()
     }
 }
 
-impl<P, ConstraintF: PrimeField> NEqGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    NEqGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     #[inline]
     fn enforce_not_equal<CS: ConstraintSystem<ConstraintF>>(
@@ -777,14 +697,12 @@ where
     }
 
     fn cost() -> usize {
-        3 * <Fp2Gadget<P, ConstraintF> as NEqGadget<ConstraintF>>::cost()
+        3 * <FpGadget<ConstraintF> as NEqGadget<ConstraintF>>::cost()
     }
 }
 
-impl<P, ConstraintF: PrimeField> ToBitsGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    ToBitsGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     fn to_bits<CS: ConstraintSystem<ConstraintF>>(
         &self,
@@ -815,10 +733,8 @@ where
     }
 }
 
-impl<P, ConstraintF: PrimeField> ToBytesGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    ToBytesGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     fn to_bytes<CS: ConstraintSystem<ConstraintF>>(
         &self,
@@ -849,61 +765,55 @@ where
     }
 }
 
-impl<P, ConstraintF: PrimeField> Clone for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField> Clone
+    for Fp3Gadget<P, ConstraintF>
 {
     fn clone(&self) -> Self {
         Self::new(self.c0.clone(), self.c1.clone(), self.c2.clone())
     }
 }
 
-impl<P, ConstraintF: PrimeField> CondSelectGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    CondSelectGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     #[inline]
     fn conditionally_select<CS: ConstraintSystem<ConstraintF>>(
         mut cs: CS,
         cond: &Boolean,
-        true_value: &Self,
-        false_value: &Self,
+        first: &Self,
+        second: &Self,
     ) -> Result<Self, SynthesisError> {
-        let c0 = Fp2Gadget::<P, ConstraintF>::conditionally_select(
+        let c0 = FpGadget::<ConstraintF>::conditionally_select(
             &mut cs.ns(|| "c0"),
             cond,
-            &true_value.c0,
-            &false_value.c0,
+            &first.c0,
+            &second.c0,
         )?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::conditionally_select(
+        let c1 = FpGadget::<ConstraintF>::conditionally_select(
             &mut cs.ns(|| "c1"),
             cond,
-            &true_value.c1,
-            &false_value.c1,
+            &first.c1,
+            &second.c1,
         )?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::conditionally_select(
+        let c2 = FpGadget::<ConstraintF>::conditionally_select(
             &mut cs.ns(|| "c2"),
             cond,
-            &true_value.c2,
-            &false_value.c2,
+            &first.c2,
+            &second.c2,
         )?;
 
         Ok(Self::new(c0, c1, c2))
     }
 
     fn cost() -> usize {
-        3 * <Fp2Gadget<P, ConstraintF> as CondSelectGadget<ConstraintF>>::cost()
+        3 * <FpGadget<ConstraintF> as CondSelectGadget<ConstraintF>>::cost()
     }
 }
 
-impl<P, ConstraintF: PrimeField> TwoBitLookupGadget<ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    TwoBitLookupGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
-    type TableConstant = Fp6<P>;
+    type TableConstant = Fp3<P>;
     fn two_bit_lookup<CS: ConstraintSystem<ConstraintF>>(
         mut cs: CS,
         b: &[Boolean],
@@ -912,24 +822,21 @@ where
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
         let c2s = c.iter().map(|f| f.c2).collect::<Vec<_>>();
-        let c0 = Fp2Gadget::<P, ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c0"), b, &c0s)?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c1"), b, &c1s)?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c2"), b, &c2s)?;
+        let c0 = FpGadget::<ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c0"), b, &c0s)?;
+        let c1 = FpGadget::<ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c1"), b, &c1s)?;
+        let c2 = FpGadget::<ConstraintF>::two_bit_lookup(cs.ns(|| "Lookup c2"), b, &c2s)?;
         Ok(Self::new(c0, c1, c2))
     }
 
     fn cost() -> usize {
-        3 * <Fp2Gadget<P, ConstraintF> as TwoBitLookupGadget<ConstraintF>>::cost()
+        3 * <FpGadget<ConstraintF> as TwoBitLookupGadget<ConstraintF>>::cost()
     }
 }
 
-impl<P, ConstraintF: PrimeField> ThreeBitCondNegLookupGadget<ConstraintF>
-    for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    ThreeBitCondNegLookupGadget<ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
-    type TableConstant = Fp6<P>;
+    type TableConstant = Fp3<P>;
 
     fn three_bit_cond_neg_lookup<CS: ConstraintSystem<ConstraintF>>(
         mut cs: CS,
@@ -940,19 +847,19 @@ where
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
         let c2s = c.iter().map(|f| f.c2).collect::<Vec<_>>();
-        let c0 = Fp2Gadget::<P, ConstraintF>::three_bit_cond_neg_lookup(
+        let c0 = FpGadget::<ConstraintF>::three_bit_cond_neg_lookup(
             cs.ns(|| "Lookup c0"),
             b,
             b0b1,
             &c0s,
         )?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::three_bit_cond_neg_lookup(
+        let c1 = FpGadget::<ConstraintF>::three_bit_cond_neg_lookup(
             cs.ns(|| "Lookup c1"),
             b,
             b0b1,
             &c1s,
         )?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::three_bit_cond_neg_lookup(
+        let c2 = FpGadget::<ConstraintF>::three_bit_cond_neg_lookup(
             cs.ns(|| "Lookup c2"),
             b,
             b0b1,
@@ -962,14 +869,12 @@ where
     }
 
     fn cost() -> usize {
-        3 * <Fp2Gadget<P, ConstraintF> as ThreeBitCondNegLookupGadget<ConstraintF>>::cost()
+        3 * <FpGadget<ConstraintF> as ThreeBitCondNegLookupGadget<ConstraintF>>::cost()
     }
 }
 
-impl<P, ConstraintF: PrimeField> AllocGadget<Fp6<P>, ConstraintF> for Fp6Gadget<P, ConstraintF>
-where
-    P: Fp6Parameters,
-    P::Fp2Params: Fp2Parameters<Fp = ConstraintF>,
+impl<P: Fp3Parameters<Fp = ConstraintF>, ConstraintF: PrimeField + SquareRootField>
+    AllocGadget<Fp3<P>, ConstraintF> for Fp3Gadget<P, ConstraintF>
 {
     #[inline]
     fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(
@@ -978,7 +883,7 @@ where
     ) -> Result<Self, SynthesisError>
     where
         F: FnOnce() -> Result<T, SynthesisError>,
-        T: Borrow<Fp6<P>>,
+        T: Borrow<Fp3<P>>,
     {
         let (c0, c1, c2) = match value_gen() {
             Ok(fe) => {
@@ -992,9 +897,9 @@ where
             ),
         };
 
-        let c0 = Fp2Gadget::<P, ConstraintF>::alloc(&mut cs.ns(|| "c0"), || c0)?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::alloc(&mut cs.ns(|| "c1"), || c1)?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::alloc(&mut cs.ns(|| "c2"), || c2)?;
+        let c0 = FpGadget::<ConstraintF>::alloc(&mut cs.ns(|| "c0"), || c0)?;
+        let c1 = FpGadget::<ConstraintF>::alloc(&mut cs.ns(|| "c1"), || c1)?;
+        let c2 = FpGadget::<ConstraintF>::alloc(&mut cs.ns(|| "c2"), || c2)?;
         Ok(Self::new(c0, c1, c2))
     }
 
@@ -1005,7 +910,7 @@ where
     ) -> Result<Self, SynthesisError>
     where
         F: FnOnce() -> Result<T, SynthesisError>,
-        T: Borrow<Fp6<P>>,
+        T: Borrow<Fp3<P>>,
     {
         let (c0, c1, c2) = match value_gen() {
             Ok(fe) => {
@@ -1019,9 +924,9 @@ where
             ),
         };
 
-        let c0 = Fp2Gadget::<P, ConstraintF>::alloc_input(&mut cs.ns(|| "c0"), || c0)?;
-        let c1 = Fp2Gadget::<P, ConstraintF>::alloc_input(&mut cs.ns(|| "c1"), || c1)?;
-        let c2 = Fp2Gadget::<P, ConstraintF>::alloc_input(&mut cs.ns(|| "c2"), || c2)?;
+        let c0 = FpGadget::<ConstraintF>::alloc_input(&mut cs.ns(|| "c0"), || c0)?;
+        let c1 = FpGadget::<ConstraintF>::alloc_input(&mut cs.ns(|| "c1"), || c1)?;
+        let c2 = FpGadget::<ConstraintF>::alloc_input(&mut cs.ns(|| "c2"), || c2)?;
         Ok(Self::new(c0, c1, c2))
     }
 }
