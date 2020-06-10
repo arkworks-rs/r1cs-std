@@ -1,5 +1,5 @@
 use crate::fields::fp::FpGadget;
-use algebra::edwards_bls12::fq::Fq;
+use algebra::edwards_on_bls12_377::fq::Fq;
 
 pub type FqGadget = FpGadget<Fq>;
 
