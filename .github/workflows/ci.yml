@@ -84,10 +84,7 @@ jobs:
             command: test
             args: "--all \
                    --all-features \
-                   --exclude cp-benches \
-                   --exclude algebra-benches \
-                   --exclude ff-fft-benches \
-                   -- --skip dpc --skip integration_test"
+                   --exclude cp-benches "
 
   check_no_std:
     name: Check no_std
@@ -118,53 +115,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: algebra-core
-        run: |
-          cd algebra-core
-          cargo build -p algebra-core --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p algebra-core --no-default-features --target thumbv6m-none-eabi
-          cd ..
-
-      - name: algebra
-        run: |
-          cd algebra
-          cargo build -p algebra --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p algebra --no-default-features --target thumbv6m-none-eabi
-          cd ..
-
-      - name: r1cs-core
-        run: |
-          cd r1cs-core
-          cargo build -p r1cs-core --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p r1cs-core --no-default-features --target thumbv6m-none-eabi
-          cd ..
-
       - name: r1cs-std
         run: |
           cd r1cs-std
           cargo build -p r1cs-std --no-default-features --target aarch64-unknown-none
           cargo check --examples -p r1cs-std --no-default-features --target aarch64-unknown-none
-          cd ..
-
-      - name: ff-fft
-        run: |
-          cd ff-fft
-          cargo build -p ff-fft --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p ff-fft --no-default-features --target thumbv6m-none-eabi
-          cd ..
-
-      - name: groth16
-        run: |
-          cd groth16
-          cargo build -p groth16 --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p groth16 --no-default-features --target thumbv6m-none-eabi
-          cd ..
-
-      - name: gm17
-        run: |
-          cd gm17
-          cargo build -p gm17 --no-default-features --target thumbv6m-none-eabi
-          cargo check --examples -p gm17 --no-default-features --target thumbv6m-none-eabi
           cd ..
 
       - name: crypto-primitives
