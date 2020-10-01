@@ -26,7 +26,7 @@ algebra-core = { git = "https://github.com/scipr-lab/zexe", default-features = f
 bench-utils = { git = "https://github.com/scipr-lab/zexe" }
 
 blake2 = { version = "0.8", default-features = false }
-digest = "0.8"
+digest = "0.9"
 
 ff-fft = { git = "https://github.com/scipr-lab/zexe", default-features = false }
 gm17 = { git = "https://github.com/scipr-lab/zexe", optional = true, default-features = false }
