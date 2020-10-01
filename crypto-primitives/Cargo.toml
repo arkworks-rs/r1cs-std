@@ -25,7 +25,7 @@ edition = "2018"
 algebra-core = { git = "https://github.com/scipr-lab/zexe", default-features = false }
 bench-utils = { git = "https://github.com/scipr-lab/zexe" }
 
-blake2 = { version = "0.8", default-features = false }
+blake2 = { version = "0.9", default-features = false }
 digest = "0.8"
 
 ff-fft = { git = "https://github.com/scipr-lab/zexe", default-features = false }
