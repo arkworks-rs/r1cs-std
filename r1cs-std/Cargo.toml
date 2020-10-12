@@ -1,5 +1,5 @@
 [package]
-name = "r1cs-std"
+name = "ark-r1cs-std"
 version = "0.1.0"
 authors = [ "arkworks contributors" ]
 description = "A standard library for constraint system gadgets"
@@ -27,7 +27,7 @@ rustc_version = "0.2"
 [dev-dependencies]
 rand = { version = "0.7", default-features = false }
 rand_xorshift = "0.2"
-ark-bls12-381 = { git = "https://github.com/arkworks-rs/algebra", default-features = false, features = ["scalar_field"] }
+ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves", default-features = false, features = ["scalar_field"] }
 
 [features]
 default = ["std"]
