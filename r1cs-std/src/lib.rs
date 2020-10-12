@@ -42,44 +42,6 @@ pub mod fields;
 /// This module implements gadgets related to group arithmetic, and specifically elliptic curve arithmetic.
 pub mod groups;
 
-mod instantiated;
-
-#[cfg(feature = "bls12_377")]
-pub use instantiated::bls12_377;
-
-#[cfg(feature = "ed_on_bn254")]
-pub use instantiated::ed_on_bn254;
-
-#[cfg(feature = "ed_on_bls12_377")]
-pub use instantiated::ed_on_bls12_377;
-
-#[cfg(feature = "ed_on_mnt4_298")]
-pub use instantiated::ed_on_mnt4_298;
-
-#[cfg(feature = "ed_on_mnt4_753")]
-pub use instantiated::ed_on_mnt4_753;
-
-#[cfg(feature = "ed_on_cp6_782")]
-pub use instantiated::ed_on_cp6_782;
-
-#[cfg(feature = "ed_on_bw6_761")]
-pub use instantiated::ed_on_bw6_761;
-
-#[cfg(feature = "ed_on_bls12_381")]
-pub use instantiated::ed_on_bls12_381;
-
-#[cfg(feature = "mnt4_298")]
-pub use instantiated::mnt4_298;
-
-#[cfg(feature = "mnt4_753")]
-pub use instantiated::mnt4_753;
-
-#[cfg(feature = "mnt6_298")]
-pub use instantiated::mnt6_298;
-
-#[cfg(feature = "mnt6_753")]
-pub use instantiated::mnt6_753;
-
 /// This module implements gadgets related to computing pairings in bilinear groups.
 pub mod pairing;
 
@@ -98,7 +60,6 @@ pub mod prelude {
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
-        instantiated::*,
         pairing::PairingVar,
         select::*,
         R1CSVar,
