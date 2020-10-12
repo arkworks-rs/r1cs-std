@@ -35,7 +35,7 @@ digest = "0.8"
 gm17 = { git = "ssh://git@github.com/arkworks-rs/gm17.git", default-features = false }
 groth16 = { git = "ssh://git@github.com/arkworks-rs/groth16.git", default-features = false }
 
-r1cs-std = { path = "../r1cs-std", optional = true, default-features = false }
+ark-r1cs-std = { path = "../r1cs-std", optional = true, default-features = false }
 
 rand = { version = "0.7", default-features = false }
 rayon = { version = "1.0", optional = true }
@@ -44,7 +44,7 @@ tracing = { version = "0.1", default-features = false, features = [ "attributes"
 
 [features]
 default = ["std"]
-std = [ "ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "r1cs-std/std"]
+std = [ "ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "ark-r1cs-std/std"]
 parallel = ["std", "rayon", "gm17/parallel", "groth16/parallel", "ark-ff/parallel"]
 
 [dev-dependencies]
