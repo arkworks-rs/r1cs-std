@@ -24,11 +24,7 @@ extern crate derivative;
 #[macro_use]
 pub mod macros;
 
-#[cfg(not(feature = "std"))]
-use ralloc::vec::Vec;
-
-#[cfg(feature = "std")]
-use std::vec::Vec;
+pub(crate) use ark_std::vec::Vec;
 
 use ark_ff::Field;
 
