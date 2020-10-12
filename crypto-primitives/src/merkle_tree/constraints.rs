@@ -1,5 +1,5 @@
 use algebra_core::Field;
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 
 use crate::{
@@ -40,7 +40,7 @@ where
         let cs = leaf_hash.cs().or(root.cs());
 
         // Check if leaf is one of the bottom-most siblings.
-        let leaf_is_left = Boolean::new_witness(r1cs_core::ns!(cs, "leaf_is_left"), || {
+        let leaf_is_left = Boolean::new_witness(ark_relations::r1cs::ns!(cs, "leaf_is_left"), || {
             Ok(leaf_hash.value()?.eq(&self.path[0].0.value()?))
         })?;
 
@@ -52,11 +52,11 @@ where
         for &(ref left_hash, ref right_hash) in &self.path {
             // Check if the previous_hash matches the correct current hash.
             let previous_is_left =
-                Boolean::new_witness(r1cs_core::ns!(cs, "previous_is_left"), || {
+                Boolean::new_witness(ark_relations::r1cs::ns!(cs, "previous_is_left"), || {
                     Ok(previous_hash.value()?.eq(&left_hash.value()?))
                 })?;
 
-            let ns = r1cs_core::ns!(cs, "enforcing that inner hash is correct");
+            let ns = ark_relations::r1cs::ns!(cs, "enforcing that inner hash is correct");
             let equality_cmp = previous_is_left.select(left_hash, right_hash)?;
             result = result.and(&previous_hash.is_eq(&equality_cmp)?)?;
             drop(ns);
@@ -104,12 +104,12 @@ where
             let mut path = Vec::new();
             for &(ref l, ref r) in val.borrow().path.iter() {
                 let l_hash = HGadget::OutputVar::new_variable(
-                    r1cs_core::ns!(cs, "l_child"),
+                    ark_relations::r1cs::ns!(cs, "l_child"),
                     || Ok(l),
                     mode,
                 )?;
                 let r_hash = HGadget::OutputVar::new_variable(
-                    r1cs_core::ns!(cs, "r_child"),
+                    ark_relations::r1cs::ns!(cs, "r_child"),
                     || Ok(r),
                     mode,
                 )?;
@@ -130,7 +130,7 @@ mod test {
         merkle_tree::*,
     };
     use algebra::ed_on_bls12_381::{EdwardsProjective as JubJub, Fq};
-    use r1cs_core::ConstraintSystem;
+    use ark_relations::r1cs::ConstraintSystem;
     use rand::SeedableRng;
     use rand_xorshift::XorShiftRng;
 
@@ -169,7 +169,7 @@ mod test {
 
             // Allocate Merkle Tree Root
             let root = <HG as FixedLengthCRHGadget<H, _>>::OutputVar::new_witness(
-                r1cs_core::ns!(cs, "new_digest"),
+                ark_relations::r1cs::ns!(cs, "new_digest"),
                 || {
                     if use_bad_root {
                         Ok(<H as FixedLengthCRH>::Output::default())
@@ -185,7 +185,7 @@ mod test {
 
             // Allocate Parameters for CRH
             let crh_parameters = <HG as FixedLengthCRHGadget<H, Fq>>::ParametersVar::new_constant(
-                r1cs_core::ns!(cs, "new_parameter"),
+                ark_relations::r1cs::ns!(cs, "new_parameter"),
                 &crh_parameters,
             )
             .unwrap();
@@ -205,7 +205,7 @@ mod test {
 
             // Allocate Merkle Tree Path
             let cw =
-                PathVar::<_, HG, _>::new_witness(r1cs_core::ns!(cs, "new_witness"), || Ok(&proof))
+                PathVar::<_, HG, _>::new_witness(ark_relations::r1cs::ns!(cs, "new_witness"), || Ok(&proof))
                     .unwrap();
             for (i, (l, r)) in cw.path.iter().enumerate() {
                 assert_eq!(l.value().unwrap(), proof.path[i].0);

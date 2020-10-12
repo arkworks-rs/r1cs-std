@@ -1,27 +1,22 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 //! This crate implements common "gadgets" that make
 //! programming rank-1 constraint systems easier.
-#![cfg_attr(not(feature = "std"), no_std)]
-#![deny(unused_import_braces, unused_qualifications, trivial_casts)]
-#![deny(trivial_numeric_casts, variant_size_differences, unreachable_pub)]
-#![deny(non_shorthand_field_patterns, unused_attributes, unused_imports)]
-#![deny(unused_extern_crates, renamed_and_removed_lints, unused_allocation)]
-#![deny(unused_comparisons, bare_trait_objects, const_err, unused_must_use)]
-#![deny(unused_mut, unused_unsafe, private_in_public, unsafe_code)]
-#![deny(missing_docs)]
-#![forbid(unsafe_code)]
+#![deny(
+    warnings,
+    unused,
+    future_incompatible,
+    nonstandard_style,
+    rust_2018_idioms
+)]
 
-#[doc(hidden)]
-#[cfg(all(test, not(feature = "std")))]
+
 #[macro_use]
-extern crate std;
+extern crate ark_std;
 
-#[doc(hidden)]
-#[cfg(not(feature = "std"))]
-extern crate alloc as ralloc;
-
-#[doc(hidden)]
 #[macro_use]
-extern crate algebra;
+extern crate ark_relations;
+
+use ark_relations::r1cs as r1cs_core;
 
 #[doc(hidden)]
 #[macro_use]
@@ -37,7 +32,7 @@ use ralloc::vec::Vec;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 
-use algebra::prelude::Field;
+use ark_ff::Field;
 
 /// This module implements gadgets related to bit manipulation, such as `Boolean` and `UInt`s.
 pub mod bits;
@@ -120,8 +115,8 @@ pub trait R1CSVar<F: Field> {
 
     /// Returns the underlying `ConstraintSystemRef`.
     ///
-    /// If `self` is a constant value, then this *must* return `r1cs_core::ConstraintSystemRef::None`.
-    fn cs(&self) -> r1cs_core::ConstraintSystemRef<F>;
+    /// If `self` is a constant value, then this *must* return `ark_relations::r1cs::ConstraintSystemRef::None`.
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F>;
 
     /// Returns `true` if `self` is a circuit-generation-time constant.
     fn is_constant(&self) -> bool {
@@ -130,21 +125,21 @@ pub trait R1CSVar<F: Field> {
 
     /// Returns the value that is assigned to `self` in the underlying
     /// `ConstraintSystem`.
-    fn value(&self) -> Result<Self::Value, r1cs_core::SynthesisError>;
+    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError>;
 }
 
 impl<F: Field, T: R1CSVar<F>> R1CSVar<F> for [T] {
     type Value = Vec<T::Value>;
 
-    fn cs(&self) -> r1cs_core::ConstraintSystemRef<F> {
-        let mut result = r1cs_core::ConstraintSystemRef::None;
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
+        let mut result = ark_relations::r1cs::ConstraintSystemRef::None;
         for var in self {
             result = var.cs().or(result);
         }
         result
     }
 
-    fn value(&self) -> Result<Self::Value, r1cs_core::SynthesisError> {
+    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
         let mut result = Vec::new();
         for var in self {
             result.push(var.value()?);
@@ -156,11 +151,11 @@ impl<F: Field, T: R1CSVar<F>> R1CSVar<F> for [T] {
 impl<'a, F: Field, T: 'a + R1CSVar<F>> R1CSVar<F> for &'a T {
     type Value = T::Value;
 
-    fn cs(&self) -> r1cs_core::ConstraintSystemRef<F> {
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
         (*self).cs()
     }
 
-    fn value(&self) -> Result<Self::Value, r1cs_core::SynthesisError> {
+    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
         (*self).value()
     }
 }
@@ -168,20 +163,20 @@ impl<'a, F: Field, T: 'a + R1CSVar<F>> R1CSVar<F> for &'a T {
 /// A utility trait to convert `Self` to `Result<T, SynthesisErrorA`.>
 pub trait Assignment<T> {
     /// Converts `self` to `Result`.
-    fn get(self) -> Result<T, r1cs_core::SynthesisError>;
+    fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError>;
 }
 
 impl<T> Assignment<T> for Option<T> {
-    fn get(self) -> Result<T, r1cs_core::SynthesisError> {
-        self.ok_or(r1cs_core::SynthesisError::AssignmentMissing)
+    fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError> {
+        self.ok_or(ark_relations::r1cs::SynthesisError::AssignmentMissing)
     }
 }
 
 /// Specifies how to convert a variable of type `Self` to variables of
 /// type `FpVar<ConstraintF>`
-pub trait ToConstraintFieldGadget<ConstraintF: algebra::PrimeField> {
+pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {
     /// Converts `self` to `FpVar<ConstraintF>` variables.
     fn to_constraint_field(
         &self,
-    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, r1cs_core::SynthesisError>;
+    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::r1cs::SynthesisError>;
 }

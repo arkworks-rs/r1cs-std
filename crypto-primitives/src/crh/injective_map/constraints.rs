@@ -14,7 +14,7 @@ use algebra_core::{
     fields::{Field, PrimeField, SquareRootField},
     ProjectiveCurve,
 };
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 use r1cs_std::{
     fields::fp::FpVar,
     groups::{curves::twisted_edwards::AffineVar as TEVar, CurveVar},

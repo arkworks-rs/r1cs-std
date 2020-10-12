@@ -10,9 +10,9 @@
 //! One can perform standard algebraic operations on `FqVar`:
 //!
 //! ```
-//! # fn main() -> Result<(), r1cs_core::SynthesisError> {
+//! # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
 //! use algebra::{UniformRand, ed_on_bn254::*};
-//! use r1cs_core::*;
+//! use ark_relations::r1cs::*;
 //! use r1cs_std::prelude::*;
 //! use r1cs_std::ed_on_bn254::*;
 //!
@@ -26,13 +26,13 @@
 //! let b_native = Fq::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = FqVar::new_witness(r1cs_core::ns!(cs, "generate_a"), || Ok(a_native))?;
-//! let b = FqVar::new_witness(r1cs_core::ns!(cs, "generate_b"), || Ok(b_native))?;
+//! let a = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_a"), || Ok(a_native))?;
+//! let b = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = FqVar::new_constant(r1cs_core::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = FqVar::new_constant(r1cs_core::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! let one = FqVar::one();
 //! let zero = FqVar::zero();
@@ -59,9 +59,9 @@
 //! One can also perform standard algebraic operations on `EdwardsVar`:
 //!
 //! ```
-//! # fn main() -> Result<(), r1cs_core::SynthesisError> {
+//! # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
 //! # use algebra::{UniformRand, ed_on_bn254::*};
-//! # use r1cs_core::*;
+//! # use ark_relations::r1cs::*;
 //! # use r1cs_std::prelude::*;
 //! # use r1cs_std::ed_on_bn254::*;
 //!
@@ -73,13 +73,13 @@
 //! let b_native = EdwardsProjective::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = EdwardsVar::new_witness(r1cs_core::ns!(cs, "a"), || Ok(a_native))?;
-//! let b = EdwardsVar::new_witness(r1cs_core::ns!(cs, "b"), || Ok(b_native))?;
+//! let a = EdwardsVar::new_witness(ark_relations::r1cs::ns!(cs, "a"), || Ok(a_native))?;
+//! let b = EdwardsVar::new_witness(ark_relations::r1cs::ns!(cs, "b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = EdwardsVar::new_constant(r1cs_core::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = EdwardsVar::new_constant(r1cs_core::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = EdwardsVar::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = EdwardsVar::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! // This returns the identity of `Edwards`.
 //! let zero = EdwardsVar::zero();

@@ -1,5 +1,5 @@
 use algebra_core::Field;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 use r1cs_std::prelude::*;
 
 use crate::signature::SignatureScheme;

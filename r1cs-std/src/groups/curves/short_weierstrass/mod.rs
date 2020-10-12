@@ -6,7 +6,7 @@ use algebra::{
     AffineCurve, BigInteger, BitIteratorBE, Field, One, PrimeField, ProjectiveCurve, Zero,
 };
 use core::{borrow::Borrow, marker::PhantomData};
-use r1cs_core::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::fields::fp::FpVar;
 use crate::{prelude::*, ToConstraintFieldGadget, Vec};
@@ -168,7 +168,7 @@ where
         let zero_y = F::one();
 
         let non_zero_x = F::new_variable(
-            r1cs_core::ns!(cs, "non-zero x"),
+            ark_relations::r1cs::ns!(cs, "non-zero x"),
             || {
                 let z_inv = self.z.value()?.inverse().unwrap_or(P::BaseField::zero());
                 Ok(self.x.value()? * &z_inv)
@@ -176,7 +176,7 @@ where
             mode,
         )?;
         let non_zero_y = F::new_variable(
-            r1cs_core::ns!(cs, "non-zero y"),
+            ark_relations::r1cs::ns!(cs, "non-zero y"),
             || {
                 let z_inv = self.z.value()?.inverse().unwrap_or(P::BaseField::zero());
                 Ok(self.y.value()? * &z_inv)
@@ -220,9 +220,9 @@ where
             ),
         };
 
-        let x = F::new_variable(r1cs_core::ns!(cs, "x"), || x, mode)?;
-        let y = F::new_variable(r1cs_core::ns!(cs, "y"), || y, mode)?;
-        let z = F::new_variable(r1cs_core::ns!(cs, "z"), || z, mode)?;
+        let x = F::new_variable(ark_relations::r1cs::ns!(cs, "x"), || x, mode)?;
+        let y = F::new_variable(ark_relations::r1cs::ns!(cs, "y"), || y, mode)?;
+        let z = F::new_variable(ark_relations::r1cs::ns!(cs, "z"), || z, mode)?;
 
         Ok(Self::new(x, y, z))
     }
@@ -580,7 +580,7 @@ where
 
                 let (mut ge, iter) = if cofactor_weight < modulus_minus_1_weight {
                     let ge = Self::new_variable_omit_prime_order_check(
-                        r1cs_core::ns!(cs, "Witness without subgroup check with cofactor mul"),
+                        ark_relations::r1cs::ns!(cs, "Witness without subgroup check with cofactor mul"),
                         || f().map(|g| g.borrow().into_affine().mul_by_cofactor_inv().into()),
                         mode,
                     )?;
@@ -590,7 +590,7 @@ where
                     )
                 } else {
                     let ge = Self::new_variable_omit_prime_order_check(
-                        r1cs_core::ns!(cs, "Witness without subgroup check with `r` check"),
+                        ark_relations::r1cs::ns!(cs, "Witness without subgroup check with `r` check"),
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
@@ -719,7 +719,7 @@ where
 {
     use crate::prelude::*;
     use algebra::{test_rng, BitIteratorLE, Group, UniformRand};
-    use r1cs_core::ConstraintSystem;
+    use ark_relations::r1cs::ConstraintSystem;
 
     crate::groups::test::group_test::<SWProjective<P>, _, GG>()?;
 
@@ -733,7 +733,7 @@ where
     let b_affine = b.into_affine();
 
     println!("Allocating things");
-    let ns = r1cs_core::ns!(cs, "allocating variables");
+    let ns = ark_relations::r1cs::ns!(cs, "allocating variables");
     let mut gadget_a = GG::new_witness(cs.clone(), || Ok(a))?;
     let gadget_b = GG::new_witness(cs.clone(), || Ok(b))?;
     drop(ns);
@@ -778,7 +778,7 @@ where
 
     let scalar: Vec<bool> = BitIteratorLE::new(scalar.into_repr()).collect();
     let input: Vec<Boolean<_>> =
-        Vec::new_witness(r1cs_core::ns!(cs, "bits"), || Ok(scalar)).unwrap();
+        Vec::new_witness(ark_relations::r1cs::ns!(cs, "bits"), || Ok(scalar)).unwrap();
     let result = gadget_a.scalar_mul_le(input.iter())?;
     let result_val = result.value()?.into_affine();
     assert_eq!(

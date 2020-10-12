@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use algebra::{Field, PairingEngine};
 use core::fmt::Debug;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 /// This module implements pairings for BLS12 bilinear groups.
 pub mod bls12;
@@ -85,7 +85,7 @@ pub(crate) mod tests {
     use algebra::{
         test_rng, BitIteratorLE, Field, PairingEngine, PrimeField, ProjectiveCurve, UniformRand,
     };
-    use r1cs_core::{ConstraintSystem, SynthesisError};
+    use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     #[allow(dead_code)]
     pub(crate) fn bilinearity_test<E: PairingEngine, P: PairingVar<E>>(

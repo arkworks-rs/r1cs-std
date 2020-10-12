@@ -1,7 +1,7 @@
 use crate::Vec;
 use algebra::Field;
 use core::borrow::Borrow;
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 /// Describes the mode that a variable should be allocated in within
 /// a `ConstraintSystem`.

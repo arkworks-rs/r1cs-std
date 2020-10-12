@@ -2,7 +2,7 @@ use algebra::{BitIteratorBE, Field, PrimeField};
 
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use core::borrow::Borrow;
-use r1cs_core::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
+use ark_relations::r1cs::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
 
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
@@ -277,10 +277,10 @@ impl<F: Field> Boolean<F> {
     /// This *does not* create any new variables or constraints.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -308,7 +308,7 @@ impl<F: Field> Boolean<F> {
     ///
     /// This *does not* create any new variables or constraints.
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
     /// use r1cs_std::prelude::*;
@@ -329,10 +329,10 @@ impl<F: Field> Boolean<F> {
     ///
     /// This *does not* create any new variables or constraints.
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -364,10 +364,10 @@ impl<F: Field> Boolean<F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -406,10 +406,10 @@ impl<F: Field> Boolean<F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -447,10 +447,10 @@ impl<F: Field> Boolean<F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -488,10 +488,10 @@ impl<F: Field> Boolean<F> {
     /// Outputs `bits[0] & bits[1] & ... & bits.last().unwrap()`.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -525,10 +525,10 @@ impl<F: Field> Boolean<F> {
     /// Outputs `bits[0] | bits[1] | ... | bits.last().unwrap()`.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -563,10 +563,10 @@ impl<F: Field> Boolean<F> {
     /// Outputs `(bits[0] & bits[1] & ... & bits.last().unwrap()).not()`.
     ///
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -685,10 +685,10 @@ impl<F: Field> Boolean<F> {
     ///
     /// If `self.is_eq(&Boolean::TRUE)`, this outputs `first`; else, it outputs `second`.
     /// ```
-    /// # fn main() -> Result<(), r1cs_core::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use algebra::bls12_381::Fr;
-    /// use r1cs_core::*;
+    /// use ark_relations::r1cs::*;
     /// use r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -904,7 +904,7 @@ mod test {
     use algebra::{
         bls12_381::Fr, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero,
     };
-    use r1cs_core::{ConstraintSystem, Namespace, SynthesisError};
+    use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
     use rand::SeedableRng;
     use rand_xorshift::XorShiftRng;
 
@@ -1093,7 +1093,7 @@ mod test {
                         }
 
                         let false_cond =
-                            Boolean::new_witness(r1cs_core::ns!(cs, "cond"), || Ok(false))?;
+                            Boolean::new_witness(ark_relations::r1cs::ns!(cs, "cond"), || Ok(false))?;
                         a.conditional_enforce_equal(&b, &false_cond)?;
 
                         assert!(cs.is_satisfied().unwrap());
@@ -1170,8 +1170,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(r1cs_core::ns!(cs, "a"), first_operand)?;
-                let b = construct(r1cs_core::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
                 let c = Boolean::xor(&a, &b)?;
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1300,9 +1300,9 @@ mod test {
                 for second_operand in VARIANTS.iter().cloned() {
                     let cs = ConstraintSystem::<Fr>::new_ref();
 
-                    let cond = construct(r1cs_core::ns!(cs, "cond"), condition)?;
-                    let a = construct(r1cs_core::ns!(cs, "a"), first_operand)?;
-                    let b = construct(r1cs_core::ns!(cs, "b"), second_operand)?;
+                    let cond = construct(ark_relations::r1cs::ns!(cs, "cond"), condition)?;
+                    let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
+                    let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
                     let c = cond.select(&a, &b)?;
 
                     assert!(
@@ -1332,8 +1332,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(r1cs_core::ns!(cs, "a"), first_operand)?;
-                let b = construct(r1cs_core::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
                 let c = a.or(&b)?;
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1453,8 +1453,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(r1cs_core::ns!(cs, "a"), first_operand)?;
-                let b = construct(r1cs_core::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
                 let c = a.and(&b)?;
 
                 assert!(cs.is_satisfied().unwrap());

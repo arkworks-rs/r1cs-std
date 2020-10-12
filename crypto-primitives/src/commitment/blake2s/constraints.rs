@@ -1,4 +1,4 @@
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
     commitment::blake2s,
@@ -80,7 +80,7 @@ mod test {
         commitment::{CommitmentGadget, CommitmentScheme},
     };
     use algebra::{ed_on_bls12_381::Fq as Fr, test_rng};
-    use r1cs_core::ConstraintSystem;
+    use ark_relations::r1cs::ConstraintSystem;
     use r1cs_std::prelude::*;
     use rand::Rng;
 
@@ -114,7 +114,7 @@ mod test {
 
         let parameters_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fr>>::ParametersVar::new_witness(
-                r1cs_core::ns!(cs, "gadget_parameters"),
+                ark_relations::r1cs::ns!(cs, "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();

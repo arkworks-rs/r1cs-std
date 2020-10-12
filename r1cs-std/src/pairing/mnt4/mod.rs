@@ -1,4 +1,4 @@
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 use super::PairingVar as PG;
 

@@ -1,8 +1,8 @@
 [workspace]
 
 members = [
-    "cp-benches",
-    "crypto-primitives",
+    # "cp-benches",
+    # "crypto-primitives",
     "r1cs-std",
 ]
 

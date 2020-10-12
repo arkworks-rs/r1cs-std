@@ -7,7 +7,7 @@ use algebra_core::{
     fields::{Field, PrimeField},
     to_bytes, ProjectiveCurve, Zero,
 };
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use core::{borrow::Borrow, marker::PhantomData};
 use r1cs_std::prelude::*;
@@ -149,7 +149,7 @@ mod test {
         },
         crh::pedersen,
     };
-    use r1cs_core::ConstraintSystem;
+    use ark_relations::r1cs::ConstraintSystem;
     use r1cs_std::{ed_on_bls12_381::EdwardsVar, prelude::*};
 
     #[test]
@@ -184,13 +184,13 @@ mod test {
 
         let randomness_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fq>>::RandomnessVar::new_witness(
-                r1cs_core::ns!(cs, "gadget_randomness"),
+                ark_relations::r1cs::ns!(cs, "gadget_randomness"),
                 || Ok(&randomness),
             )
             .unwrap();
         let parameters_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fq>>::ParametersVar::new_witness(
-                r1cs_core::ns!(cs, "gadget_parameters"),
+                ark_relations::r1cs::ns!(cs, "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();

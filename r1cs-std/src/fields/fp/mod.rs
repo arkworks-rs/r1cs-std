@@ -1,5 +1,5 @@
 use algebra::{BigInteger, FpParameters, PrimeField};
-use r1cs_core::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
+use ark_relations::r1cs::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
 
 use core::borrow::Borrow;
 

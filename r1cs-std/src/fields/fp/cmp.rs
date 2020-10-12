@@ -6,7 +6,7 @@ use crate::{
 };
 use algebra::PrimeField;
 use core::cmp::Ordering;
-use r1cs_core::{lc, SynthesisError, Variable};
+use ark_relations::r1cs::{lc, SynthesisError, Variable};
 
 impl<F: PrimeField> FpVar<F> {
     /// This function enforces the ordering between `self` and `other`. The
@@ -156,7 +156,7 @@ mod test {
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
     use algebra::{bls12_381::Fr, PrimeField, UniformRand};
-    use r1cs_core::ConstraintSystem;
+    use ark_relations::r1cs::ConstraintSystem;
 
     #[test]
     fn test_cmp() {

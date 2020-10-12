@@ -6,7 +6,7 @@ use crate::{
     Vec,
 };
 use algebra_core::{Field, ProjectiveCurve};
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 
 use core::{borrow::Borrow, marker::PhantomData};
@@ -100,7 +100,7 @@ mod test {
         ed_on_bls12_381::{EdwardsProjective as JubJub, Fq as Fr},
         test_rng,
     };
-    use r1cs_core::{ConstraintSystem, ConstraintSystemRef};
+    use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
     use r1cs_std::ed_on_bls12_381::EdwardsVar;
     use rand::Rng;
 
@@ -140,7 +140,7 @@ mod test {
         let primitive_result = TestCRH::evaluate(&parameters, &input).unwrap();
 
         let parameters_var =
-            CRHParametersVar::new_constant(r1cs_core::ns!(cs, "CRH Parameters"), &parameters)
+            CRHParametersVar::new_constant(ark_relations::r1cs::ns!(cs, "CRH Parameters"), &parameters)
                 .unwrap();
 
         let result_var = TestCRHGadget::evaluate(&parameters_var, &input_var).unwrap();

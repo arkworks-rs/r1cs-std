@@ -1,6 +1,6 @@
 use algebra_core::Field;
 use core::borrow::Borrow;
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 
 use crate::nizk::NIZK;

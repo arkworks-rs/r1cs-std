@@ -2,7 +2,7 @@ use algebra_core::Field;
 use core::fmt::Debug;
 
 use crate::{prf::PRF, Vec};
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use r1cs_std::prelude::*;
 

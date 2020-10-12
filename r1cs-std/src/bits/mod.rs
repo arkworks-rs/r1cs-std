@@ -3,7 +3,7 @@ use crate::{
     Vec,
 };
 use algebra::Field;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 /// This module contains `Boolean`, a R1CS equivalent of the `bool` type.
 pub mod boolean;

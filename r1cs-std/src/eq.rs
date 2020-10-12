@@ -1,6 +1,6 @@
 use crate::{prelude::*, Vec};
-use algebra::Field;
-use r1cs_core::SynthesisError;
+use ark_ff::Field;
+use ark_relations::r1cs::SynthesisError;
 
 /// Specifies how to generate constraints that check for equality for two variables of type `Self`.
 pub trait EqGadget<F: Field> {

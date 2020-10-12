@@ -12,7 +12,7 @@ use algebra_core::{
     curves::{ModelParameters, TEModelParameters},
     Field,
 };
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::{
     alloc::AllocVar, groups::curves::twisted_edwards::AffineVar, prelude::*, uint8::UInt8,
 };
@@ -119,7 +119,7 @@ mod test {
         ed_on_bls12_381::{EdwardsParameters, Fq as Fr},
         test_rng, ProjectiveCurve,
     };
-    use r1cs_core::{ConstraintSystem, ConstraintSystemRef};
+    use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
     use r1cs_std::{alloc::AllocVar, ed_on_bls12_381::FqVar, uint8::UInt8, R1CSVar};
 
     type TestCRH = CRH<EdwardsParameters, Window>;
@@ -160,7 +160,7 @@ mod test {
 
         let parameters_var =
             <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Fr>>::ParametersVar::new_witness(
-                r1cs_core::ns!(cs, "parameters_var"),
+                ark_relations::r1cs::ns!(cs, "parameters_var"),
                 || Ok(&parameters),
             )
             .unwrap();

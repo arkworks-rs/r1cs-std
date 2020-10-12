@@ -2,7 +2,7 @@ use algebra_core::Field;
 use core::fmt::Debug;
 
 use crate::crh::FixedLengthCRH;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 use r1cs_std::prelude::*;
 

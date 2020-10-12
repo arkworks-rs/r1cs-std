@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use algebra::Field;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 /// Generates constraints for selecting between one of two values.
 pub trait CondSelectGadget<ConstraintF: Field>

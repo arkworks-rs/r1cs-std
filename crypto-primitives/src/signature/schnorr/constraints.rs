@@ -1,6 +1,6 @@
 use crate::Vec;
 use algebra_core::{Field, ProjectiveCurve};
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 
 use crate::signature::SigRandomizePkGadget;

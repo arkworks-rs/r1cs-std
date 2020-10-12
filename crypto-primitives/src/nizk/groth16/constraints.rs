@@ -3,7 +3,7 @@ use crate::{
     Vec,
 };
 use algebra_core::{AffineCurve, PairingEngine, ToConstraintField};
-use r1cs_core::{ConstraintSynthesizer, Namespace, SynthesisError};
+use ark_relations::r1cs::{ConstraintSynthesizer, Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 
 use core::{borrow::Borrow, marker::PhantomData};
@@ -94,17 +94,17 @@ where
         f().and_then(|proof| {
             let proof = proof.borrow();
             let a = CurveVar::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "Proof.a"),
+                ark_relations::r1cs::ns!(cs, "Proof.a"),
                 || Ok(proof.a.into_projective()),
                 mode,
             )?;
             let b = CurveVar::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "Proof.b"),
+                ark_relations::r1cs::ns!(cs, "Proof.b"),
                 || Ok(proof.b.into_projective()),
                 mode,
             )?;
             let c = CurveVar::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "Proof.c"),
+                ark_relations::r1cs::ns!(cs, "Proof.c"),
                 || Ok(proof.c.into_projective()),
                 mode,
             )?;
@@ -125,22 +125,22 @@ where
         f().and_then(|vk| {
             let vk = vk.borrow();
             let alpha_g1 = P::G1Var::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "alpha_g1"),
+                ark_relations::r1cs::ns!(cs, "alpha_g1"),
                 || Ok(vk.alpha_g1.into_projective()),
                 mode,
             )?;
             let beta_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "beta_g2"),
+                ark_relations::r1cs::ns!(cs, "beta_g2"),
                 || Ok(vk.beta_g2.into_projective()),
                 mode,
             )?;
             let gamma_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "gamma_g2"),
+                ark_relations::r1cs::ns!(cs, "gamma_g2"),
                 || Ok(vk.gamma_g2.into_projective()),
                 mode,
             )?;
             let delta_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                r1cs_core::ns!(cs, "delta_g2"),
+                ark_relations::r1cs::ns!(cs, "delta_g2"),
                 || Ok(vk.delta_g2.into_projective()),
                 mode,
             )?;
@@ -150,7 +150,7 @@ where
                 .iter()
                 .map(|g| {
                     P::G1Var::new_variable_omit_prime_order_check(
-                        r1cs_core::ns!(cs, "g"),
+                        ark_relations::r1cs::ns!(cs, "g"),
                         || Ok(g.into_projective()),
                         mode,
                     )
@@ -238,25 +238,25 @@ where
         f().and_then(|pvk| {
             let pvk = pvk.borrow();
             let alpha_g1_beta_g2 = P::GTVar::new_variable(
-                r1cs_core::ns!(cs, "alpha_g1_beta_g2"),
+                ark_relations::r1cs::ns!(cs, "alpha_g1_beta_g2"),
                 || Ok(pvk.alpha_g1_beta_g2),
                 mode,
             )?;
 
             let gamma_g2_neg_pc = P::G2PreparedVar::new_variable(
-                r1cs_core::ns!(cs, "gamma_g2_neg_pc"),
+                ark_relations::r1cs::ns!(cs, "gamma_g2_neg_pc"),
                 || Ok(pvk.gamma_g2_neg_pc.clone()),
                 mode,
             )?;
 
             let delta_g2_neg_pc = P::G2PreparedVar::new_variable(
-                r1cs_core::ns!(cs, "delta_g2_neg_pc"),
+                ark_relations::r1cs::ns!(cs, "delta_g2_neg_pc"),
                 || Ok(pvk.delta_g2_neg_pc.clone()),
                 mode,
             )?;
 
             let gamma_abc_g1 = Vec::new_variable(
-                r1cs_core::ns!(cs, "gamma_abc_g1"),
+                ark_relations::r1cs::ns!(cs, "gamma_abc_g1"),
                 || Ok(pvk.gamma_abc_g1.clone()),
                 mode,
             )?;
@@ -295,13 +295,13 @@ where
                 gamma_abc_g1,
             } = vk.borrow().clone();
             let alpha_g1 =
-                P::G1Var::new_variable(r1cs_core::ns!(cs, "alpha_g1"), || Ok(alpha_g1), mode)?;
+                P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "alpha_g1"), || Ok(alpha_g1), mode)?;
             let beta_g2 =
-                P::G2Var::new_variable(r1cs_core::ns!(cs, "beta_g2"), || Ok(beta_g2), mode)?;
+                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "beta_g2"), || Ok(beta_g2), mode)?;
             let gamma_g2 =
-                P::G2Var::new_variable(r1cs_core::ns!(cs, "gamma_g2"), || Ok(gamma_g2), mode)?;
+                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "gamma_g2"), || Ok(gamma_g2), mode)?;
             let delta_g2 =
-                P::G2Var::new_variable(r1cs_core::ns!(cs, "delta_g2"), || Ok(delta_g2), mode)?;
+                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "delta_g2"), || Ok(delta_g2), mode)?;
 
             let gamma_abc_g1 = Vec::new_variable(cs.clone(), || Ok(gamma_abc_g1), mode)?;
             Ok(Self {
@@ -331,9 +331,9 @@ where
 
         f().and_then(|proof| {
             let Proof { a, b, c } = proof.borrow().clone();
-            let a = P::G1Var::new_variable(r1cs_core::ns!(cs, "a"), || Ok(a), mode)?;
-            let b = P::G2Var::new_variable(r1cs_core::ns!(cs, "b"), || Ok(b), mode)?;
-            let c = P::G1Var::new_variable(r1cs_core::ns!(cs, "c"), || Ok(c), mode)?;
+            let a = P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "a"), || Ok(a), mode)?;
+            let b = P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "b"), || Ok(b), mode)?;
+            let c = P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "c"), || Ok(c), mode)?;
             Ok(Self { a, b, c })
         })
     }
@@ -362,7 +362,7 @@ where
 #[cfg(test)]
 mod test {
     use groth16::*;
-    use r1cs_core::{
+    use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
 
@@ -459,7 +459,7 @@ mod test {
                     let input_bits = BitIteratorLE::new(input.into_repr()).collect::<Vec<_>>();
 
                     let input_bits =
-                        Vec::<Boolean<Fq>>::new_input(r1cs_core::ns!(cs, "Input"), || {
+                        Vec::<Boolean<Fq>>::new_input(ark_relations::r1cs::ns!(cs, "Input"), || {
                             Ok(input_bits)
                         })
                         .unwrap();
@@ -468,9 +468,9 @@ mod test {
             }
 
             let vk_gadget =
-                TestVkVar::new_input(r1cs_core::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
+                TestVkVar::new_input(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
             let proof_gadget =
-                TestProofVar::new_witness(r1cs_core::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             println!("Time to verify!\n\n\n\n");
             <TestVerifierGadget as NIZKVerifierGadget<TestProofSystem, Fq>>::verify(
@@ -497,7 +497,7 @@ mod test {
 #[cfg(test)]
 mod test_recursive {
     use groth16::*;
-    use r1cs_core::{
+    use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
 
@@ -601,7 +601,7 @@ mod test_recursive {
 
                 // Allocate this byte array as input packed into field elements.
                 let input_bytes =
-                    UInt8::new_input_vec(r1cs_core::ns!(cs, "Input"), &input_bytes[..])?;
+                    UInt8::new_input_vec(ark_relations::r1cs::ns!(cs, "Input"), &input_bytes[..])?;
                 // 40 byte
                 let element_size = <MNT4FqParameters as FftParameters>::BigInt::NUM_LIMBS * 8;
                 input_gadgets = input_bytes
@@ -615,9 +615,9 @@ mod test_recursive {
                     .collect::<Vec<_>>();
             }
 
-            let vk_gadget = TestVkVar1::new_witness(r1cs_core::ns!(cs, "Vk"), || Ok(&params.vk))?;
+            let vk_gadget = TestVkVar1::new_witness(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk))?;
             let proof_gadget =
-                TestProofVar1::new_witness(r1cs_core::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar1::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             <TestVerifierGadget1 as NIZKVerifierGadget<TestProofSystem1, MNT6Fq>>::verify(
                 &vk_gadget,
@@ -694,7 +694,7 @@ mod test_recursive {
                 let mut input_bits = Vec::new();
                 for input in inputs.into_iter() {
                     let input_gadget =
-                        FpVar::new_input(r1cs_core::ns!(cs, "Input"), || Ok(input)).unwrap();
+                        FpVar::new_input(ark_relations::r1cs::ns!(cs, "Input"), || Ok(input)).unwrap();
                     let mut fp_bits = input_gadget.to_bits_le().unwrap();
 
                     // Use 320 bits per element.
@@ -720,9 +720,9 @@ mod test_recursive {
             }
 
             let vk_gadget =
-                TestVkVar2::new_input(r1cs_core::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
+                TestVkVar2::new_input(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
             let proof_gadget =
-                TestProofVar2::new_witness(r1cs_core::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar2::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             println!("Time to verify!\n\n\n\n");
             <TestVerifierGadget2 as NIZKVerifierGadget<TestProofSystem2, MNT4Fq>>::verify(

@@ -6,7 +6,7 @@ use algebra::{
     fields::Field,
     BitIteratorBE, One,
 };
-use r1cs_core::{Namespace, SynthesisError};
+use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
     fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
@@ -64,10 +64,10 @@ impl<P: Bls12Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
         let cs = ns.cs();
         let g1_prep = f().map(|b| b.borrow().0);
 
-        let x = FpVar::new_variable(r1cs_core::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
-        let y = FpVar::new_variable(r1cs_core::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
+        let x = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
+        let y = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
         let infinity = Boolean::new_variable(
-            r1cs_core::ns!(cs, "inf"),
+            ark_relations::r1cs::ns!(cs, "inf"),
             || g1_prep.map(|g| g.infinity),
             mode,
         )?;
@@ -137,7 +137,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
         });
 
         let l = Vec::new_variable(
-            r1cs_core::ns!(cs, "l"),
+            ark_relations::r1cs::ns!(cs, "l"),
             || {
                 g2_prep
                     .clone()
@@ -146,7 +146,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
             mode,
         )?;
         let r = Vec::new_variable(
-            r1cs_core::ns!(cs, "r"),
+            ark_relations::r1cs::ns!(cs, "r"),
             || g2_prep.map(|c| c.iter().map(|(_, r)| *r).collect::<Vec<_>>()),
             mode,
         )?;

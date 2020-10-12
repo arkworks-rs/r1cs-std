@@ -1,6 +1,6 @@
 use crate::fields::{fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
 use algebra::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Parameters, Field, QuadExtParameters};
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a
 /// quadratic extension over a cubic extension over a quadratic extension field.

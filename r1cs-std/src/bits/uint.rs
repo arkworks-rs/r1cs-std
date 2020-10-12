@@ -10,7 +10,7 @@ macro_rules! make_uint {
             use core::borrow::Borrow;
             use core::convert::TryFrom;
 
-            use r1cs_core::{
+            use ark_relations::r1cs::{
                 lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
             };
 
@@ -358,7 +358,7 @@ macro_rules! make_uint {
                 use super::$name;
                 use crate::{bits::boolean::Boolean, prelude::*, Vec};
                 use algebra::bls12_381::Fr;
-                use r1cs_core::{ConstraintSystem, SynthesisError};
+                use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
                 use rand::{Rng, SeedableRng};
                 use rand_xorshift::XorShiftRng;
 
@@ -481,10 +481,10 @@ macro_rules! make_uint {
 
                         let mut expected = (a ^ b).wrapping_add(c).wrapping_add(d);
 
-                        let a_bit = $name::new_witness(r1cs_core::ns!(cs, "a_bit"), || Ok(a))?;
+                        let a_bit = $name::new_witness(ark_relations::r1cs::ns!(cs, "a_bit"), || Ok(a))?;
                         let b_bit = $name::constant(b);
                         let c_bit = $name::constant(c);
-                        let d_bit = $name::new_witness(r1cs_core::ns!(cs, "d_bit"), || Ok(d))?;
+                        let d_bit = $name::new_witness(ark_relations::r1cs::ns!(cs, "d_bit"), || Ok(d))?;
 
                         let r = a_bit.xor(&b_bit).unwrap();
                         let r = $name::addmany(&[r, c_bit, d_bit]).unwrap();

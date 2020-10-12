@@ -8,7 +8,7 @@ use crate::commitment::{
 
 pub use crate::crh::injective_map::constraints::InjectiveMapGadget;
 use algebra_core::{Field, PrimeField, ProjectiveCurve};
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 use r1cs_std::{
     groups::{CurveVar, GroupOpsBounds},
     uint8::UInt8,

@@ -1,7 +1,7 @@
 use crate::fields::{cubic_extension::*, fp2::*};
 use algebra::fields::{fp6_3over2::*, CubicExtParameters, Fp2};
 use core::ops::MulAssign;
-use r1cs_core::SynthesisError;
+use ark_relations::r1cs::SynthesisError;
 
 /// A sextic extension field constructed as the tower of a
 /// cubic extension over a quadratic extension field.

@@ -3,7 +3,7 @@ use algebra::{
     Zero,
 };
 use core::{borrow::Borrow, marker::PhantomData};
-use r1cs_core::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::fields::fp::FpVar;
 use crate::{
@@ -552,8 +552,8 @@ where
             ),
         };
 
-        let c0 = BF::new_variable(r1cs_core::ns!(cs, "c0"), || c0, mode)?;
-        let c1 = BF::new_variable(r1cs_core::ns!(cs, "c1"), || c1, mode)?;
+        let c0 = BF::new_variable(ark_relations::r1cs::ns!(cs, "c0"), || c0, mode)?;
+        let c1 = BF::new_variable(ark_relations::r1cs::ns!(cs, "c1"), || c1, mode)?;
         Ok(Self::new(c0, c1))
     }
 }
