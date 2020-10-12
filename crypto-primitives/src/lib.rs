@@ -38,7 +38,7 @@ pub use self::{
     nizk::NIZKVerifierGadget, prf::PRFGadget, signature::SigRandomizePkGadget,
 };
 
-pub type Error = Box<dyn algebra_core::Error>;
+pub type Error = Box<dyn ark_std::error::Error>;
 
 #[derive(Debug)]
 pub enum CryptoError {
@@ -56,4 +56,4 @@ impl core::fmt::Display for CryptoError {
     }
 }
 
-impl algebra_core::Error for CryptoError {}
+impl ark_std::error::Error for CryptoError {}

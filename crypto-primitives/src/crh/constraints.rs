@@ -1,4 +1,4 @@
-use algebra_core::Field;
+use ark_ff::Field;
 use core::fmt::Debug;
 
 use crate::crh::FixedLengthCRH;

@@ -8,8 +8,9 @@ use rand::Rng;
 use rayon::prelude::*;
 
 use crate::crh::FixedLengthCRH;
-use algebra_core::{Field, ProjectiveCurve, ToConstraintField};
-use ff_fft::cfg_chunks;
+use ark_ff::{Field, ToConstraintField};
+use ark_ec::ProjectiveCurve;
+use ark_std::cfg_chunks;
 
 #[cfg(feature = "r1cs")]
 pub mod constraints;
@@ -146,7 +147,7 @@ impl<ConstraintF: Field, C: ProjectiveCurve + ToConstraintField<ConstraintF>>
     ToConstraintField<ConstraintF> for Parameters<C>
 {
     #[inline]
-    fn to_field_elements(&self) -> Result<Vec<ConstraintF>, Error> {
-        Ok(Vec::new())
+    fn to_field_elements(&self) -> Option<Vec<ConstraintF>> {
+        Some(Vec::new())
     }
 }

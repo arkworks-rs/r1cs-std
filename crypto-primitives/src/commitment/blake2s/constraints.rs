@@ -6,7 +6,7 @@ use crate::{
     prf::blake2s::constraints::{evaluate_blake2s, OutputVar},
     Vec,
 };
-use algebra_core::{Field, PrimeField};
+use ark_ff::{Field, PrimeField};
 use r1cs_std::prelude::*;
 
 use core::borrow::Borrow;

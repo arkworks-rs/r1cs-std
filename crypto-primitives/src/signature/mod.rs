@@ -1,5 +1,5 @@
 use crate::Error;
-use algebra_core::bytes::ToBytes;
+use ark_ff::bytes::ToBytes;
 use core::hash::Hash;
 use rand::Rng;
 

@@ -5,7 +5,7 @@ use crate::{
     },
     Vec,
 };
-use algebra_core::{Field, ProjectiveCurve};
+use ark_ff::{Field, ProjectiveCurve};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 

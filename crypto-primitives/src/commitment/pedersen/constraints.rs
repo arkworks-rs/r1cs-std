@@ -3,7 +3,7 @@ use crate::{
     crh::pedersen::Window,
     Vec,
 };
-use algebra_core::{
+use ark_ff::{
     fields::{Field, PrimeField},
     to_bytes, ProjectiveCurve, Zero,
 };

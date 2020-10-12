@@ -1,4 +1,4 @@
-use algebra_core::bytes::{FromBytes, ToBytes};
+use ark_ff::bytes::{FromBytes, ToBytes};
 use core::{fmt::Debug, hash::Hash};
 
 use crate::CryptoError;

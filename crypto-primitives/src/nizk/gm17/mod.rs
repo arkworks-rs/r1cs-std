@@ -1,5 +1,5 @@
 use crate::Error;
-use algebra_core::PairingEngine;
+use ark_ec::PairingEngine;
 use gm17::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
     Parameters, PreparedVerifyingKey, Proof, VerifyingKey,
@@ -7,7 +7,7 @@ use gm17::{
 use ark_relations::r1cs::ConstraintSynthesizer;
 use rand::Rng;
 
-use algebra_core::ToConstraintField;
+use ark_ff::ToConstraintField;
 use core::marker::PhantomData;
 
 use super::NIZK;

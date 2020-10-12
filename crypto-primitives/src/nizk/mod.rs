@@ -1,4 +1,4 @@
-use algebra_core::bytes::ToBytes;
+use ark_ff::bytes::ToBytes;
 use rand::Rng;
 
 #[cfg(feature = "gm17")]
