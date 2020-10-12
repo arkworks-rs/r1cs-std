@@ -9,10 +9,8 @@ use crate::{
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use algebra::{
-    curves::mnt6::{MNT6Parameters, MNT6},
-    fields::BitIteratorBE,
-};
+use ark_ec::mnt6::{MNT6Parameters, MNT6};
+use ark_ff::fields::BitIteratorBE;
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT6 bilinear group.

@@ -2,7 +2,7 @@ use crate::{
     bits::{boolean::Boolean, uint8::UInt8},
     Vec,
 };
-use algebra::Field;
+use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 
 /// This module contains `Boolean`, a R1CS equivalent of the `bool` type.

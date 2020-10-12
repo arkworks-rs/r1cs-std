@@ -1,4 +1,4 @@
-use algebra::{
+use ark_ff::{
     fields::{CubicExtField, CubicExtParameters, Field},
     Zero,
 };
@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// This struct is the `R1CS` equivalent of the cubic extension field type
-/// in `algebra-core`, i.e. `algebra_core::CubicExtField`.
+/// in `ark-ff`, i.e. `ark_ff::CubicExtField`.
 #[derive(Derivative)]
 #[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
 #[must_use]
@@ -570,9 +570,9 @@ where
             ),
         };
 
-        let c0 = BF::new_variable(ark_relations::r1cs::ns!(cs, "c0"), || c0, mode)?;
-        let c1 = BF::new_variable(ark_relations::r1cs::ns!(cs, "c1"), || c1, mode)?;
-        let c2 = BF::new_variable(ark_relations::r1cs::ns!(cs, "c2"), || c2, mode)?;
+        let c0 = BF::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
+        let c1 = BF::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
+        let c2 = BF::new_variable(ark_relations::ns!(cs, "c2"), || c2, mode)?;
         Ok(Self::new(c0, c1, c2))
     }
 }

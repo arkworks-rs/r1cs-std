@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use algebra::Field;
+use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 
 /// Generates constraints for selecting between one of two values.

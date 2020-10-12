@@ -4,9 +4,9 @@ use crate::{
     prelude::*,
     ToBitsGadget,
 };
-use algebra::PrimeField;
+use ark_ff::PrimeField;
 use core::cmp::Ordering;
-use ark_relations::r1cs::{lc, SynthesisError, Variable};
+use ark_relations::r1cs::{SynthesisError, Variable};
 
 impl<F: PrimeField> FpVar<F> {
     /// This function enforces the ordering between `self` and `other`. The
@@ -155,7 +155,8 @@ mod test {
     use std::cmp::Ordering;
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
-    use algebra::{bls12_381::Fr, PrimeField, UniformRand};
+    use ark_bls12_381::Fr; 
+    use ark_ff::{PrimeField, UniformRand};
     use ark_relations::r1cs::ConstraintSystem;
 
     #[test]

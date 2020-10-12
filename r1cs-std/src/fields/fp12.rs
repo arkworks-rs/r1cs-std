@@ -1,10 +1,10 @@
 use crate::fields::{fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
-use algebra::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Parameters, Field, QuadExtParameters};
+use ark_ff::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Parameters, Field, QuadExtParameters};
 use ark_relations::r1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a
 /// quadratic extension over a cubic extension over a quadratic extension field.
-/// This is the R1CS equivalent of `algebra_core::fp12_2over3over2::Fp12<P>`.
+/// This is the R1CS equivalent of `ark_ff::fp12_2over3over2::Fp12<P>`.
 pub type Fp12Var<P> = QuadExtVar<Fp6Var<<P as Fp12Parameters>::Fp6Params>, Fp12ParamsWrapper<P>>;
 
 type Fp2Params<P> = <<P as Fp12Parameters>::Fp6Params as Fp6Parameters>::Fp2Params;
@@ -141,7 +141,7 @@ impl<P: Fp12Parameters> Fp12Var<P> {
         &self,
         exponent: impl AsRef<[u64]>,
     ) -> Result<Self, SynthesisError> {
-        use algebra::biginteger::arithmetic::find_wnaf;
+        use ark_ff::biginteger::arithmetic::find_wnaf;
         let mut res = Self::one();
         let self_inverse = self.unitary_inverse()?;
 

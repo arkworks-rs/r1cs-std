@@ -1,11 +1,8 @@
-use algebra::{
-    curves::{
-        bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
-        short_weierstrass_jacobian::GroupAffine,
-    },
-    fields::Field,
-    BitIteratorBE, One,
+use ark_ec::{
+    bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
+    short_weierstrass_jacobian::GroupAffine,
 };
+use ark_ff::{Field, BitIteratorBE, One};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
@@ -64,10 +61,10 @@ impl<P: Bls12Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
         let cs = ns.cs();
         let g1_prep = f().map(|b| b.borrow().0);
 
-        let x = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
-        let y = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
+        let x = FpVar::new_variable(ark_relations::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
+        let y = FpVar::new_variable(ark_relations::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
         let infinity = Boolean::new_variable(
-            ark_relations::r1cs::ns!(cs, "inf"),
+            ark_relations::ns!(cs, "inf"),
             || g1_prep.map(|g| g.infinity),
             mode,
         )?;
@@ -128,7 +125,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                 .iter()
                 .map(|(_, _, z)| *z)
                 .collect::<Vec<_>>();
-            algebra::fields::batch_inversion(&mut z_s);
+            ark_ff::fields::batch_inversion(&mut z_s);
             projective_coeffs
                 .iter()
                 .zip(z_s)
@@ -137,7 +134,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
         });
 
         let l = Vec::new_variable(
-            ark_relations::r1cs::ns!(cs, "l"),
+            ark_relations::ns!(cs, "l"),
             || {
                 g2_prep
                     .clone()
@@ -146,7 +143,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
             mode,
         )?;
         let r = Vec::new_variable(
-            ark_relations::r1cs::ns!(cs, "r"),
+            ark_relations::ns!(cs, "r"),
             || g2_prep.map(|c| c.iter().map(|(_, r)| *r).collect::<Vec<_>>()),
             mode,
         )?;

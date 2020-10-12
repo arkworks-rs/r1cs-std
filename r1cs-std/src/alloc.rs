@@ -1,5 +1,5 @@
 use crate::Vec;
-use algebra::Field;
+use ark_ff::Field;
 use core::borrow::Borrow;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 

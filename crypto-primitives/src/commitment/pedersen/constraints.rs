@@ -184,13 +184,13 @@ mod test {
 
         let randomness_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fq>>::RandomnessVar::new_witness(
-                ark_relations::r1cs::ns!(cs, "gadget_randomness"),
+                ark_relations::ns!(cs, "gadget_randomness"),
                 || Ok(&randomness),
             )
             .unwrap();
         let parameters_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fq>>::ParametersVar::new_witness(
-                ark_relations::r1cs::ns!(cs, "gadget_parameters"),
+                ark_relations::ns!(cs, "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();

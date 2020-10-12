@@ -27,13 +27,13 @@
 //! let b_native = Fq::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_a"), || Ok(a_native))?;
-//! let b = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_b"), || Ok(b_native))?;
+//! let a = FqVar::new_witness(ark_relations::ns!(cs, "generate_a"), || Ok(a_native))?;
+//! let b = FqVar::new_witness(ark_relations::ns!(cs, "generate_b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = FqVar::new_constant(ark_relations::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = FqVar::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! let one = FqVar::one();
 //! let zero = FqVar::zero();
@@ -74,13 +74,13 @@
 //! let b_native = G1Projective::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = G1Var::new_witness(ark_relations::r1cs::ns!(cs, "a"), || Ok(a_native))?;
-//! let b = G1Var::new_witness(ark_relations::r1cs::ns!(cs, "b"), || Ok(b_native))?;
+//! let a = G1Var::new_witness(ark_relations::ns!(cs, "a"), || Ok(a_native))?;
+//! let b = G1Var::new_witness(ark_relations::ns!(cs, "b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = G1Var::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = G1Var::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = G1Var::new_constant(ark_relations::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = G1Var::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! // This returns the identity of `G1`.
 //! let zero = G1Var::zero();
@@ -118,13 +118,13 @@
 //! let b_native = G2Projective::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = G1Var::new_witness(ark_relations::r1cs::ns!(cs, "a"), || Ok(a_native))?;
-//! let b = G2Var::new_witness(ark_relations::r1cs::ns!(cs, "b"), || Ok(b_native))?;
+//! let a = G1Var::new_witness(ark_relations::ns!(cs, "a"), || Ok(a_native))?;
+//! let b = G2Var::new_witness(ark_relations::ns!(cs, "b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = G1Var::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = G2Var::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = G1Var::new_constant(ark_relations::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = G2Var::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! let pairing_result_native = Bls12_377::pairing(a_native, b_native);
 //!

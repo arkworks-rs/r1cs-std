@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use algebra::{Field, PairingEngine};
+use ark_ff::Field;
+use ark_ec::PairingEngine;
 use core::fmt::Debug;
 use ark_relations::r1cs::SynthesisError;
 
@@ -82,9 +83,8 @@ pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::{prelude::*, Vec};
-    use algebra::{
-        test_rng, BitIteratorLE, Field, PairingEngine, PrimeField, ProjectiveCurve, UniformRand,
-    };
+    use ark_ff::{test_rng, BitIteratorLE, Field, PrimeField, UniformRand};
+    use ark_ec::{PairingEngine, ProjectiveCurve};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     #[allow(dead_code)]

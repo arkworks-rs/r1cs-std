@@ -1,8 +1,8 @@
-use algebra::{BitIteratorBE, Field, PrimeField};
+use ark_ff::{BitIteratorBE, Field, PrimeField};
 
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use core::borrow::Borrow;
-use ark_relations::r1cs::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
+use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
 
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
@@ -901,9 +901,8 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
 mod test {
     use super::{AllocatedBit, Boolean};
     use crate::prelude::*;
-    use algebra::{
-        bls12_381::Fr, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero,
-    };
+    use ark_bls12_381::Fr;
+    use ark_ff::{BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero};
     use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
     use rand::SeedableRng;
     use rand_xorshift::XorShiftRng;
@@ -1093,7 +1092,7 @@ mod test {
                         }
 
                         let false_cond =
-                            Boolean::new_witness(ark_relations::r1cs::ns!(cs, "cond"), || Ok(false))?;
+                            Boolean::new_witness(ark_relations::ns!(cs, "cond"), || Ok(false))?;
                         a.conditional_enforce_equal(&b, &false_cond)?;
 
                         assert!(cs.is_satisfied().unwrap());
@@ -1170,8 +1169,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
-                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::ns!(cs, "b"), second_operand)?;
                 let c = Boolean::xor(&a, &b)?;
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1300,9 +1299,9 @@ mod test {
                 for second_operand in VARIANTS.iter().cloned() {
                     let cs = ConstraintSystem::<Fr>::new_ref();
 
-                    let cond = construct(ark_relations::r1cs::ns!(cs, "cond"), condition)?;
-                    let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
-                    let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
+                    let cond = construct(ark_relations::ns!(cs, "cond"), condition)?;
+                    let a = construct(ark_relations::ns!(cs, "a"), first_operand)?;
+                    let b = construct(ark_relations::ns!(cs, "b"), second_operand)?;
                     let c = cond.select(&a, &b)?;
 
                     assert!(
@@ -1332,8 +1331,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
-                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::ns!(cs, "b"), second_operand)?;
                 let c = a.or(&b)?;
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1453,8 +1452,8 @@ mod test {
             for second_operand in VARIANTS.iter().cloned() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
 
-                let a = construct(ark_relations::r1cs::ns!(cs, "a"), first_operand)?;
-                let b = construct(ark_relations::r1cs::ns!(cs, "b"), second_operand)?;
+                let a = construct(ark_relations::ns!(cs, "a"), first_operand)?;
+                let b = construct(ark_relations::ns!(cs, "b"), second_operand)?;
                 let c = a.and(&b)?;
 
                 assert!(cs.is_satisfied().unwrap());

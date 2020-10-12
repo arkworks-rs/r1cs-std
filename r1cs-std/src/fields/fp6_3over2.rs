@@ -1,11 +1,11 @@
 use crate::fields::{cubic_extension::*, fp2::*};
-use algebra::fields::{fp6_3over2::*, CubicExtParameters, Fp2};
+use ark_ff::fields::{fp6_3over2::*, CubicExtParameters, Fp2};
 use core::ops::MulAssign;
 use ark_relations::r1cs::SynthesisError;
 
 /// A sextic extension field constructed as the tower of a
 /// cubic extension over a quadratic extension field.
-/// This is the R1CS equivalent of `algebra_core::fp6_3over3::Fp6<P>`.
+/// This is the R1CS equivalent of `ark_ff::fp6_3over3::Fp6<P>`.
 pub type Fp6Var<P> = CubicExtVar<Fp2Var<<P as Fp6Parameters>::Fp2Params>, Fp6ParamsWrapper<P>>;
 
 impl<P: Fp6Parameters> CubicExtVarParams<Fp2Var<P::Fp2Params>> for Fp6ParamsWrapper<P> {

@@ -1,5 +1,5 @@
 use crate::fields::{cubic_extension::*, fp::FpVar};
-use algebra::fields::{CubicExtParameters, Fp3Parameters, Fp3ParamsWrapper};
+use ark_ff::fields::{CubicExtParameters, Fp3Parameters, Fp3ParamsWrapper};
 
 /// A cubic extension field constructed over a prime field.
 /// This is the R1CS equivalent of `algebra_core::Fp3<P>`.

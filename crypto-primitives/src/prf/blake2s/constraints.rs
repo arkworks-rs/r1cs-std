@@ -370,7 +370,7 @@ impl<F: PrimeField> PRFGadget<Blake2s, F> for Blake2sGadget {
     fn new_seed(cs: impl Into<Namespace<F>>, seed: &[u8; 32]) -> Vec<UInt8<F>> {
         let ns = cs.into();
         let cs = ns.cs();
-        UInt8::new_witness_vec(ark_relations::r1cs::ns!(cs, "New Blake2s seed"), seed).unwrap()
+        UInt8::new_witness_vec(ark_relations::ns!(cs, "New Blake2s seed"), seed).unwrap()
     }
 
     #[tracing::instrument(target = "r1cs", skip(seed, input))]
@@ -406,7 +406,7 @@ mod test {
     fn test_blake2s_constraints() {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let input_bits: Vec<_> = (0..512)
-            .map(|_| Boolean::new_witness(ark_relations::r1cs::ns!(cs, "input bit"), || Ok(true)).unwrap())
+            .map(|_| Boolean::new_witness(ark_relations::ns!(cs, "input bit"), || Ok(true)).unwrap())
             .collect();
         evaluate_blake2s(&input_bits).unwrap();
         assert!(cs.is_satisfied().unwrap());
@@ -429,10 +429,10 @@ mod test {
 
         let seed_var = Blake2sGadget::new_seed(cs.clone(), &seed);
         let input_var =
-            UInt8::new_witness_vec(ark_relations::r1cs::ns!(cs, "declare_input"), &input).unwrap();
+            UInt8::new_witness_vec(ark_relations::ns!(cs, "declare_input"), &input).unwrap();
         let out = B2SPRF::evaluate(&seed, &input).unwrap();
         let actual_out_var = <Blake2sGadget as PRFGadget<_, Fr>>::OutputVar::new_witness(
-            ark_relations::r1cs::ns!(cs, "declare_output"),
+            ark_relations::ns!(cs, "declare_output"),
             || Ok(out),
         )
         .unwrap();
@@ -459,7 +459,7 @@ mod test {
         let input_bits: Vec<_> = (0..512)
             .map(|_| Boolean::constant(rng.gen()))
             .chain((0..512).map(|_| {
-                Boolean::new_witness(ark_relations::r1cs::ns!(cs, "input bit"), || Ok(true)).unwrap()
+                Boolean::new_witness(ark_relations::ns!(cs, "input bit"), || Ok(true)).unwrap()
             }))
             .collect();
         evaluate_blake2s(&input_bits).unwrap();
@@ -499,7 +499,7 @@ mod test {
 
             for input_byte in data.into_iter() {
                 for bit_i in 0..8 {
-                    let cs = ark_relations::r1cs::ns!(cs, "input bit");
+                    let cs = ark_relations::ns!(cs, "input bit");
 
                     input_bits.push(
                         Boolean::new_witness(cs, || Ok((input_byte >> bit_i) & 1u8 == 1u8))

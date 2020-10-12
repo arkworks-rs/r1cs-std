@@ -1,5 +1,5 @@
 use crate::fields::{fp2::Fp2Var, quadratic_extension::*};
-use algebra::fields::{Fp4Parameters, Fp4ParamsWrapper, QuadExtParameters};
+use ark_ff::fields::{Fp4Parameters, Fp4ParamsWrapper, QuadExtParameters};
 
 /// A quartic extension field constructed as the tower of a
 /// quadratic extension over a quadratic extension field.

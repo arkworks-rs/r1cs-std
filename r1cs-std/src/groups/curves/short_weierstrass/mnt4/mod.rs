@@ -1,10 +1,10 @@
-use algebra::{
-    curves::mnt4::{
+use ark_ec::{
+    mnt4::{
         g2::{AteAdditionCoefficients, AteDoubleCoefficients},
         G1Prepared, G2Prepared, MNT4Parameters,
     },
-    Field,
 };
+use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
@@ -50,15 +50,15 @@ impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
 
         let g1_prep = f().map(|b| *b.borrow());
 
-        let x = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
-        let y = FpVar::new_variable(ark_relations::r1cs::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
+        let x = FpVar::new_variable(ark_relations::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
+        let y = FpVar::new_variable(ark_relations::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
         let x_twist = Fp2Var::new_variable(
-            ark_relations::r1cs::ns!(cs, "x_twist"),
+            ark_relations::ns!(cs, "x_twist"),
             || g1_prep.map(|g| g.x_twist),
             mode,
         )?;
         let y_twist = Fp2Var::new_variable(
-            ark_relations::r1cs::ns!(cs, "y_twist"),
+            ark_relations::ns!(cs, "y_twist"),
             || g1_prep.map(|g| g.y_twist),
             mode,
         )?;
@@ -166,25 +166,25 @@ impl<P: MNT4Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
         let g2_prep = f().map(|b| b.borrow().clone());
         let g2 = g2_prep.as_ref().map_err(|e| *e);
 
-        let x = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "x"), || g2.map(|g| g.x), mode)?;
-        let y = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "y"), || g2.map(|g| g.y), mode)?;
+        let x = Fp2Var::new_variable(ark_relations::ns!(cs, "x"), || g2.map(|g| g.x), mode)?;
+        let y = Fp2Var::new_variable(ark_relations::ns!(cs, "y"), || g2.map(|g| g.y), mode)?;
         let x_over_twist = Fp2Var::new_variable(
-            ark_relations::r1cs::ns!(cs, "x_over_twist"),
+            ark_relations::ns!(cs, "x_over_twist"),
             || g2.map(|g| g.x_over_twist),
             mode,
         )?;
         let y_over_twist = Fp2Var::new_variable(
-            ark_relations::r1cs::ns!(cs, "y_over_twist"),
+            ark_relations::ns!(cs, "y_over_twist"),
             || g2.map(|g| g.y_over_twist),
             mode,
         )?;
         let double_coefficients = Vec::new_variable(
-            ark_relations::r1cs::ns!(cs, "double coeffs"),
+            ark_relations::ns!(cs, "double coeffs"),
             || g2.map(|g| g.double_coefficients.clone()),
             mode,
         )?;
         let addition_coefficients = Vec::new_variable(
-            ark_relations::r1cs::ns!(cs, "add coeffs"),
+            ark_relations::ns!(cs, "add coeffs"),
             || g2.map(|g| g.addition_coefficients.clone()),
             mode,
         )?;
@@ -363,10 +363,10 @@ impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleC
         let c_prep = f().map(|c| c.borrow().clone());
         let c = c_prep.as_ref().map_err(|e| *e);
 
-        let c_h = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_h"), || c.map(|c| c.c_h), mode)?;
-        let c_4c = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_4c"), || c.map(|c| c.c_4c), mode)?;
-        let c_j = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_j"), || c.map(|c| c.c_j), mode)?;
-        let c_l = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_l"), || c.map(|c| c.c_l), mode)?;
+        let c_h = Fp2Var::new_variable(ark_relations::ns!(cs, "c_h"), || c.map(|c| c.c_h), mode)?;
+        let c_4c = Fp2Var::new_variable(ark_relations::ns!(cs, "c_4c"), || c.map(|c| c.c_4c), mode)?;
+        let c_j = Fp2Var::new_variable(ark_relations::ns!(cs, "c_j"), || c.map(|c| c.c_j), mode)?;
+        let c_l = Fp2Var::new_variable(ark_relations::ns!(cs, "c_l"), || c.map(|c| c.c_l), mode)?;
         Ok(Self {
             c_h,
             c_4c,
@@ -446,8 +446,8 @@ impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
         let c_prep = f().map(|c| c.borrow().clone());
         let c = c_prep.as_ref().map_err(|e| *e);
 
-        let c_l1 = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_l1"), || c.map(|c| c.c_l1), mode)?;
-        let c_rz = Fp2Var::new_variable(ark_relations::r1cs::ns!(cs, "c_rz"), || c.map(|c| c.c_rz), mode)?;
+        let c_l1 = Fp2Var::new_variable(ark_relations::ns!(cs, "c_l1"), || c.map(|c| c.c_l1), mode)?;
+        let c_rz = Fp2Var::new_variable(ark_relations::ns!(cs, "c_rz"), || c.map(|c| c.c_rz), mode)?;
         Ok(Self { c_l1, c_rz })
     }
 }

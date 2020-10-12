@@ -1,10 +1,8 @@
-use algebra::{
-    curves::{
-        twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
-        AffineCurve, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
-    },
-    BigInteger, BitIteratorBE, Field, One, PrimeField, Zero,
+use ark_ec::{
+    twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
+    AffineCurve, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
 };
+use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
@@ -38,7 +36,8 @@ pub struct MontgomeryAffineVar<
 
 mod montgomery_affine_impl {
     use super::*;
-    use algebra::{twisted_edwards_extended::GroupAffine, Field};
+    use ark_ec::{twisted_edwards_extended::GroupAffine};
+    use ark_ff::Field;
     use core::ops::Add;
 
     impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for MontgomeryAffineVar<P, F>
@@ -104,8 +103,8 @@ mod montgomery_affine_impl {
             p: &TEAffine<P>,
         ) -> Result<Self, SynthesisError> {
             let montgomery_coords = Self::from_edwards_to_coords(p)?;
-            let u = F::new_witness(ark_relations::r1cs::ns!(cs, "u"), || Ok(montgomery_coords.0))?;
-            let v = F::new_witness(ark_relations::r1cs::ns!(cs, "v"), || Ok(montgomery_coords.1))?;
+            let u = F::new_witness(ark_relations::ns!(cs, "u"), || Ok(montgomery_coords.0))?;
+            let v = F::new_witness(ark_relations::ns!(cs, "v"), || Ok(montgomery_coords.1))?;
             Ok(Self::new(u, v))
         }
 
@@ -114,7 +113,7 @@ mod montgomery_affine_impl {
         pub fn into_edwards(&self) -> Result<AffineVar<P, F>, SynthesisError> {
             let cs = self.cs();
             // Compute u = x / y
-            let u = F::new_witness(ark_relations::r1cs::ns!(cs, "u"), || {
+            let u = F::new_witness(ark_relations::ns!(cs, "u"), || {
                 let y_inv = self
                     .y
                     .value()?
@@ -125,7 +124,7 @@ mod montgomery_affine_impl {
 
             u.mul_equals(&self.y, &self.x)?;
 
-            let v = F::new_witness(ark_relations::r1cs::ns!(cs, "v"), || {
+            let v = F::new_witness(ark_relations::ns!(cs, "v"), || {
                 let mut t0 = self.x.value()?;
                 let mut t1 = t0;
                 t0 -= &P::BaseField::one();
@@ -163,7 +162,7 @@ mod montgomery_affine_impl {
             let coeff_a = P::MontgomeryModelParameters::COEFF_A;
 
             let lambda = F::new_variable(
-                ark_relations::r1cs::ns!(cs, "lambda"),
+                ark_relations::ns!(cs, "lambda"),
                 || {
                     let n = other.y.value()? - &self.y.value()?;
                     let d = other.x.value()? - &self.x.value()?;
@@ -178,7 +177,7 @@ mod montgomery_affine_impl {
 
             // Compute x'' = B*lambda^2 - A - x - x'
             let xprime = F::new_variable(
-                ark_relations::r1cs::ns!(cs, "xprime"),
+                ark_relations::ns!(cs, "xprime"),
                 || {
                     Ok(lambda.value()?.square() * &coeff_b
                         - &coeff_a
@@ -195,7 +194,7 @@ mod montgomery_affine_impl {
             lambda_b.mul_equals(&lambda, &xprime_lc).unwrap();
 
             let yprime = F::new_variable(
-                ark_relations::r1cs::ns!(cs, "yprime"),
+                ark_relations::ns!(cs, "yprime"),
                 || {
                     Ok(-(self.y.value()?
                         + &(lambda.value()? * &(xprime.value()? - &self.x.value()?))))
@@ -269,8 +268,8 @@ where
             ),
         };
 
-        let x = F::new_variable(ark_relations::r1cs::ns!(cs, "x"), || x, mode)?;
-        let y = F::new_variable(ark_relations::r1cs::ns!(cs, "y"), || y, mode)?;
+        let x = F::new_variable(ark_relations::ns!(cs, "x"), || x, mode)?;
+        let y = F::new_variable(ark_relations::ns!(cs, "y"), || y, mode)?;
 
         Ok(Self::new(x, y))
     }
@@ -475,7 +474,7 @@ where
             let a_x2 = &x2 * a;
 
             // Compute x3 = (2xy) / (ax^2 + y^2)
-            let x3 = F::new_witness(ark_relations::r1cs::ns!(cs, "x3"), || {
+            let x3 = F::new_witness(ark_relations::ns!(cs, "x3"), || {
                 let t0 = xy.value()?.double();
                 let t1 = a * &x2.value()? + &y2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -487,7 +486,7 @@ where
 
             // Compute y3 = (y^2 - ax^2) / (2 - ax^2 - y^2)
             let two = P::BaseField::one().double();
-            let y3 = F::new_witness(ark_relations::r1cs::ns!(cs, "y3"), || {
+            let y3 = F::new_witness(ark_relations::ns!(cs, "y3"), || {
                 let a_x2 = a * &x2.value()?;
                 let t0 = y2.value()? - &a_x2;
                 let t1 = two - &a_x2 - &y2.value()?;
@@ -600,7 +599,7 @@ where
 
                 let (mut ge, iter) = if cofactor_weight < modulus_minus_1_weight {
                     let ge = Self::new_variable_omit_prime_order_check(
-                        ark_relations::r1cs::ns!(cs, "Witness without subgroup check with cofactor mul"),
+                        ark_relations::ns!(cs, "Witness without subgroup check with cofactor mul"),
                         || f().map(|g| g.borrow().into_affine().mul_by_cofactor_inv().into()),
                         mode,
                     )?;
@@ -610,7 +609,7 @@ where
                     )
                 } else {
                     let ge = Self::new_variable_omit_prime_order_check(
-                        ark_relations::r1cs::ns!(cs, "Witness without subgroup check with `r` check"),
+                        ark_relations::ns!(cs, "Witness without subgroup check with `r` check"),
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
@@ -733,7 +732,7 @@ impl_bounded_ops!(
             let v2 = &v0 * &v1 * d;
 
             // Compute x3 = (v0 + v1) / (1 + v2)
-            let x3 = F::new_witness(ark_relations::r1cs::ns!(cs, "x3"), || {
+            let x3 = F::new_witness(ark_relations::ns!(cs, "x3"), || {
                 let t0 = v0.value()? + &v1.value()?;
                 let t1 = P::BaseField::one() + &v2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -744,7 +743,7 @@ impl_bounded_ops!(
             x3.mul_equals(&v2_plus_one, &v0_plus_v1).unwrap();
 
             // Compute y3 = (U + a * v0 - v1) / (1 - v2)
-            let y3 = F::new_witness(ark_relations::r1cs::ns!(cs, "y3"), || {
+            let y3 = F::new_witness(ark_relations::ns!(cs, "y3"), || {
                 let t0 = u.value()? + &(a * &v0.value()?) - &v1.value()?;
                 let t1 = P::BaseField::one() - &v2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -929,7 +928,8 @@ where
     for<'a> &'a GG: GroupOpsBounds<'a, TEProjective<P>, GG>,
 {
     use crate::prelude::*;
-    use algebra::{test_rng, BitIteratorLE, Group, UniformRand};
+    use ark_ff::{test_rng, BitIteratorLE, UniformRand};
+    use ark_ec::group::Group;
     use ark_relations::r1cs::ConstraintSystem;
 
     crate::groups::test::group_test::<TEProjective<P>, _, GG>()?;
@@ -944,7 +944,7 @@ where
     let b_affine = b.into_affine();
 
     println!("Allocating things");
-    let ns = ark_relations::r1cs::ns!(cs, "allocating variables");
+    let ns = ark_relations::ns!(cs, "allocating variables");
     let mut gadget_a = GG::new_witness(cs.clone(), || Ok(a))?;
     let gadget_b = GG::new_witness(cs.clone(), || Ok(b))?;
     drop(ns);
@@ -989,7 +989,7 @@ where
 
     let scalar: Vec<bool> = BitIteratorLE::new(scalar.into_repr()).collect();
     let input: Vec<Boolean<_>> =
-        Vec::new_witness(ark_relations::r1cs::ns!(cs, "bits"), || Ok(scalar)).unwrap();
+        Vec::new_witness(ark_relations::ns!(cs, "bits"), || Ok(scalar)).unwrap();
     let result = gadget_a.scalar_mul_le(input.iter())?;
     let result_val = result.value()?.into_affine();
     assert_eq!(

@@ -101,17 +101,17 @@ where
         f().and_then(|proof| {
             let proof = proof.borrow();
             let a = CurveVar::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "Proof.a"),
+                ark_relations::ns!(cs, "Proof.a"),
                 || Ok(proof.a.into_projective()),
                 mode,
             )?;
             let b = CurveVar::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "Proof.b"),
+                ark_relations::ns!(cs, "Proof.b"),
                 || Ok(proof.b.into_projective()),
                 mode,
             )?;
             let c = CurveVar::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "Proof.c"),
+                ark_relations::ns!(cs, "Proof.c"),
                 || Ok(proof.c.into_projective()),
                 mode,
             )?;
@@ -132,27 +132,27 @@ where
         f().and_then(|vk| {
             let vk = vk.borrow();
             let g_alpha_g1 = P::G1Var::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "g_alpha"),
+                ark_relations::ns!(cs, "g_alpha"),
                 || Ok(vk.g_alpha_g1.into_projective()),
                 mode,
             )?;
             let h_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "h"),
+                ark_relations::ns!(cs, "h"),
                 || Ok(vk.h_g2.into_projective()),
                 mode,
             )?;
             let h_beta_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "h_beta"),
+                ark_relations::ns!(cs, "h_beta"),
                 || Ok(vk.h_beta_g2.into_projective()),
                 mode,
             )?;
             let g_gamma_g1 = P::G1Var::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "g_gamma"),
+                ark_relations::ns!(cs, "g_gamma"),
                 || Ok(vk.g_gamma_g1.into_projective()),
                 mode,
             )?;
             let h_gamma_g2 = P::G2Var::new_variable_omit_prime_order_check(
-                ark_relations::r1cs::ns!(cs, "h_gamma"),
+                ark_relations::ns!(cs, "h_gamma"),
                 || Ok(vk.h_gamma_g2.into_projective()),
                 mode,
             )?;
@@ -162,7 +162,7 @@ where
                 .iter()
                 .map(|g| {
                     P::G1Var::new_variable_omit_prime_order_check(
-                        ark_relations::r1cs::ns!(cs, "g"),
+                        ark_relations::ns!(cs, "g"),
                         || Ok(g.into_projective()),
                         mode,
                     )
@@ -280,33 +280,33 @@ where
         f().and_then(|pvk| {
             let pvk = pvk.borrow();
             let g_alpha =
-                P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "g_alpha"), || Ok(pvk.g_alpha), mode)?;
+                P::G1Var::new_variable(ark_relations::ns!(cs, "g_alpha"), || Ok(pvk.g_alpha), mode)?;
             let h_beta =
-                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "h_beta"), || Ok(pvk.h_beta), mode)?;
+                P::G2Var::new_variable(ark_relations::ns!(cs, "h_beta"), || Ok(pvk.h_beta), mode)?;
             let g_alpha_pc = P::G1PreparedVar::new_variable(
-                ark_relations::r1cs::ns!(cs, "g_alpha_pc"),
+                ark_relations::ns!(cs, "g_alpha_pc"),
                 || Ok(pvk.g_alpha.into()),
                 mode,
             )?;
             let h_beta_pc = P::G2PreparedVar::new_variable(
-                ark_relations::r1cs::ns!(cs, "h_beta_pc"),
+                ark_relations::ns!(cs, "h_beta_pc"),
                 || Ok(pvk.h_beta.into()),
                 mode,
             )?;
             let g_gamma_pc = P::G1PreparedVar::new_variable(
-                ark_relations::r1cs::ns!(cs, "g_gamma_pc"),
+                ark_relations::ns!(cs, "g_gamma_pc"),
                 || Ok(&pvk.g_gamma_pc),
                 mode,
             )?;
             let h_gamma_pc = P::G2PreparedVar::new_variable(
-                ark_relations::r1cs::ns!(cs, "h_gamma_pc"),
+                ark_relations::ns!(cs, "h_gamma_pc"),
                 || Ok(&pvk.h_gamma_pc),
                 mode,
             )?;
             let h_pc =
-                P::G2PreparedVar::new_variable(ark_relations::r1cs::ns!(cs, "h_pc"), || Ok(&pvk.h_pc), mode)?;
+                P::G2PreparedVar::new_variable(ark_relations::ns!(cs, "h_pc"), || Ok(&pvk.h_pc), mode)?;
             let query =
-                Vec::new_variable(ark_relations::r1cs::ns!(cs, "query"), || Ok(pvk.query.clone()), mode)?;
+                Vec::new_variable(ark_relations::ns!(cs, "query"), || Ok(pvk.query.clone()), mode)?;
 
             Ok(Self {
                 g_alpha,
@@ -340,16 +340,16 @@ where
         f().and_then(|vk| {
             let vk = vk.borrow();
             let g_alpha_g1 =
-                P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "g_alpha"), || Ok(vk.g_alpha_g1), mode)?;
-            let h_g2 = P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "h"), || Ok(vk.h_g2), mode)?;
+                P::G1Var::new_variable(ark_relations::ns!(cs, "g_alpha"), || Ok(vk.g_alpha_g1), mode)?;
+            let h_g2 = P::G2Var::new_variable(ark_relations::ns!(cs, "h"), || Ok(vk.h_g2), mode)?;
             let h_beta_g2 =
-                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "h_beta"), || Ok(vk.h_beta_g2), mode)?;
+                P::G2Var::new_variable(ark_relations::ns!(cs, "h_beta"), || Ok(vk.h_beta_g2), mode)?;
             let g_gamma_g1 =
-                P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "g_gamma"), || Ok(&vk.g_gamma_g1), mode)?;
+                P::G1Var::new_variable(ark_relations::ns!(cs, "g_gamma"), || Ok(&vk.g_gamma_g1), mode)?;
             let h_gamma_g2 =
-                P::G2Var::new_variable(ark_relations::r1cs::ns!(cs, "h_gamma"), || Ok(&vk.h_gamma_g2), mode)?;
+                P::G2Var::new_variable(ark_relations::ns!(cs, "h_gamma"), || Ok(&vk.h_gamma_g2), mode)?;
             let query =
-                Vec::new_variable(ark_relations::r1cs::ns!(cs, "query"), || Ok(vk.query.clone()), mode)?;
+                Vec::new_variable(ark_relations::ns!(cs, "query"), || Ok(vk.query.clone()), mode)?;
             Ok(Self {
                 h_g2,
                 g_alpha_g1,
@@ -382,7 +382,7 @@ where
             let Proof { a, b, c } = proof.borrow().clone();
             let a = P::G1Var::new_variable(cs.clone(), || Ok(a), mode)?;
             let b = P::G2Var::new_variable(cs.clone(), || Ok(b), mode)?;
-            let c = P::G1Var::new_variable(ark_relations::r1cs::ns!(cs, "c"), || Ok(c), mode)?;
+            let c = P::G1Var::new_variable(ark_relations::ns!(cs, "c"), || Ok(c), mode)?;
             Ok(Self { a, b, c })
         })
     }
@@ -508,7 +508,7 @@ mod test {
                 for input in inputs.into_iter() {
                     let input_bits: Vec<_> = BitIteratorLE::new(input.into_repr()).collect();
                     let input_bits =
-                        Vec::<Boolean<Fq>>::new_input(ark_relations::r1cs::ns!(cs, "Input"), || {
+                        Vec::<Boolean<Fq>>::new_input(ark_relations::ns!(cs, "Input"), || {
                             Ok(input_bits)
                         })
                         .unwrap();
@@ -517,9 +517,9 @@ mod test {
             }
 
             let vk_gadget =
-                TestVkVar::new_input(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
+                TestVkVar::new_input(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
             let proof_gadget =
-                TestProofVar::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar::new_witness(ark_relations::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             println!("Time to verify!\n\n\n\n");
             <TestVerifierGadget as NIZKVerifierGadget<TestProofSystem, Fq>>::verify(
@@ -651,7 +651,7 @@ mod test_recursive {
 
                 // Allocate this byte array as input packed into field elements.
                 let input_bytes =
-                    UInt8::new_input_vec(ark_relations::r1cs::ns!(cs, "Input"), &input_bytes[..])?;
+                    UInt8::new_input_vec(ark_relations::ns!(cs, "Input"), &input_bytes[..])?;
                 // 40 byte
                 let element_size = <MNT4FqParameters as FftParameters>::BigInt::NUM_LIMBS * 8;
                 input_gadgets = input_bytes
@@ -665,9 +665,9 @@ mod test_recursive {
                     .collect::<Vec<_>>();
             }
 
-            let vk_gadget = TestVkVar1::new_witness(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk))?;
+            let vk_gadget = TestVkVar1::new_witness(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk))?;
             let proof_gadget =
-                TestProofVar1::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar1::new_witness(ark_relations::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             <TestVerifierGadget1 as NIZKVerifierGadget<TestProofSystem1, MNT6Fq>>::verify(
                 &vk_gadget,
@@ -744,7 +744,7 @@ mod test_recursive {
                 let mut input_bits = Vec::new();
                 for input in inputs.into_iter() {
                     let input_gadget =
-                        FpVar::new_input(ark_relations::r1cs::ns!(cs, "Input"), || Ok(input)).unwrap();
+                        FpVar::new_input(ark_relations::ns!(cs, "Input"), || Ok(input)).unwrap();
                     let mut fp_bits = input_gadget.to_bits_le().unwrap();
 
                     // Use 320 bits per element.
@@ -770,9 +770,9 @@ mod test_recursive {
             }
 
             let vk_gadget =
-                TestVkVar2::new_input(ark_relations::r1cs::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
+                TestVkVar2::new_input(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk)).unwrap();
             let proof_gadget =
-                TestProofVar2::new_witness(ark_relations::r1cs::ns!(cs, "Proof"), || Ok(proof.clone()))
+                TestProofVar2::new_witness(ark_relations::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();
             println!("Time to verify!\n\n\n\n");
             <TestVerifierGadget2 as NIZKVerifierGadget<TestProofSystem2, MNT4Fq>>::verify(

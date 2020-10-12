@@ -140,7 +140,7 @@ mod test {
         let primitive_result = TestCRH::evaluate(&parameters, &input).unwrap();
 
         let parameters_var =
-            CRHParametersVar::new_constant(ark_relations::r1cs::ns!(cs, "CRH Parameters"), &parameters)
+            CRHParametersVar::new_constant(ark_relations::ns!(cs, "CRH Parameters"), &parameters)
                 .unwrap();
 
         let result_var = TestCRHGadget::evaluate(&parameters_var, &input_var).unwrap();

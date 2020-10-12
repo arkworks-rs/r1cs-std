@@ -160,7 +160,7 @@ mod test {
 
         let parameters_var =
             <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Fr>>::ParametersVar::new_witness(
-                ark_relations::r1cs::ns!(cs, "parameters_var"),
+                ark_relations::ns!(cs, "parameters_var"),
                 || Ok(&parameters),
             )
             .unwrap();

@@ -114,7 +114,7 @@ mod test {
 
         let parameters_var =
             <TestCOMMGadget as CommitmentGadget<TestCOMM, Fr>>::ParametersVar::new_witness(
-                ark_relations::r1cs::ns!(cs, "gadget_parameters"),
+                ark_relations::ns!(cs, "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();

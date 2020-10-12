@@ -1,5 +1,4 @@
-use algebra::Field;
-use algebra::{FpParameters, PrimeField, ToConstraintField};
+use ark_ff::{Field, FpParameters, PrimeField, ToConstraintField};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
@@ -313,7 +312,7 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
 mod test {
     use super::UInt8;
     use crate::{prelude::*, Vec};
-    use algebra::bls12_381::Fr;
+    use ark_bls12_381::Fr;
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
     use rand::{Rng, SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -322,7 +321,7 @@ mod test {
     fn test_uint8_from_bits_to_bits() -> Result<(), SynthesisError> {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let byte_val = 0b01110001;
-        let byte = UInt8::new_witness(ark_relations::r1cs::ns!(cs, "alloc value"), || Ok(byte_val)).unwrap();
+        let byte = UInt8::new_witness(ark_relations::ns!(cs, "alloc value"), || Ok(byte_val)).unwrap();
         let bits = byte.to_bits_le()?;
         for (i, bit) in bits.iter().enumerate() {
             assert_eq!(bit.value()?, (byte_val >> i) & 1 == 1)
@@ -334,7 +333,7 @@ mod test {
     fn test_uint8_new_input_vec() -> Result<(), SynthesisError> {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let byte_vals = (64u8..128u8).collect::<Vec<_>>();
-        let bytes = UInt8::new_input_vec(ark_relations::r1cs::ns!(cs, "alloc value"), &byte_vals).unwrap();
+        let bytes = UInt8::new_input_vec(ark_relations::ns!(cs, "alloc value"), &byte_vals).unwrap();
         dbg!(bytes.value())?;
         for (native, variable) in byte_vals.into_iter().zip(bytes) {
             let bits = variable.to_bits_le()?;
@@ -395,9 +394,9 @@ mod test {
 
             let mut expected = a ^ b ^ c;
 
-            let a_bit = UInt8::new_witness(ark_relations::r1cs::ns!(cs, "a_bit"), || Ok(a)).unwrap();
+            let a_bit = UInt8::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a)).unwrap();
             let b_bit = UInt8::constant(b);
-            let c_bit = UInt8::new_witness(ark_relations::r1cs::ns!(cs, "c_bit"), || Ok(c)).unwrap();
+            let c_bit = UInt8::new_witness(ark_relations::ns!(cs, "c_bit"), || Ok(c)).unwrap();
 
             let r = a_bit.xor(&b_bit).unwrap();
             let r = r.xor(&c_bit).unwrap();

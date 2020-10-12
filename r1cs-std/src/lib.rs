@@ -16,8 +16,6 @@ extern crate ark_std;
 #[macro_use]
 extern crate ark_relations;
 
-use ark_relations::r1cs as r1cs_core;
-
 #[doc(hidden)]
 #[macro_use]
 extern crate derivative;

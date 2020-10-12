@@ -26,13 +26,13 @@
 //! let b_native = Fq::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_a"), || Ok(a_native))?;
-//! let b = FqVar::new_witness(ark_relations::r1cs::ns!(cs, "generate_b"), || Ok(b_native))?;
+//! let a = FqVar::new_witness(ark_relations::ns!(cs, "generate_a"), || Ok(a_native))?;
+//! let b = FqVar::new_witness(ark_relations::ns!(cs, "generate_b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = FqVar::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = FqVar::new_constant(ark_relations::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = FqVar::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! let one = FqVar::one();
 //! let zero = FqVar::zero();
@@ -73,13 +73,13 @@
 //! let b_native = EdwardsProjective::rand(&mut rng);
 //!
 //! // Allocate `a_native` and `b_native` as witness variables in `cs`.
-//! let a = EdwardsVar::new_witness(ark_relations::r1cs::ns!(cs, "a"), || Ok(a_native))?;
-//! let b = EdwardsVar::new_witness(ark_relations::r1cs::ns!(cs, "b"), || Ok(b_native))?;
+//! let a = EdwardsVar::new_witness(ark_relations::ns!(cs, "a"), || Ok(a_native))?;
+//! let b = EdwardsVar::new_witness(ark_relations::ns!(cs, "b"), || Ok(b_native))?;
 //!
 //! // Allocate `a_native` and `b_native` as constants in `cs`. This does not add any
 //! // constraints or variables.
-//! let a_const = EdwardsVar::new_constant(ark_relations::r1cs::ns!(cs, "a_as_constant"), a_native)?;
-//! let b_const = EdwardsVar::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+//! let a_const = EdwardsVar::new_constant(ark_relations::ns!(cs, "a_as_constant"), a_native)?;
+//! let b_const = EdwardsVar::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 //!
 //! // This returns the identity.
 //! let zero = EdwardsVar::zero();

@@ -1,5 +1,5 @@
 use crate::fields::{fp3::Fp3Var, quadratic_extension::*};
-use algebra::fields::{fp6_2over3::*, QuadExtParameters};
+use ark_ff::fields::{fp6_2over3::*, QuadExtParameters};
 
 /// A sextic extension field constructed as the tower of a
 /// quadratic extension over a cubic extension field.

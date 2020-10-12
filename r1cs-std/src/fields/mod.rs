@@ -1,4 +1,4 @@
-use algebra::{prelude::*, BitIteratorBE};
+use ark_ff::{prelude::*, BitIteratorBE};
 use core::{
     fmt::Debug,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
@@ -204,7 +204,7 @@ pub(crate) mod tests {
     use rand_xorshift::XorShiftRng;
 
     use crate::{fields::*, Vec};
-    use algebra::{test_rng, BitIteratorLE, Field, UniformRand};
+    use ark_ff::{test_rng, BitIteratorLE, Field, UniformRand};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     #[allow(dead_code)]
@@ -221,9 +221,9 @@ pub(crate) mod tests {
         let mut rng = test_rng();
         let a_native = F::rand(&mut rng);
         let b_native = F::rand(&mut rng);
-        let a = AF::new_witness(ark_relations::r1cs::ns!(cs, "generate_a"), || Ok(a_native))?;
-        let b = AF::new_witness(ark_relations::r1cs::ns!(cs, "generate_b"), || Ok(b_native))?;
-        let b_const = AF::new_constant(ark_relations::r1cs::ns!(cs, "b_as_constant"), b_native)?;
+        let a = AF::new_witness(ark_relations::ns!(cs, "generate_a"), || Ok(a_native))?;
+        let b = AF::new_witness(ark_relations::ns!(cs, "generate_b"), || Ok(b_native))?;
+        let b_const = AF::new_constant(ark_relations::ns!(cs, "b_as_constant"), b_native)?;
 
         let zero = AF::zero();
         let zero_native = zero.value()?;
@@ -357,14 +357,14 @@ pub(crate) mod tests {
         assert!(cs.is_satisfied().unwrap());
 
         let f = F::from(1u128 << 64);
-        let f_bits = algebra::BitIteratorLE::new(&[0u64, 1u64]).collect::<Vec<_>>();
-        let fv = AF::new_witness(ark_relations::r1cs::ns!(cs, "alloc u128"), || Ok(f))?;
+        let f_bits = ark_ff::BitIteratorLE::new(&[0u64, 1u64]).collect::<Vec<_>>();
+        let fv = AF::new_witness(ark_relations::ns!(cs, "alloc u128"), || Ok(f))?;
         assert_eq!(fv.to_bits_le()?.value().unwrap()[..128], f_bits[..128]);
         assert!(cs.is_satisfied().unwrap());
 
         let r_native: F = UniformRand::rand(&mut test_rng());
 
-        let r = AF::new_witness(ark_relations::r1cs::ns!(cs, "r_native"), || Ok(r_native)).unwrap();
+        let r = AF::new_witness(ark_relations::ns!(cs, "r_native"), || Ok(r_native)).unwrap();
         let _ = r.to_non_unique_bits_le()?;
         assert!(cs.is_satisfied().unwrap());
         let _ = r.to_bits_le()?;
@@ -372,13 +372,13 @@ pub(crate) mod tests {
 
         let bytes = r.to_non_unique_bytes()?;
         assert_eq!(
-            algebra::to_bytes!(r_native).unwrap(),
+            ark_ff::to_bytes!(r_native).unwrap(),
             bytes.value().unwrap()
         );
         assert!(cs.is_satisfied().unwrap());
         let bytes = r.to_bytes()?;
         assert_eq!(
-            algebra::to_bytes!(r_native).unwrap(),
+            ark_ff::to_bytes!(r_native).unwrap(),
             bytes.value().unwrap()
         );
         assert!(cs.is_satisfied().unwrap());
@@ -409,7 +409,7 @@ pub(crate) mod tests {
         let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
         for i in 0..=maxpower {
             let mut a = F::rand(&mut rng);
-            let mut a_gadget = AF::new_witness(ark_relations::r1cs::ns!(cs, "a"), || Ok(a))?;
+            let mut a_gadget = AF::new_witness(ark_relations::ns!(cs, "a"), || Ok(a))?;
             a_gadget.frobenius_map_in_place(i)?;
             a.frobenius_map(i);
 

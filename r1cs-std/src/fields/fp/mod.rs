@@ -1,5 +1,5 @@
-use algebra::{BigInteger, FpParameters, PrimeField};
-use ark_relations::r1cs::{lc, ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
+use ark_ff::{BigInteger, FpParameters, PrimeField};
+use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
 
 use core::borrow::Borrow;
 
@@ -417,7 +417,7 @@ impl<F: PrimeField> ToBitsGadget<F> for AllocatedFp<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
         let cs = self.cs.clone();
-        use algebra::BitIteratorBE;
+        use ark_ff::BitIteratorBE;
         let mut bits = if let Some(value) = self.value {
             let field_char = BitIteratorBE::new(F::characteristic());
             let bits: Vec<_> = BitIteratorBE::new(value.into_repr())
@@ -870,7 +870,7 @@ impl<F: PrimeField> ToBitsGadget<F> for FpVar<F> {
 
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        use algebra::BitIteratorLE;
+        use ark_ff::BitIteratorLE;
         match self {
             Self::Constant(c) => Ok(BitIteratorLE::without_trailing_zeros(&c.into_repr())
                 .map(Boolean::constant)
@@ -886,7 +886,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
             Self::Var(v) => v.to_bytes(),
         }
     }
@@ -894,7 +894,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
             Self::Var(v) => v.to_non_unique_bytes(),
         }
     }

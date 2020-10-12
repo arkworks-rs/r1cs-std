@@ -6,10 +6,8 @@ use crate::{
     fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar},
     groups::bls12::{G1AffineVar, G1PreparedVar, G1Var, G2PreparedVar, G2Var},
 };
-use algebra::{
-    curves::bls12::{Bls12, Bls12Parameters, TwistType},
-    fields::BitIteratorBE,
-};
+use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
+use ark_ff::fields::BitIteratorBE;
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.

@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use algebra::{Field, ProjectiveCurve};
+use ark_ff::Field;
+use ark_ec::ProjectiveCurve;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
@@ -150,7 +151,8 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
 
 #[cfg(test)]
 mod test {
-    use algebra::{test_rng, Field, ProjectiveCurve};
+    use ark_ff::{test_rng, Field};
+    use ark_ec::ProjectiveCurve;
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     use crate::prelude::*;
@@ -165,8 +167,8 @@ mod test {
         let mut rng = test_rng();
         let a_native = C::rand(&mut rng);
         let b_native = C::rand(&mut rng);
-        let a = GG::new_witness(ark_relations::r1cs::ns!(cs, "generate_a"), || Ok(a_native)).unwrap();
-        let b = GG::new_witness(ark_relations::r1cs::ns!(cs, "generate_b"), || Ok(b_native)).unwrap();
+        let a = GG::new_witness(ark_relations::ns!(cs, "generate_a"), || Ok(a_native)).unwrap();
+        let b = GG::new_witness(ark_relations::ns!(cs, "generate_b"), || Ok(b_native)).unwrap();
 
         let zero = GG::zero();
         assert_eq!(zero.value()?, zero.value()?);
