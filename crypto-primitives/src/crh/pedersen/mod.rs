@@ -8,8 +8,8 @@ use rand::Rng;
 use rayon::prelude::*;
 
 use crate::crh::FixedLengthCRH;
-use ark_ff::{Field, ToConstraintField};
 use ark_ec::ProjectiveCurve;
+use ark_ff::{Field, ToConstraintField};
 use ark_std::cfg_chunks;
 
 #[cfg(feature = "r1cs")]

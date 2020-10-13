@@ -1,10 +1,8 @@
 use crate::{Error, Vec};
-use ark_ff::{
-    bytes::ToBytes,
-    BitIteratorLE, Field, FpParameters, PrimeField, ToConstraintField,
-    UniformRand,
-};
 use ark_ec::ProjectiveCurve;
+use ark_ff::{
+    bytes::ToBytes, BitIteratorLE, Field, FpParameters, PrimeField, ToConstraintField, UniformRand,
+};
 use ark_std::io::{Result as IoResult, Write};
 
 use core::marker::PhantomData;

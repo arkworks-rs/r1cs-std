@@ -1,8 +1,8 @@
 use crate::prelude::*;
-use ark_ff::Field;
 use ark_ec::PairingEngine;
-use core::fmt::Debug;
+use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
+use core::fmt::Debug;
 
 /// This module implements pairings for BLS12 bilinear groups.
 pub mod bls12;
@@ -11,7 +11,8 @@ pub mod mnt4;
 /// This module implements pairings for MNT6 bilinear groups.
 pub mod mnt6;
 
-/// Specifies the constraints for computing a pairing in the yybilinear group `E`.
+/// Specifies the constraints for computing a pairing in the yybilinear group
+/// `E`.
 pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>::Fq> {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
@@ -29,14 +30,16 @@ pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>
     /// This is the R1CS equivalent of `E::GT`.
     type GTVar: FieldVar<E::Fqk, ConstraintF>;
 
-    /// An variable representing cached precomputation  that can speed up pairings computations.
-    /// This is the R1CS equivalent of `E::G1Prepared`.
+    /// An variable representing cached precomputation  that can speed up
+    /// pairings computations. This is the R1CS equivalent of
+    /// `E::G1Prepared`.
     type G1PreparedVar: ToBytesGadget<ConstraintF>
         + AllocVar<E::G1Prepared, ConstraintF>
         + Clone
         + Debug;
-    /// An variable representing cached precomputation  that can speed up pairings computations.
-    /// This is the R1CS equivalent of `E::G2Prepared`.
+    /// An variable representing cached precomputation  that can speed up
+    /// pairings computations. This is the R1CS equivalent of
+    /// `E::G2Prepared`.
     type G2PreparedVar: ToBytesGadget<ConstraintF>
         + AllocVar<E::G2Prepared, ConstraintF>
         + Clone
@@ -83,8 +86,8 @@ pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::{prelude::*, Vec};
-    use ark_ff::{test_rng, BitIteratorLE, Field, PrimeField, UniformRand};
     use ark_ec::{PairingEngine, ProjectiveCurve};
+    use ark_ff::{test_rng, BitIteratorLE, Field, PrimeField, UniformRand};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     #[allow(dead_code)]

@@ -1,14 +1,12 @@
 use ark_ec::{
     short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
-    SWModelParameters,
-    AffineCurve, ProjectiveCurve,
+    AffineCurve, ProjectiveCurve, SWModelParameters,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
-use core::{borrow::Borrow, marker::PhantomData};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use core::{borrow::Borrow, marker::PhantomData};
 
-use crate::fields::fp::FpVar;
-use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 /// This module provides a generic implementation of G1 and G2 for
 /// the [[BLS12]](https://eprint.iacr.org/2002/088.pdf) family of bilinear groups.
@@ -211,7 +209,7 @@ where
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
-            }
+            },
             _ => (
                 Err(SynthesisError::AssignmentMissing),
                 Err(SynthesisError::AssignmentMissing),
@@ -628,7 +626,7 @@ where
                     ge.enforce_equal(&ge)?;
                     Ok(ge)
                 }
-            }
+            },
         }
     }
 }
@@ -717,8 +715,8 @@ where
     for<'a> &'a GG: GroupOpsBounds<'a, SWProjective<P>, GG>,
 {
     use crate::prelude::*;
-    use ark_ff::{test_rng, BitIteratorLE, UniformRand};
     use ark_ec::group::Group;
+    use ark_ff::{test_rng, BitIteratorLE, UniformRand};
     use ark_relations::r1cs::ConstraintSystem;
 
     crate::groups::test::group_test::<SWProjective<P>, _, GG>()?;

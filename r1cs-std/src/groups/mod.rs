@@ -1,17 +1,15 @@
 use crate::prelude::*;
-use ark_ff::Field;
 use ark_ec::ProjectiveCurve;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
+use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use core::{borrow::Borrow, fmt::Debug};
 
 /// This module contains implementations of arithmetic for various curve models.
 pub mod curves;
 
-pub use self::curves::short_weierstrass::bls12;
-pub use self::curves::short_weierstrass::mnt4;
-pub use self::curves::short_weierstrass::mnt6;
+pub use self::curves::short_weierstrass::{bls12, mnt4, mnt6};
 
 /// A hack used to work around the lack of implied bounds.
 pub trait GroupOpsBounds<'a, F, T: 'a>:
@@ -151,8 +149,8 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
 
 #[cfg(test)]
 mod test {
-    use ark_ff::{test_rng, Field};
     use ark_ec::ProjectiveCurve;
+    use ark_ff::{test_rng, Field};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
 
     use crate::prelude::*;

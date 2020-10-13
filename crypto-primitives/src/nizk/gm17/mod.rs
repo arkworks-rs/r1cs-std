@@ -1,10 +1,10 @@
 use crate::Error;
 use ark_ec::PairingEngine;
+use ark_relations::r1cs::ConstraintSynthesizer;
 use gm17::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
     Parameters, PreparedVerifyingKey, Proof, VerifyingKey,
 };
-use ark_relations::r1cs::ConstraintSynthesizer;
 use rand::Rng;
 
 use ark_ff::ToConstraintField;

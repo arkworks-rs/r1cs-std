@@ -1,8 +1,6 @@
-use ark_ec::{
-    mnt4::{
-        g2::{AteAdditionCoefficients, AteDoubleCoefficients},
-        G1Prepared, G2Prepared, MNT4Parameters,
-    },
+use ark_ec::mnt4::{
+    g2::{AteAdditionCoefficients, AteDoubleCoefficients},
+    G1Prepared, G2Prepared, MNT4Parameters,
 };
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
@@ -72,7 +70,8 @@ impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
 }
 
 impl<P: MNT4Parameters> G1PreparedVar<P> {
-    /// Returns the value assigned to `self` in the underlying constraint system.
+    /// Returns the value assigned to `self` in the underlying constraint
+    /// system.
     pub fn value(&self) -> Result<G1Prepared<P>, SynthesisError> {
         let (x, y, x_twist, y_twist) = (
             self.x.value()?,
@@ -243,7 +242,8 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
 }
 
 impl<P: MNT4Parameters> G2PreparedVar<P> {
-    /// Returns the value assigned to `self` in the underlying constraint system.
+    /// Returns the value assigned to `self` in the underlying constraint
+    /// system.
     pub fn value(&self) -> Result<G2Prepared<P>, SynthesisError> {
         let x = self.x.value()?;
         let y = self.y.value()?;
@@ -364,7 +364,8 @@ impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleC
         let c = c_prep.as_ref().map_err(|e| *e);
 
         let c_h = Fp2Var::new_variable(ark_relations::ns!(cs, "c_h"), || c.map(|c| c.c_h), mode)?;
-        let c_4c = Fp2Var::new_variable(ark_relations::ns!(cs, "c_4c"), || c.map(|c| c.c_4c), mode)?;
+        let c_4c =
+            Fp2Var::new_variable(ark_relations::ns!(cs, "c_4c"), || c.map(|c| c.c_4c), mode)?;
         let c_j = Fp2Var::new_variable(ark_relations::ns!(cs, "c_j"), || c.map(|c| c.c_j), mode)?;
         let c_l = Fp2Var::new_variable(ark_relations::ns!(cs, "c_l"), || c.map(|c| c.c_l), mode)?;
         Ok(Self {
@@ -406,7 +407,8 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
 }
 
 impl<P: MNT4Parameters> AteDoubleCoefficientsVar<P> {
-    /// Returns the value assigned to `self` in the underlying constraint system.
+    /// Returns the value assigned to `self` in the underlying constraint
+    /// system.
     pub fn value(&self) -> Result<AteDoubleCoefficients<P>, SynthesisError> {
         let (c_h, c_4c, c_j, c_l) = (
             self.c_l.value()?,
@@ -446,8 +448,10 @@ impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
         let c_prep = f().map(|c| c.borrow().clone());
         let c = c_prep.as_ref().map_err(|e| *e);
 
-        let c_l1 = Fp2Var::new_variable(ark_relations::ns!(cs, "c_l1"), || c.map(|c| c.c_l1), mode)?;
-        let c_rz = Fp2Var::new_variable(ark_relations::ns!(cs, "c_rz"), || c.map(|c| c.c_rz), mode)?;
+        let c_l1 =
+            Fp2Var::new_variable(ark_relations::ns!(cs, "c_l1"), || c.map(|c| c.c_l1), mode)?;
+        let c_rz =
+            Fp2Var::new_variable(ark_relations::ns!(cs, "c_rz"), || c.map(|c| c.c_rz), mode)?;
         Ok(Self { c_l1, c_rz })
     }
 }
@@ -474,7 +478,8 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> {
 }
 
 impl<P: MNT4Parameters> AteAdditionCoefficientsVar<P> {
-    /// Returns the value assigned to `self` in the underlying constraint system.
+    /// Returns the value assigned to `self` in the underlying constraint
+    /// system.
     pub fn value(&self) -> Result<AteAdditionCoefficients<P>, SynthesisError> {
         let (c_l1, c_rz) = (self.c_l1.value()?, self.c_rz.value()?);
         Ok(AteAdditionCoefficients { c_l1, c_rz })

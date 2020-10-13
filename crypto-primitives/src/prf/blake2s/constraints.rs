@@ -299,8 +299,8 @@ impl<ConstraintF: PrimeField> EqGadget<ConstraintF> for OutputVar<ConstraintF> {
         self.0.is_eq(&other.0)
     }
 
-    /// If `should_enforce == true`, enforce that `self` and `other` are equal; else,
-    /// enforce a vacuously true statement.
+    /// If `should_enforce == true`, enforce that `self` and `other` are equal;
+    /// else, enforce a vacuously true statement.
     #[tracing::instrument(target = "r1cs")]
     fn conditional_enforce_equal(
         &self,
@@ -310,8 +310,8 @@ impl<ConstraintF: PrimeField> EqGadget<ConstraintF> for OutputVar<ConstraintF> {
         self.0.conditional_enforce_equal(&other.0, should_enforce)
     }
 
-    /// If `should_enforce == true`, enforce that `self` and `other` are not equal; else,
-    /// enforce a vacuously true statement.
+    /// If `should_enforce == true`, enforce that `self` and `other` are not
+    /// equal; else, enforce a vacuously true statement.
     #[tracing::instrument(target = "r1cs")]
     fn conditional_enforce_not_equal(
         &self,
@@ -396,8 +396,8 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     use crate::prf::blake2s::{constraints::evaluate_blake2s, Blake2s as B2SPRF};
-    use blake2::VarBlake2s;
     use ark_relations::r1cs::ConstraintSystem;
+    use blake2::VarBlake2s;
 
     use super::Blake2sGadget;
     use r1cs_std::prelude::*;
@@ -406,7 +406,9 @@ mod test {
     fn test_blake2s_constraints() {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let input_bits: Vec<_> = (0..512)
-            .map(|_| Boolean::new_witness(ark_relations::ns!(cs, "input bit"), || Ok(true)).unwrap())
+            .map(|_| {
+                Boolean::new_witness(ark_relations::ns!(cs, "input bit"), || Ok(true)).unwrap()
+            })
             .collect();
         evaluate_blake2s(&input_bits).unwrap();
         assert!(cs.is_satisfied().unwrap());
@@ -521,14 +523,14 @@ mod test {
                     match b {
                         Boolean::Is(b) => {
                             assert!(s.next().unwrap() == b.value().unwrap());
-                        }
+                        },
                         Boolean::Not(b) => {
                             assert!(s.next().unwrap() != b.value().unwrap());
-                        }
+                        },
                         Boolean::Constant(b) => {
                             assert!(input_len == 0);
                             assert!(s.next().unwrap() == b);
-                        }
+                        },
                     }
                 }
             }

@@ -280,8 +280,11 @@ where
 
         f().and_then(|pvk| {
             let pvk = pvk.borrow();
-            let g_alpha =
-                P::G1Var::new_variable(ark_relations::ns!(cs, "g_alpha"), || Ok(pvk.g_alpha), mode)?;
+            let g_alpha = P::G1Var::new_variable(
+                ark_relations::ns!(cs, "g_alpha"),
+                || Ok(pvk.g_alpha),
+                mode,
+            )?;
             let h_beta =
                 P::G2Var::new_variable(ark_relations::ns!(cs, "h_beta"), || Ok(pvk.h_beta), mode)?;
             let g_alpha_pc = P::G1PreparedVar::new_variable(
@@ -304,10 +307,16 @@ where
                 || Ok(&pvk.h_gamma_pc),
                 mode,
             )?;
-            let h_pc =
-                P::G2PreparedVar::new_variable(ark_relations::ns!(cs, "h_pc"), || Ok(&pvk.h_pc), mode)?;
-            let query =
-                Vec::new_variable(ark_relations::ns!(cs, "query"), || Ok(pvk.query.clone()), mode)?;
+            let h_pc = P::G2PreparedVar::new_variable(
+                ark_relations::ns!(cs, "h_pc"),
+                || Ok(&pvk.h_pc),
+                mode,
+            )?;
+            let query = Vec::new_variable(
+                ark_relations::ns!(cs, "query"),
+                || Ok(pvk.query.clone()),
+                mode,
+            )?;
 
             Ok(Self {
                 g_alpha,
@@ -340,17 +349,32 @@ where
 
         f().and_then(|vk| {
             let vk = vk.borrow();
-            let g_alpha_g1 =
-                P::G1Var::new_variable(ark_relations::ns!(cs, "g_alpha"), || Ok(vk.g_alpha_g1), mode)?;
+            let g_alpha_g1 = P::G1Var::new_variable(
+                ark_relations::ns!(cs, "g_alpha"),
+                || Ok(vk.g_alpha_g1),
+                mode,
+            )?;
             let h_g2 = P::G2Var::new_variable(ark_relations::ns!(cs, "h"), || Ok(vk.h_g2), mode)?;
-            let h_beta_g2 =
-                P::G2Var::new_variable(ark_relations::ns!(cs, "h_beta"), || Ok(vk.h_beta_g2), mode)?;
-            let g_gamma_g1 =
-                P::G1Var::new_variable(ark_relations::ns!(cs, "g_gamma"), || Ok(&vk.g_gamma_g1), mode)?;
-            let h_gamma_g2 =
-                P::G2Var::new_variable(ark_relations::ns!(cs, "h_gamma"), || Ok(&vk.h_gamma_g2), mode)?;
-            let query =
-                Vec::new_variable(ark_relations::ns!(cs, "query"), || Ok(vk.query.clone()), mode)?;
+            let h_beta_g2 = P::G2Var::new_variable(
+                ark_relations::ns!(cs, "h_beta"),
+                || Ok(vk.h_beta_g2),
+                mode,
+            )?;
+            let g_gamma_g1 = P::G1Var::new_variable(
+                ark_relations::ns!(cs, "g_gamma"),
+                || Ok(&vk.g_gamma_g1),
+                mode,
+            )?;
+            let h_gamma_g2 = P::G2Var::new_variable(
+                ark_relations::ns!(cs, "h_gamma"),
+                || Ok(&vk.h_gamma_g2),
+                mode,
+            )?;
+            let query = Vec::new_variable(
+                ark_relations::ns!(cs, "query"),
+                || Ok(vk.query.clone()),
+                mode,
+            )?;
             Ok(Self {
                 h_g2,
                 g_alpha_g1,
@@ -412,10 +436,10 @@ where
 
 #[cfg(test)]
 mod test {
-    use gm17::*;
     use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
+    use gm17::*;
 
     use super::*;
     use algebra::{
@@ -547,10 +571,10 @@ mod test {
 
 #[cfg(test)]
 mod test_recursive {
-    use gm17::*;
     use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
+    use gm17::*;
 
     use super::*;
     use algebra::{
@@ -666,7 +690,8 @@ mod test_recursive {
                     .collect::<Vec<_>>();
             }
 
-            let vk_gadget = TestVkVar1::new_witness(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk))?;
+            let vk_gadget =
+                TestVkVar1::new_witness(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk))?;
             let proof_gadget =
                 TestProofVar1::new_witness(ark_relations::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();

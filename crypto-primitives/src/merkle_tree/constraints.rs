@@ -205,8 +205,10 @@ mod test {
 
             // Allocate Merkle Tree Path
             let cw =
-                PathVar::<_, HG, _>::new_witness(ark_relations::ns!(cs, "new_witness"), || Ok(&proof))
-                    .unwrap();
+                PathVar::<_, HG, _>::new_witness(ark_relations::ns!(cs, "new_witness"), || {
+                    Ok(&proof)
+                })
+                .unwrap();
             for (i, (l, r)) in cw.path.iter().enumerate() {
                 assert_eq!(l.value().unwrap(), proof.path[i].0);
                 assert_eq!(r.value().unwrap(), proof.path[i].1);

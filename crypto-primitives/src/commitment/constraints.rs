@@ -1,7 +1,7 @@
 use crate::commitment::CommitmentScheme;
 use ark_ff::Field;
-use core::fmt::Debug;
 use ark_relations::r1cs::SynthesisError;
+use core::fmt::Debug;
 use r1cs_std::prelude::*;
 
 pub trait CommitmentGadget<C: CommitmentScheme, ConstraintF: Field> {

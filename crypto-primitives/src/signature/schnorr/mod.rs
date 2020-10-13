@@ -1,11 +1,11 @@
 use crate::{Error, SignatureScheme, Vec};
+use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::{
     bytes::ToBytes,
     fields::{Field, PrimeField},
     to_bytes, One, ToConstraintField, UniformRand, Zero,
 };
 use ark_std::io::{Result as IoResult, Write};
-use ark_ec::{AffineCurve, ProjectiveCurve};
 use core::{hash::Hash, marker::PhantomData};
 use digest::Digest;
 use rand::Rng;

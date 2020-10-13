@@ -361,10 +361,10 @@ where
 
 #[cfg(test)]
 mod test {
-    use groth16::*;
     use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
+    use groth16::*;
 
     use super::*;
     use algebra::{
@@ -496,10 +496,10 @@ mod test {
 
 #[cfg(test)]
 mod test_recursive {
-    use groth16::*;
     use ark_relations::r1cs::{
         lc, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, SynthesisError,
     };
+    use groth16::*;
 
     use super::*;
     use algebra::{
@@ -615,7 +615,8 @@ mod test_recursive {
                     .collect::<Vec<_>>();
             }
 
-            let vk_gadget = TestVkVar1::new_witness(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk))?;
+            let vk_gadget =
+                TestVkVar1::new_witness(ark_relations::ns!(cs, "Vk"), || Ok(&params.vk))?;
             let proof_gadget =
                 TestProofVar1::new_witness(ark_relations::ns!(cs, "Proof"), || Ok(proof.clone()))
                     .unwrap();

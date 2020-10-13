@@ -115,9 +115,9 @@ impl<F: Field> UInt8<F> {
     }
 
     /// Allocates a slice of `u8`'s as public inputs by first packing them into
-    /// elements of `F`, (thus reducing the number of input allocations), allocating
-    /// these elements as public inputs, and then converting these field variables
-    /// `FpVar<F>` variables back into bytes.
+    /// elements of `F`, (thus reducing the number of input allocations),
+    /// allocating these elements as public inputs, and then converting
+    /// these field variables `FpVar<F>` variables back into bytes.
     ///
     /// From a user perspective, this trade-off adds constraints, but improves
     /// verifier time and verification key size.
@@ -321,7 +321,8 @@ mod test {
     fn test_uint8_from_bits_to_bits() -> Result<(), SynthesisError> {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let byte_val = 0b01110001;
-        let byte = UInt8::new_witness(ark_relations::ns!(cs, "alloc value"), || Ok(byte_val)).unwrap();
+        let byte =
+            UInt8::new_witness(ark_relations::ns!(cs, "alloc value"), || Ok(byte_val)).unwrap();
         let bits = byte.to_bits_le()?;
         for (i, bit) in bits.iter().enumerate() {
             assert_eq!(bit.value()?, (byte_val >> i) & 1 == 1)
@@ -333,7 +334,8 @@ mod test {
     fn test_uint8_new_input_vec() -> Result<(), SynthesisError> {
         let cs = ConstraintSystem::<Fr>::new_ref();
         let byte_vals = (64u8..128u8).collect::<Vec<_>>();
-        let bytes = UInt8::new_input_vec(ark_relations::ns!(cs, "alloc value"), &byte_vals).unwrap();
+        let bytes =
+            UInt8::new_input_vec(ark_relations::ns!(cs, "alloc value"), &byte_vals).unwrap();
         dbg!(bytes.value())?;
         for (native, variable) in byte_vals.into_iter().zip(bytes) {
             let bits = variable.to_bits_le()?;
@@ -372,8 +374,8 @@ mod test {
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {
-                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
-                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
+                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
+                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
                     _ => unreachable!(),
                 }
             }

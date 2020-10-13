@@ -1,7 +1,7 @@
 use crate::Vec;
 use ark_ff::Field;
-use core::borrow::Borrow;
 use ark_relations::r1cs::{Namespace, SynthesisError};
+use core::borrow::Borrow;
 
 /// Describes the mode that a variable should be allocated in within
 /// a `ConstraintSystem`.
@@ -22,7 +22,8 @@ pub enum AllocationMode {
 }
 
 impl AllocationMode {
-    /// Outputs the maximum according to the relation `Constant < Input < Witness`.
+    /// Outputs the maximum according to the relation `Constant < Input <
+    /// Witness`.
     pub fn max(&self, other: Self) -> Self {
         use AllocationMode::*;
         match (self, other) {
@@ -34,7 +35,8 @@ impl AllocationMode {
     }
 }
 
-/// Specifies how variables of type `Self` should be allocated in a `ConstraintSystem`.
+/// Specifies how variables of type `Self` should be allocated in a
+/// `ConstraintSystem`.
 pub trait AllocVar<V, F: Field>
 where
     Self: Sized,
@@ -59,7 +61,8 @@ where
         Self::new_variable(cs, || Ok(t), AllocationMode::Constant)
     }
 
-    /// Allocates a new public input of type `Self` in the `ConstraintSystem` `cs`.
+    /// Allocates a new public input of type `Self` in the `ConstraintSystem`
+    /// `cs`.
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_input<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,
@@ -68,7 +71,8 @@ where
         Self::new_variable(cs, f, AllocationMode::Input)
     }
 
-    /// Allocates a new private witness of type `Self` in the `ConstraintSystem` `cs`.
+    /// Allocates a new private witness of type `Self` in the `ConstraintSystem`
+    /// `cs`.
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_witness<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,

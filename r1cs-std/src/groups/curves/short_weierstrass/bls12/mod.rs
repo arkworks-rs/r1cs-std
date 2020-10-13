@@ -2,7 +2,7 @@ use ark_ec::{
     bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
     short_weierstrass_jacobian::GroupAffine,
 };
-use ark_ff::{Field, BitIteratorBE, One};
+use ark_ff::{BitIteratorBE, Field, One};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
@@ -17,15 +17,17 @@ use core::fmt::Debug;
 pub type G1Var<P> =
     ProjectiveVar<<P as Bls12Parameters>::G1Parameters, FpVar<<P as Bls12Parameters>::Fp>>;
 
-/// Represents an affine point on G1. Should be used only for comparison and when
-/// a canonical representation of a point is required, and not for arithmetic.
+/// Represents an affine point on G1. Should be used only for comparison and
+/// when a canonical representation of a point is required, and not for
+/// arithmetic.
 pub type G1AffineVar<P> =
     AffineVar<<P as Bls12Parameters>::G1Parameters, FpVar<<P as Bls12Parameters>::Fp>>;
 
 /// Represents a projective point in G2.
 pub type G2Var<P> = ProjectiveVar<<P as Bls12Parameters>::G2Parameters, Fp2G<P>>;
-/// Represents an affine point on G2. Should be used only for comparison and when
-/// a canonical representation of a point is required, and not for arithmetic.
+/// Represents an affine point on G2. Should be used only for comparison and
+/// when a canonical representation of a point is required, and not for
+/// arithmetic.
 pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Parameters, Fp2G<P>>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
@@ -35,7 +37,8 @@ pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Parameters, Fp2G<P
 pub struct G1PreparedVar<P: Bls12Parameters>(pub AffineVar<P::G1Parameters, FpVar<P::Fp>>);
 
 impl<P: Bls12Parameters> G1PreparedVar<P> {
-    /// Returns the value assigned to `self` in the underlying constraint system.
+    /// Returns the value assigned to `self` in the underlying constraint
+    /// system.
     pub fn value(&self) -> Result<G1Prepared<P>, SynthesisError> {
         let x = self.0.x.value()?;
         let y = self.0.y.value()?;

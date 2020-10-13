@@ -63,7 +63,9 @@ mod test {
             bls12_377::{Bls12_377, Fr},
             One,
         };
-        use ark_relations::r1cs::{lc, ConstraintSynthesizer, ConstraintSystemRef, SynthesisError, Variable};
+        use ark_relations::r1cs::{
+            lc, ConstraintSynthesizer, ConstraintSystemRef, SynthesisError, Variable,
+        };
 
         #[derive(Copy, Clone)]
         struct R1CSCircuit {
