@@ -1,10 +1,10 @@
 use crate::{CryptoError, Error};
-use algebra_core::bytes::ToBytes;
+use ark_ff::bytes::ToBytes;
 use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 use rand::Rng;
 
 use super::{pedersen, FixedLengthCRH};
-use algebra_core::curves::{
+use ark_ec::{
     models::{ModelParameters, TEModelParameters},
     twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
     ProjectiveCurve,

@@ -8,10 +8,8 @@ use crate::{
     },
     Vec,
 };
-use algebra_core::{
-    curves::{ModelParameters, TEModelParameters},
-    Field,
-};
+use ark_ff::Field;
+use ark_ec::{ModelParameters, TEModelParameters};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::{
     alloc::AllocVar, groups::curves::twisted_edwards::AffineVar, prelude::*, uint8::UInt8,

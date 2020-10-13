@@ -22,18 +22,20 @@ edition = "2018"
 ################################# Dependencies ################################
 
 [dependencies]
-algebra-core = { git = "https://github.com/scipr-lab/zexe", default-features = false }
-bench-utils = { git = "https://github.com/scipr-lab/zexe" }
+ark-ff = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
+ark-ec = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
+ark-std = { git = "https://github.com/arkworks-rs/utils", default-features = false }
+ark-relations = { git = "https://github.com/arkworks-rs/snark", default-features = false }
+
+bench-utils = { git = "https://github.com/arkworks-rs/utils", default-features = false }
 
 blake2 = { version = "0.8", default-features = false }
 digest = "0.8"
 
-ff-fft = { git = "https://github.com/scipr-lab/zexe", default-features = false }
-gm17 = { git = "https://github.com/scipr-lab/zexe", optional = true, default-features = false }
-groth16 = { git = "https://github.com/scipr-lab/zexe", optional = true, default-features = false }
+gm17 = { git = "ssh://git@github.com/arkworks-rs/gm17.git", default-features = false }
+groth16 = { git = "ssh://git@github.com/arkworks-rs/groth16.git", default-features = false }
 
-r1cs-core = { git = "https://github.com/scipr-lab/zexe", optional = true, default-features = false }
-r1cs-std = { path = "../r1cs-std", optional = true, default-features = false }
+ark-r1cs-std = { path = "../r1cs-std", optional = true, default-features = false }
 
 rand = { version = "0.7", default-features = false }
 rayon = { version = "1.0", optional = true }
@@ -41,12 +43,11 @@ derivative = { version = "2.0", features = ["use_core"] }
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
 
 [features]
-default = ["std", "r1cs"]
-r1cs = ["r1cs-core", "r1cs-std"]
-std = [ "algebra-core/std", "r1cs-core/std", "r1cs-std/std"]
-parallel = ["std", "rayon", "gm17/parallel", "groth16/parallel", "ff-fft/parallel"]
+default = ["std"]
+std = [ "ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "ark-r1cs-std/std"]
+parallel = ["std", "rayon", "gm17/parallel", "groth16/parallel", "ark-ff/parallel"]
 
 [dev-dependencies]
-algebra = { git = "https://github.com/scipr-lab/zexe", default-features = false, features = [ "ed_on_bls12_381", "bls12_377", "mnt4_298", "mnt6_298" ] }
-r1cs-std = { path = "../r1cs-std", default-features = false, features = [ "ed_on_bls12_381", "bls12_377", "mnt4_298", "mnt6_298" ] }
+#algebra = { git = "https://github.com/scipr-lab/zexe", default-features = false, features = [ "ed_on_bls12_381", "bls12_377", "mnt4_298", "mnt6_298" ] }
+#r1cs-std = { path = "../r1cs-std", default-features = false, features = [ "ed_on_bls12_381", "bls12_377", "mnt4_298", "mnt6_298" ] }
 rand_xorshift = { version = "0.2" }

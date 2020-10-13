@@ -4,7 +4,7 @@ use rand::Rng;
 
 use super::{pedersen, CommitmentScheme};
 pub use crate::crh::injective_map::InjectiveMap;
-use algebra_core::ProjectiveCurve;
+use ark_ec::ProjectiveCurve;
 
 #[cfg(feature = "r1cs")]
 pub mod constraints;

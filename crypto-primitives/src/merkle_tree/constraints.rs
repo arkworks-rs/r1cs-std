@@ -1,4 +1,4 @@
-use algebra_core::Field;
+use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 

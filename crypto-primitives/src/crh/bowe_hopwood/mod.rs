@@ -9,11 +9,12 @@ use rayon::prelude::*;
 
 use super::pedersen;
 use crate::crh::FixedLengthCRH;
-use algebra_core::{
-    biginteger::BigInteger, curves::twisted_edwards_extended::GroupProjective as TEProjective,
-    fields::PrimeField, ProjectiveCurve, TEModelParameters, UniformRand,
+use ark_ff::{biginteger::BigInteger, fields::PrimeField, UniformRand};
+use ark_ec::{
+    twisted_edwards_extended::GroupProjective as TEProjective, 
+    ProjectiveCurve, TEModelParameters,
 };
-use ff_fft::cfg_chunks;
+use ark_std::cfg_chunks;
 
 #[cfg(feature = "r1cs")]
 pub mod constraints;

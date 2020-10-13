@@ -2,7 +2,7 @@
 
 members = [
     # "cp-benches",
-    # "crypto-primitives",
+    "crypto-primitives",
     "r1cs-std",
 ]
 

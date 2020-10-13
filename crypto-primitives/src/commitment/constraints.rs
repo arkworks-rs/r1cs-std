@@ -1,5 +1,5 @@
 use crate::commitment::CommitmentScheme;
-use algebra_core::Field;
+use ark_ff::Field;
 use core::fmt::Debug;
 use ark_relations::r1cs::SynthesisError;
 use r1cs_std::prelude::*;

@@ -1,10 +1,11 @@
 use crate::{Error, SignatureScheme, Vec};
-use algebra_core::{
+use ark_ff::{
     bytes::ToBytes,
     fields::{Field, PrimeField},
-    io::{Result as IoResult, Write},
-    to_bytes, AffineCurve, One, ProjectiveCurve, ToConstraintField, UniformRand, Zero,
+    to_bytes, One, ToConstraintField, UniformRand, Zero,
 };
+use ark_std::io::{Result as IoResult, Write};
+use ark_ec::{AffineCurve, ProjectiveCurve};
 use core::{hash::Hash, marker::PhantomData};
 use digest::Digest;
 use rand::Rng;
@@ -223,7 +224,7 @@ impl<ConstraintF: Field, C: ProjectiveCurve + ToConstraintField<ConstraintF>, D:
     ToConstraintField<ConstraintF> for Parameters<C, D>
 {
     #[inline]
-    fn to_field_elements(&self) -> Result<Vec<ConstraintF>, Error> {
+    fn to_field_elements(&self) -> Option<Vec<ConstraintF>> {
         self.generator.into_projective().to_field_elements()
     }
 }

@@ -1,8 +1,8 @@
-use algebra_core::UniformRand;
+use ark_ff::UniformRand;
 use core::{fmt::Debug, hash::Hash};
 use rand::Rng;
 
-use algebra_core::bytes::ToBytes;
+use ark_ff::bytes::ToBytes;
 
 pub mod blake2s;
 pub mod injective_map;

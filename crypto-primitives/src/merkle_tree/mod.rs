@@ -1,5 +1,5 @@
 use crate::{crh::FixedLengthCRH, Vec};
-use algebra_core::bytes::ToBytes;
+use ark_ff::bytes::ToBytes;
 use core::fmt;
 
 #[cfg(feature = "r1cs")]
@@ -256,7 +256,7 @@ impl core::fmt::Display for Error {
     }
 }
 
-impl algebra_core::Error for Error {}
+impl ark_std::error::Error for Error {}
 
 /// Returns the height of the tree, given the size of the tree.
 #[inline]
@@ -265,7 +265,7 @@ fn tree_height(tree_size: usize) -> usize {
         return 1;
     }
 
-    algebra_core::log2(tree_size) as usize
+    ark_std::log2(tree_size) as usize
 }
 
 /// Returns true iff the index represents the root.
@@ -326,9 +326,9 @@ pub(crate) fn hash_inner_node<H: FixedLengthCRH>(
     right: &H::Output,
     buffer: &mut [u8],
 ) -> Result<H::Output, crate::Error> {
-    let bytes = algebra_core::to_bytes![left]?
+    let bytes = ark_ff::to_bytes![left]?
         .into_iter()
-        .chain(algebra_core::to_bytes![right]?);
+        .chain(ark_ff::to_bytes![right]?);
     buffer.iter_mut().zip(bytes).for_each(|(b, l_b)| *b = l_b);
     H::evaluate(parameters, &buffer[..(H::INPUT_SIZE_BITS / 8)])
 }
@@ -341,7 +341,7 @@ pub(crate) fn hash_leaf<H: FixedLengthCRH, L: ToBytes>(
 ) -> Result<H::Output, crate::Error> {
     buffer
         .iter_mut()
-        .zip(&algebra_core::to_bytes![leaf]?)
+        .zip(&ark_ff::to_bytes![leaf]?)
         .for_each(|(b, l_b)| *b = *l_b);
     H::evaluate(parameters, &buffer[..(H::INPUT_SIZE_BITS / 8)])
 }

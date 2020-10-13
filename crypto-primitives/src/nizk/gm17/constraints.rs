@@ -2,7 +2,8 @@ use crate::{
     nizk::{gm17::Gm17, NIZKVerifierGadget},
     Vec,
 };
-use algebra_core::{AffineCurve, PairingEngine, ToConstraintField};
+use ark_ec::{AffineCurve, PairingEngine, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_relations::r1cs::{ConstraintSynthesizer, Namespace, SynthesisError};
 use r1cs_std::prelude::*;
 

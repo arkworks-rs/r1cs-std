@@ -1,10 +1,11 @@
 use crate::{Error, Vec};
-use algebra_core::{
+use ark_ff::{
     bytes::ToBytes,
-    io::{Result as IoResult, Write},
-    BitIteratorLE, Field, FpParameters, PrimeField, ProjectiveCurve, ToConstraintField,
+    BitIteratorLE, Field, FpParameters, PrimeField, ToConstraintField,
     UniformRand,
 };
+use ark_ec::ProjectiveCurve;
+use ark_std::io::{Result as IoResult, Write};
 
 use core::marker::PhantomData;
 use rand::Rng;
@@ -119,7 +120,7 @@ impl<ConstraintF: Field, C: ProjectiveCurve + ToConstraintField<ConstraintF>>
     ToConstraintField<ConstraintF> for Parameters<C>
 {
     #[inline]
-    fn to_field_elements(&self) -> Result<Vec<ConstraintF>, Error> {
-        Ok(Vec::new())
+    fn to_field_elements(&self) -> Option<Vec<ConstraintF>> {
+        Some(Vec::new())
     }
 }
