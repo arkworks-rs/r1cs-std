@@ -42,9 +42,9 @@ impl<F: Field> UInt8<F> {
     /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use algebra::bls12_381::Fr;
+    /// use ark_test_curves::bls12_381::Fr;
     /// use ark_relations::r1cs::*;
-    /// use r1cs_std::prelude::*;
+    /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let var = vec![UInt8::new_witness(cs.clone(), || Ok(2))?];
@@ -70,9 +70,9 @@ impl<F: Field> UInt8<F> {
     /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use algebra::bls12_381::Fr;
+    /// use ark_test_curves::bls12_381::Fr;
     /// use ark_relations::r1cs::*;
-    /// use r1cs_std::prelude::*;
+    /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let var = UInt8::new_witness(cs.clone(), || Ok(2))?;
@@ -125,9 +125,9 @@ impl<F: Field> UInt8<F> {
     /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use algebra::bls12_381::Fr;
+    /// use ark_test_curves::bls12_381::Fr;
     /// use ark_relations::r1cs::*;
-    /// use r1cs_std::prelude::*;
+    /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let two = UInt8::new_witness(cs.clone(), || Ok(2))?;
@@ -178,9 +178,9 @@ impl<F: Field> UInt8<F> {
     /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use algebra::bls12_381::Fr;
+    /// use ark_test_curves::bls12_381::Fr;
     /// use ark_relations::r1cs::*;
-    /// use r1cs_std::prelude::*;
+    /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let var = UInt8::new_witness(cs.clone(), || Ok(128))?;
@@ -223,9 +223,9 @@ impl<F: Field> UInt8<F> {
     /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use algebra::bls12_381::Fr;
+    /// use ark_test_curves::bls12_381::Fr;
     /// use ark_relations::r1cs::*;
-    /// use r1cs_std::prelude::*;
+    /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
@@ -312,8 +312,8 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
 mod test {
     use super::UInt8;
     use crate::{prelude::*, Vec};
-    use ark_bls12_381::Fr;
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
+    use ark_test_curves::bls12_381::Fr;
     use rand::{Rng, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -374,8 +374,8 @@ mod test {
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {
-                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
-                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
+                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
+                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
                     _ => unreachable!(),
                 }
             }

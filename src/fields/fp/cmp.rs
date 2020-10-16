@@ -158,9 +158,9 @@ mod test {
     use std::cmp::Ordering;
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
-    use ark_bls12_381::Fr;
     use ark_ff::{PrimeField, UniformRand};
     use ark_relations::r1cs::ConstraintSystem;
+    use ark_test_curves::bls12_381::Fr;
 
     #[test]
     fn test_cmp() {
@@ -190,12 +190,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                },
+                }
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             if i == 0 {
@@ -216,12 +216,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                },
+                }
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                },
-                _ => {},
+                }
+                _ => {}
             }
 
             assert!(!cs.is_satisfied().unwrap());

@@ -9,40 +9,40 @@ use crate::{prelude::*, Assignment};
 
 /// This module contains a generic implementation of cubic extension field
 /// variables. That is, it implements the R1CS equivalent of
-/// `algebra_core::CubicExtField`.
+/// `ark_ff::CubicExtField`.
 pub mod cubic_extension;
 /// This module contains a generic implementation of quadratic extension field
 /// variables. That is, it implements the R1CS equivalent of
-/// `algebra_core::QuadExtField`.
+/// `ark_ff::QuadExtField`.
 pub mod quadratic_extension;
 
 /// This module contains a generic implementation of prime field variables.
-/// That is, it implements the R1CS equivalent of `algebra_core::Fp*`.
+/// That is, it implements the R1CS equivalent of `ark_ff::Fp*`.
 pub mod fp;
 
 /// This module contains a generic implementation of the degree-12 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::Fp12`
+/// `ark_ff::Fp12`
 pub mod fp12;
 /// This module contains a generic implementation of the degree-2 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::Fp2`
+/// `ark_ff::Fp2`
 pub mod fp2;
 /// This module contains a generic implementation of the degree-3 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::Fp3`
+/// `ark_ff::Fp3`
 pub mod fp3;
 /// This module contains a generic implementation of the degree-4 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::Fp4`
+/// `ark_ff::Fp4`
 pub mod fp4;
 /// This module contains a generic implementation of the degree-6 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::fp6_2over3::Fp6`
+/// `ark_ff::fp6_2over3::Fp6`
 pub mod fp6_2over3;
 /// This module contains a generic implementation of the degree-6 tower
 /// extension field. That is, it implements the R1CS equivalent of
-/// `algebra_core::fp6_3over2::Fp6`
+/// `ark_ff::fp6_3over2::Fp6`
 pub mod fp6_3over2;
 
 /// This trait is a hack used to work around the lack of implied bounds.

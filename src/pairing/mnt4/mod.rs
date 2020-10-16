@@ -19,7 +19,7 @@ pub struct PairingVar<P: MNT4Parameters>(PhantomData<P>);
 
 type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Params>;
 type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Params>;
-/// A variable corresponding to `algebra_core::mnt4::GT`.
+/// A variable corresponding to `ark_ec::mnt4::GT`.
 pub type GTVar<P> = Fp4G<P>;
 
 impl<P: MNT4Parameters> PairingVar<P> {

@@ -3,7 +3,7 @@ use ark_ff::fields::{fp6_2over3::*, QuadExtParameters};
 
 /// A sextic extension field constructed as the tower of a
 /// quadratic extension over a cubic extension field.
-/// This is the R1CS equivalent of `algebra_core::fp6_2over3::Fp6<P>`.
+/// This is the R1CS equivalent of `ark_ff::fp6_2over3::Fp6<P>`.
 pub type Fp6Var<P> = QuadExtVar<Fp3Var<<P as Fp6Parameters>::Fp3Params>, Fp6ParamsWrapper<P>>;
 
 impl<P: Fp6Parameters> QuadExtVarParams<Fp3Var<P::Fp3Params>> for Fp6ParamsWrapper<P> {

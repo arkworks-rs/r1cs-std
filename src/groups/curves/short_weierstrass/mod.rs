@@ -209,7 +209,7 @@ where
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
-            },
+            }
             _ => (
                 Err(SynthesisError::AssignmentMissing),
                 Err(SynthesisError::AssignmentMissing),
@@ -626,7 +626,7 @@ where
                     ge.enforce_equal(&ge)?;
                     Ok(ge)
                 }
-            },
+            }
         }
     }
 }

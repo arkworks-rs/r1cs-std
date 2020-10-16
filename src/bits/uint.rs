@@ -357,7 +357,7 @@ macro_rules! make_uint {
             mod test {
                 use super::$name;
                 use crate::{bits::boolean::Boolean, prelude::*, Vec};
-                use ark_bls12_381::Fr;
+                use ark_test_curves::bls12_381::Fr;
                 use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
                 use rand::{Rng, SeedableRng};
                 use rand_xorshift::XorShiftRng;

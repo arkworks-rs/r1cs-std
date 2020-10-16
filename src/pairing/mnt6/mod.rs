@@ -18,7 +18,7 @@ pub struct PairingVar<P: MNT6Parameters>(PhantomData<P>);
 
 type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Params>;
 type Fp6G<P> = Fp6Var<<P as MNT6Parameters>::Fp6Params>;
-/// A variable corresponding to `algebra_core::mnt6::GT`.
+/// A variable corresponding to `ark_ec::mnt6::GT`.
 pub type GTVar<P> = Fp6G<P>;
 
 impl<P: MNT6Parameters> PairingVar<P> {
