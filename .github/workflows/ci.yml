@@ -117,14 +117,5 @@ jobs:
 
       - name: r1cs-std
         run: |
-          cd r1cs-std
-          cargo build -p r1cs-std --no-default-features --target aarch64-unknown-none
-          cargo check --examples -p r1cs-std --no-default-features --target aarch64-unknown-none
-          cd ..
-
-      - name: crypto-primitives
-        run: |
-          cd crypto-primitives
-          cargo build -p crypto-primitives --no-default-features --target aarch64-unknown-none
-          cargo check --examples -p crypto-primitives --no-default-features --target aarch64-unknown-none
-          cd ..
+          cargo build --no-default-features --target aarch64-unknown-none
+          cargo check --examples --no-default-features --target aarch64-unknown-none
