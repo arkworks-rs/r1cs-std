@@ -1,0 +1,73 @@
+[package]
+name = "ark-nonnative-field"
+version = "0.0.4"
+authors = [
+    "Weikeng Chen",
+    "Alessandro Chiesa",
+    "Emma Dauterman",
+    "Nicholas Ward"
+]
+description = "Constraints for nonnative field gadgets"
+homepage = "https://libzexe.org"
+repository = "https://github.com/scipr/zexe"
+documentation = "https://docs.rs/zexe/"
+keywords = ["r1cs", "nonnative"]
+categories = ["cryptography"]
+include = ["Cargo.toml", "src", "tests", "README.md"]
+license = "MIT/Apache-2.0"
+edition = "2018"
+
+[profile.release]
+debug = true
+
+[profile.test]
+opt-level = 3
+lto = "thin"
+incremental = true
+
+[profile.bench]
+opt-level = 3
+lto = "fat"
+incremental = true
+debug = false
+rpath = false
+debug-assertions = false
+
+################################# Dependencies ################################
+
+[dependencies]
+rand = "0.7"
+derivative = "2"
+
+tracing-subscriber = { version = "0.2" }
+tracing = { version = "0.1", default-features = false }
+
+ark-ff = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
+ark-ec = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
+ark-std = { git = "https://github.com/arkworks-rs/utils", default-features = false }
+ark-relations = { git = "https://github.com/arkworks-rs/snark", default-features = false }
+ark-r1cs-std = { git = "https://github.com/arkworks-rs/r1cs-std", default-features = false  }
+
+rand_core = { version = "0.5" }
+num-traits = { version = "0.2", default-features = false }
+num-bigint = "0.3.0"
+
+[dev-dependencies]
+criterion = "0.3"
+rand_xorshift = { version = "0.2" }
+paste = "1.0"
+ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
+ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
+ark-mnt4-753 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
+ark-mnt6-298 = { git = "https://github.com/arkworks-rs/curves", default-features = false  }
+ark-mnt6-753 = { git = "https://github.com/arkworks-rs/curves", default-features = false  }
+
+[features]
+default = []
+std = [ "ark-std/std", "ark-ff/std", "ark-ec/std", "ark-relations/std", "ark-r1cs-std/std" ]
+parallel = [ "std", "ark-ff/parallel", "ark-std/parallel", "ark-ec/parallel", "ark-r1cs-std/parallel" ]
+
+[[bench]]
+name = "nonnative-bench"
+path = "benches/bench.rs"
+harness = false
