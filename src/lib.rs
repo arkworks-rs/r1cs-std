@@ -1,12 +1,3 @@
-#![deny(unused_import_braces, unused_qualifications, trivial_casts)]
-#![deny(trivial_numeric_casts, variant_size_differences, unreachable_pub)]
-#![deny(non_shorthand_field_patterns, unused_attributes, unused_imports)]
-#![deny(unused_extern_crates, renamed_and_removed_lints, unused_allocation)]
-#![deny(unused_comparisons, bare_trait_objects, const_err, unused_must_use)]
-#![deny(unused_mut, unused_unsafe, private_in_public, unsafe_code)]
-#![deny(missing_docs)]
-#![forbid(unsafe_code)]
-
 //! This library provides the non-native field gadget for the Zexe constraint-writing platform.
 //! The non-native field gadget can be used as a standard FieldVar, given a reasonable non-native gadget parameters.
 //!
@@ -17,6 +8,20 @@
 //! - NonNativeFieldMulResultVar is an intermediate representations of the result of multiplication, which is hidden from the FieldVar interface and is left for advanced users who want better performance.
 //!
 //! The Python script mentioned above can be found in the subdirectory `scripts`.
+
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#![deny(
+    warnings,
+    unused,
+    future_incompatible,
+    nonstandard_style,
+    rust_2018_idioms,
+    missing_docs,
+)]
+#![allow(clippy::redundant_closure_call)]
+#![forbid(unsafe_code)]
 
 #[macro_use]
 extern crate ark_r1cs_std;
@@ -40,7 +45,7 @@ use ark_relations::{
     lc,
     r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError},
 };
-use core::{borrow::Borrow, cmp::max, fmt::Debug, marker::PhantomData};
+use ark_std::{borrow::Borrow, cmp::max, fmt::Debug, marker::PhantomData, vec::Vec, vec};
 
 /// example parameters of non-native field gadget
 ///
@@ -181,8 +186,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Clone
         AllocatedNonNativeFieldVar {
             cs: self.cs.clone(),
             limbs: self.limbs.clone(),
-            num_of_additions_over_normal_form: self.num_of_additions_over_normal_form.clone(),
-            is_in_the_normal_form: self.is_in_the_normal_form.clone(),
+            num_of_additions_over_normal_form: self.num_of_additions_over_normal_form,
+            is_in_the_normal_form: self.is_in_the_normal_form,
             target_phantom: PhantomData,
         }
     }
@@ -246,7 +251,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         let mut res = Self {
             cs: self.cs.clone(),
-            limbs: limbs,
+            limbs,
             num_of_additions_over_normal_form: self
                 .num_of_additions_over_normal_form
                 .add(&other.num_of_additions_over_normal_form)
@@ -272,7 +277,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         let mut res = Self {
             cs: self.cs.clone(),
-            limbs: limbs,
+            limbs,
             num_of_additions_over_normal_form: self
                 .num_of_additions_over_normal_form
                 .add(&BaseField::one()),
@@ -355,7 +360,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             .is_eq(&one)?
             .enforce_equal(&Boolean::constant(true))?;
 
-        return Ok(inverse);
+        Ok(inverse)
     }
 
     /// Convert a TargetField element into limbs (not constraints)
@@ -425,8 +430,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         let mut other_reduced = other.clone();
         Reducer::<TargetField, BaseField>::pre_mul_reduce(&mut self_reduced, &mut other_reduced)?;
 
-        let x_num_of_additions = self_reduced.num_of_additions_over_normal_form.clone();
-        let y_num_of_additions = other_reduced.num_of_additions_over_normal_form.clone();
+        let x_num_of_additions = self_reduced.num_of_additions_over_normal_form;
+        let y_num_of_additions = other_reduced.num_of_additions_over_normal_form;
 
         let x: Vec<BaseField> = self_reduced
             .limbs
@@ -791,7 +796,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
         Ok(Self {
             cs: cs.clone(),
             limbs,
-            num_of_additions_over_normal_form: num_of_additions_over_normal_form,
+            num_of_additions_over_normal_form,
             is_in_the_normal_form: mode != AllocationMode::Witness,
             target_phantom: PhantomData,
         })
@@ -1343,8 +1348,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(Self {
             cs: self.cs.clone(),
             limbs: new_limbs,
-            prod_of_num_of_additions: self.prod_of_num_of_additions.clone()
-                + &other.prod_of_num_of_additions,
+            prod_of_num_of_additions: self.prod_of_num_of_additions
+                + other.prod_of_num_of_additions,
             target_phantom: PhantomData,
         })
     }
@@ -1374,7 +1379,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(Self {
             cs: self.cs.clone(),
             limbs: new_limbs,
-            prod_of_num_of_additions: self.prod_of_num_of_additions.clone() + &BaseField::one(),
+            prod_of_num_of_additions: self.prod_of_num_of_additions + &BaseField::one(),
             target_phantom: PhantomData,
         })
     }
@@ -1397,10 +1402,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     #[tracing::instrument(target = "r1cs")]
     pub fn reduce(&self) -> Result<NonNativeFieldVar<TargetField, BaseField>, SynthesisError> {
         match self {
-            NonNativeFieldMulResultVar::Constant(c) => {
-                Ok(NonNativeFieldVar::Constant((*c).clone()))
-            }
-            NonNativeFieldMulResultVar::Var(v) => Ok(NonNativeFieldVar::Var(v.reduce()?)),
+            Self::Constant(c) => Ok(NonNativeFieldVar::Constant(*c)),
+            Self::Var(v) => Ok(NonNativeFieldVar::Var(v.reduce()?)),
         }
     }
 }

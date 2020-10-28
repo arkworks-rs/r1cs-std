@@ -10,7 +10,7 @@ use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use rand::thread_rng;
-use rand_core::RngCore;
+use rand::RngCore;
 
 const NUM_REPETITIONS: usize = 100;
 const TEST_COUNT: usize = 100;

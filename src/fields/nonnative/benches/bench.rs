@@ -1,11 +1,11 @@
-use crate::NonNativeFieldVar;
+use ark_nonnative_field::NonNativeFieldVar;
 use ark_ff::PrimeField;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::fields::FieldVar;
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use curves::{bls12_381, mnt4_298, mnt4_753, mnt6_298, mnt6_753};
 use rand::thread_rng;
-use rand_core::RngCore;
+use rand::RngCore;
 
 const NUM_REPETITIONS: usize = 100;
 
