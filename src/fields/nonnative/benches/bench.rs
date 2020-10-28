@@ -1,5 +1,5 @@
-use ark_nonnative_field::NonNativeFieldVar;
 use ark_ff::PrimeField;
+use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::eq::EqGadget;
 use ark_r1cs_std::fields::FieldVar;
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};

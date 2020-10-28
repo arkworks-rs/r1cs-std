@@ -3,9 +3,9 @@ use ark_ff::PrimeField;
 use ark_relations::r1cs::ConstraintSystemRef;
 use ark_std::{
     any::{Any, TypeId},
+    boxed::Box,
     cmp::min,
     collections::BTreeMap,
-    boxed::Box,
 };
 
 /// The type for a cache map for parameters
@@ -277,7 +277,7 @@ impl ParamsSearching {
                         continue;
                     }
                 } else if !(2 * (non_top_limb_size + 1) + log_sub_top_limb
-                        < base_field_prime_length - 1)
+                    < base_field_prime_length - 1)
                 {
                     continue;
                 }

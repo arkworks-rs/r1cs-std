@@ -9,16 +9,14 @@
 //!
 //! The Python script mentioned above can be found in the subdirectory `scripts`.
 
-
 #![cfg_attr(not(feature = "std"), no_std)]
-
 #![deny(
     warnings,
     unused,
     future_incompatible,
     nonstandard_style,
     rust_2018_idioms,
-    missing_docs,
+    missing_docs
 )]
 #![allow(clippy::redundant_closure_call)]
 #![forbid(unsafe_code)]
@@ -45,7 +43,7 @@ use ark_relations::{
     lc,
     r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError},
 };
-use ark_std::{borrow::Borrow, cmp::max, fmt::Debug, marker::PhantomData, vec::Vec, vec};
+use ark_std::{borrow::Borrow, cmp::max, fmt::Debug, marker::PhantomData, vec, vec::Vec};
 
 /// example parameters of non-native field gadget
 ///

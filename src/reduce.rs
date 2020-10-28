@@ -15,7 +15,8 @@ use ark_relations::{
 use ark_std::{
     cmp::{max, min},
     marker::PhantomData,
-    vec::Vec, vec
+    vec,
+    vec::Vec,
 };
 use num_bigint::BigUint;
 
