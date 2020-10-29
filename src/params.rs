@@ -90,8 +90,8 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
             let mut big_map = cs_sys.cache_map.borrow_mut();
             let small_map = big_map.get(&TypeId::of::<ParamsMap>());
 
-            if small_map.is_some() {
-                match small_map.unwrap().downcast_ref::<ParamsMap>() {
+            if let Some(small_map) = small_map {
+                match small_map.downcast_ref::<ParamsMap>() {
                     Some(map) => {
                         let params =
                             map.get(&(BaseField::size_in_bits(), TargetField::size_in_bits()));
@@ -239,36 +239,35 @@ impl ParamsSearching {
                         / (self.num_of_limbs - 1);
 
                 // top limb must be smaller; otherwise, the top limb is too long
-                if !(top_limb_size <= non_top_limb_size) {
+                if top_limb_size > non_top_limb_size {
                     break;
                 }
 
                 // post-add reduce must succeed; otherwise, the top limb is too long
-                if !(2 * (top_limb_size + 5) < base_field_prime_length) {
+                if 2 * (top_limb_size + 5) >= base_field_prime_length {
                     break;
                 }
-                if !(2 * (non_top_limb_size + 5) < base_field_prime_length) {
+                if 2 * (non_top_limb_size + 5) >= base_field_prime_length {
                     continue;
                 }
 
                 // computation on the top limb works
-                if 2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size + 1
-                    >= 2 * (non_top_limb_size + 1) + log_sub_top_limb + 1
+                if 2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size
+                    >= 2 * (non_top_limb_size + 1) + log_sub_top_limb
                 {
-                    if !(2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size
-                        < base_field_prime_length - 1)
+                    if 2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size
+                        >= base_field_prime_length - 1
                     {
                         continue;
                     }
-                } else if !(2 * (non_top_limb_size + 1) + log_sub_top_limb
-                    < base_field_prime_length - 1)
+                } else if 2 * (non_top_limb_size + 1) + log_sub_top_limb
+                    >= base_field_prime_length - 1
                 {
                     continue;
                 }
 
                 // computation on the non-top limb works
-                if !(2 * non_top_limb_size + log_other_limbs_upper_bound
-                    <= base_field_prime_length - 1)
+                if 2 * non_top_limb_size + log_other_limbs_upper_bound > base_field_prime_length - 1
                 {
                     continue;
                 }
@@ -281,7 +280,7 @@ impl ParamsSearching {
                         * (2 * (non_top_limb_size + 1) + log_other_limbs_upper_bound)
                     - target_field_prime_bit_length;
 
-                if flag == false || this_cost < cost {
+                if !flag || this_cost < cost {
                     flag = true;
                     cost = this_cost;
                     current_top_limb_size = Some(top_limb_size);
@@ -289,7 +288,7 @@ impl ParamsSearching {
                 }
             }
 
-            if flag == false {
+            if !flag {
                 self.num_of_limbs += 1;
                 self.num_of_additions_after_mul = 1;
                 continue;

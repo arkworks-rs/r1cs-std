@@ -10,7 +10,7 @@ use ark_r1cs_std::{
 };
 use ark_relations::{
     lc,
-    r1cs::{LinearCombination, SynthesisError},
+    r1cs::{LinearCombination, Result as R1CSResult},
 };
 use ark_std::{
     cmp::{max, min},
@@ -33,7 +33,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn can_safely_push(elem: &AllocatedNonNativeFieldVar<TargetField, BaseField>) -> bool {
         let params = get_params::<TargetField, BaseField>(&elem.cs);
 
-        let log = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
+        let log = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
         BaseField::size_in_bits() > params.bits_per_non_top_limb + log + 1
     }
 
@@ -45,9 +45,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     ) -> bool {
         let params = get_params::<TargetField, BaseField>(&elem.cs);
 
-        let prod_of_num_of_additions = (elem.num_of_additions_over_normal_form.clone()
-            + &BaseField::one())
-            * &(other.num_of_additions_over_normal_form.clone() + &BaseField::one());
+        let prod_of_num_of_additions = (elem.num_of_additions_over_normal_form + BaseField::one())
+            * (other.num_of_additions_over_normal_form + BaseField::one());
 
         let bits_per_top_limb = params.bits_per_top_limb;
         let bits_per_non_top_limb = params.bits_per_non_top_limb;
@@ -77,7 +76,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn limb_to_bits(
         limb: &AllocatedFp<BaseField>,
         num_bits: usize,
-    ) -> Result<Vec<Boolean<BaseField>>, SynthesisError> {
+    ) -> R1CSResult<Vec<Boolean<BaseField>>> {
         let cs = limb.cs.clone();
 
         let num_bits = min(BaseField::size_in_bits() - 1, num_bits);
@@ -117,13 +116,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// Use the `sum of resides` method to reduce the representations, without firstly pushing it to the top
     pub fn reduce_all_limbs(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(), SynthesisError> {
+    ) -> R1CSResult<()> {
         let cs = elem.cs.clone();
         let params = get_params::<TargetField, BaseField>(&cs);
 
         // almost only used for mandatory reduce, since the values are not pushed first (pushing first provides better efficiency)
         let mut limb_bits = Vec::new();
-        let surfeit = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
+        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
         for (i, limb) in elem.limbs.iter().enumerate() {
             if i == 0 {
                 // the top limb
@@ -219,7 +218,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 }
 
                 for (k, power_of_2_coeff) in power_of_2.iter().enumerate() {
-                    limbs_lc[k] = &limbs_lc[k] + &(bit.lc() * power_of_2_coeff.clone());
+                    limbs_lc[k] = &limbs_lc[k] + &(bit.lc() * *power_of_2_coeff);
                 }
             }
         }
@@ -245,18 +244,15 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// A subprocedure of the common reduction, which firstly pushes the representations to the top
     pub fn push_to_the_top(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<
-        (
-            Vec<Boolean<BaseField>>,
-            Vec<BaseField>,
-            Vec<LinearCombination<BaseField>>,
-        ),
-        SynthesisError,
-    > {
+    ) -> R1CSResult<(
+        Vec<Boolean<BaseField>>,
+        Vec<BaseField>,
+        Vec<LinearCombination<BaseField>>,
+    )> {
         let cs = elem.cs.clone();
         let params = get_params::<TargetField, BaseField>(&cs);
 
-        let surfeit = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
+        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
         let surfeit_plus_one = surfeit + 1; // one more bit is added as a result of pushing
 
         let mut limbs_value = Vec::<BaseField>::new();
@@ -370,11 +366,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// A subprocedure of the common reduction, which pushes the representations to the top and keeps the new top unreduced.
     pub fn push_to_the_top_keep_top(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(Vec<BaseField>, Vec<LinearCombination<BaseField>>), SynthesisError> {
+    ) -> R1CSResult<(Vec<BaseField>, Vec<LinearCombination<BaseField>>)> {
         let cs = elem.cs.clone();
         let params = get_params::<TargetField, BaseField>(&cs);
 
-        let surfeit = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
+        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
         let surfeit_plus_one = surfeit + 1; // one more bit is added as a result of pushing
 
         let mut limbs_value = Vec::<BaseField>::new();
@@ -460,8 +456,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// A full reduction procedure, which pushes the representations to the top first and then reduces it
     pub fn push_and_reduce_the_top(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(), SynthesisError> {
-        let surfeit = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
+    ) -> R1CSResult<()> {
+        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
         let cs = elem.cs.clone();
 
         let params = get_params::<TargetField, BaseField>(&cs);
@@ -502,7 +498,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             }
 
             for (j, power_of_2_coeff) in power_of_2.iter().enumerate() {
-                limbs_lc[j] = &limbs_lc[j] + &(bit.lc() * power_of_2_coeff.clone());
+                limbs_lc[j] = &limbs_lc[j] + &(bit.lc() * *power_of_2_coeff);
             }
         }
 
@@ -531,7 +527,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// Reduction to be enforced after additions
     pub fn post_add_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(), SynthesisError> {
+    ) -> R1CSResult<()> {
         if Self::can_safely_push(elem) {
             Ok(())
         } else {
@@ -543,7 +539,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn pre_mul_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
         elem_other: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(), SynthesisError> {
+    ) -> R1CSResult<()> {
         let params = get_params::<TargetField, BaseField>(&elem.cs);
 
         if (2 * params.bits_per_top_limb + params.bits_per_non_top_limb + 1
@@ -570,7 +566,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// Reduction to the normal form
     pub fn pre_eq_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-    ) -> Result<(), SynthesisError> {
+    ) -> R1CSResult<()> {
         let cs = elem.cs.clone();
         let params = get_params::<TargetField, BaseField>(&cs);
 
@@ -617,8 +613,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 let limb_repr = limb.into_repr().to_bits();
                 let mut small_cur = big_cur.clone();
                 for limb_bit in limb_repr.iter().rev() {
-                    if *limb_bit == true {
-                        val = val + &small_cur;
+                    if *limb_bit {
+                        val += &small_cur;
                     }
                     small_cur *= 2u32;
                 }
@@ -640,7 +636,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 let bytes_basefield =
                     BaseField::from_repr(<BaseField as PrimeField>::BigInt::from(*byte as u64))
                         .unwrap();
-                val = val + &(cur * &bytes_basefield);
+                val += cur * bytes_basefield;
 
                 cur *= &basefield_256;
             }
@@ -671,7 +667,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         let kp_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
             cs: elem.cs.clone(),
             limbs: kp_gadget_limbs,
-            num_of_additions_over_normal_form: elem.num_of_additions_over_normal_form.clone(),
+            num_of_additions_over_normal_form: elem.num_of_additions_over_normal_form,
             is_in_the_normal_form: false,
             target_phantom: PhantomData,
         };
