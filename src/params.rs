@@ -201,26 +201,21 @@ impl ParamsSearching {
             } = self.clone();
 
             let mut min_overhead =
-                ((2 * num_of_limbs - 3) * (4 + ((num_of_limbs as f64).log2().ceil()) as usize)) + 5;
+                ((2 * num_of_limbs - 3) * (4 + ark_std::log2(num_of_limbs) as usize)) + 5;
             if min_overhead > target_field_prime_bit_length {
                 min_overhead -= target_field_prime_bit_length;
                 min_overhead = ((2 * num_of_limbs - 3)
-                    * (4 + (((num_of_limbs * min_overhead * min_overhead) as f64)
-                        .log2()
-                        .ceil()) as usize))
+                    * (4 + (ark_std::log2(num_of_limbs * min_overhead * min_overhead) as usize)))
                     + 5;
 
                 if min_overhead > target_field_prime_bit_length {
                     min_overhead -= target_field_prime_bit_length;
 
-                    if (((num_of_limbs * min_overhead * min_overhead) as f64)
-                        .log2()
-                        .ceil() as usize)
-                        + 3
+                    if (ark_std::log2(num_of_limbs * min_overhead * min_overhead) as usize) + 3
                         >= base_field_prime_length
                     {
                         #[cfg(feature = "std")]
-                        dbg!(format!("The program has tested up to {} limbs; at this point, we can conclude that no suitable parameters exist", num_of_limbs););
+                        dbg!(format!("The program has tested up to {} limbs; at this point, we can conclude that no suitable parameters exist", num_of_limbs));
                         self.top_limb_size = None;
                         self.non_top_limb_size = None;
                         return;
@@ -228,21 +223,10 @@ impl ParamsSearching {
                 }
             }
 
-            let log_top_limb =
-                ((1 + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1)) as f64)
-                    .log2()
-                    .ceil() as usize;
-            let log_sub_top_limb = ((1
-                + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1) * 2)
-                as f64)
-                .log2()
-                .ceil() as usize;
-            let log_other_limbs_upper_bound = ((1
-                + (num_of_additions_after_mul + 1)
-                    * (num_of_additions_after_mul + 1)
-                    * num_of_limbs) as f64)
-                .log2()
-                .ceil() as usize;
+            let top_limb = 1 + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1);
+            let log_top_limb = ark_std::log2(top_limb) as usize;
+            let log_sub_top_limb = ark_std::log2(top_limb * 2) as usize;
+            let log_other_limbs_upper_bound = ark_std::log2(top_limb * num_of_limbs) as usize;
 
             let mut flag = false;
             let mut cost = 0usize;

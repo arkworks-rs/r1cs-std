@@ -548,8 +548,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
 
         if (2 * params.bits_per_top_limb + params.bits_per_non_top_limb + 1
             > BaseField::size_in_bits() - 1)
-            || (2 * params.bits_per_non_top_limb
-                + f64::from(params.num_limbs as u32).log2().ceil() as usize
+            || (2 * params.bits_per_non_top_limb + ark_std::log2(params.num_limbs) as usize
                 > BaseField::size_in_bits() - 1)
         {
             panic!("The current limb parameters do not support multiplication.");
