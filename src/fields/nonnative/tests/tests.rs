@@ -9,8 +9,7 @@ use ark_mnt6_753::MNT6_753;
 use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
-use rand::thread_rng;
-use rand_core::RngCore;
+use rand::RngCore;
 
 const NUM_REPETITIONS: usize = 100;
 const TEST_COUNT: usize = 100;
@@ -336,7 +335,7 @@ fn addition_stress_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCo
     for _ in 0..TEST_COUNT {
         let next_native = TargetField::rand(rng);
         let next = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next num for repetition"),
             || Ok(next_native),
         )
         .unwrap();
@@ -360,7 +359,7 @@ fn multiplication_stress_test<TargetField: PrimeField, BaseField: PrimeField, R:
     for _ in 0..TEST_COUNT {
         let next_native = TargetField::rand(rng);
         let next = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next num for repetition"),
             || Ok(next_native),
         )
         .unwrap();
@@ -384,13 +383,13 @@ fn mul_and_add_stress_test<TargetField: PrimeField, BaseField: PrimeField, R: Rn
     for _ in 0..TEST_COUNT {
         let next_add_native = TargetField::rand(rng);
         let next_add = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next to add num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next to add num for repetition"),
             || Ok(next_add_native),
         )
         .unwrap();
         let next_mul_native = TargetField::rand(rng);
         let next_mul = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next to mul num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next to mul num for repetition"),
             || Ok(next_mul_native),
         )
         .unwrap();
@@ -415,13 +414,13 @@ fn square_mul_add_stress_test<TargetField: PrimeField, BaseField: PrimeField, R:
     for _ in 0..TEST_COUNT {
         let next_add_native = TargetField::rand(rng);
         let next_add = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next to add num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next to add num for repetition"),
             || Ok(next_add_native),
         )
         .unwrap();
         let next_mul_native = TargetField::rand(rng);
         let next_mul = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("next to mul num for repetition {}", rep)),
+            ark_relations::ns!(cs, "next to mul num for repetition"),
             || Ok(next_mul_native),
         )
         .unwrap();
@@ -498,7 +497,7 @@ fn double_stress_test_3<TargetField: PrimeField, BaseField: PrimeField, R: RngCo
         let num_square_native = num_native * &num_native;
         let num_square = &num * &num;
         let num_square_native_gadget = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-            ark_relations::ns!(cs, format!("repetition {}: alloc_native num", rep)),
+            ark_relations::ns!(cs, "repetition: alloc_native num"),
             || Ok(num_square_native),
         )
         .unwrap();
@@ -535,8 +534,7 @@ macro_rules! nonnative_test_individual {
         paste::item! {
             #[test]
             fn [<$test_method _ $test_name:lower>]() {
-                let rng = &mut thread_rng();
-
+                let rng = &mut ark_ff::test_rng();
                 /*{
                     let cs = ConstraintSystem::<$test_base_field>::new();
                     let cs_ref = ConstraintSystemRef::new(cs);
@@ -548,10 +546,9 @@ macro_rules! nonnative_test_individual {
                 }*/
 
                 for _ in 0..NUM_REPETITIONS {
-                    let cs = ConstraintSystem::<$test_base_field>::new();
-                    let cs_ref = ConstraintSystemRef::new(cs);
-                    $test_method::<$test_target_field, $test_base_field, _>(cs_ref.clone(), rng);
-                    assert!(cs_ref.is_satisfied().unwrap());
+                    let cs = ConstraintSystem::<$test_base_field>::new_ref();
+                    $test_method::<$test_target_field, $test_base_field, _>(cs.clone(), rng);
+                    assert!(cs.is_satisfied().unwrap());
                 }
             }
         }

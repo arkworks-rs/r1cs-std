@@ -1,11 +1,9 @@
-use crate::NonNativeFieldVar;
+use ark_ff::test_rng as thread_rng;
 use ark_ff::PrimeField;
-use ark_r1cs_std::eq::EqGadget;
-use ark_r1cs_std::fields::FieldVar;
+use ark_nonnative_field::NonNativeFieldVar;
+use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
-use curves::{bls12_381, mnt4_298, mnt4_753, mnt6_298, mnt6_753};
-use rand::thread_rng;
-use rand_core::RngCore;
+use rand::RngCore;
 
 const NUM_REPETITIONS: usize = 100;
 
@@ -173,11 +171,11 @@ macro_rules! nonnative_bench {
 }
 
 fn main() {
-    nonnative_bench!(MNT46Small, mnt4_298::Fr, mnt6_298::Fr);
-    nonnative_bench!(MNT64Small, mnt6_298::Fr, mnt4_298::Fr);
-    nonnative_bench!(MNT46Big, mnt4_753::Fr, mnt6_753::Fr);
-    nonnative_bench!(MNT64Big, mnt6_753::Fr, mnt4_753::Fr);
-    nonnative_bench!(BLS12MNT4Small, bls12_381::Fr, mnt4_298::Fr);
-    nonnative_bench!(BLS12, bls12_381::Fq, bls12_381::Fr);
-    nonnative_bench!(MNT6BigMNT4Small, mnt6_753::Fr, mnt4_298::Fr);
+    nonnative_bench!(MNT46Small, ark_mnt4_298::Fr, ark_mnt6_298::Fr);
+    nonnative_bench!(MNT64Small, ark_mnt6_298::Fr, ark_mnt4_298::Fr);
+    nonnative_bench!(MNT46Big, ark_mnt4_753::Fr, ark_mnt6_753::Fr);
+    nonnative_bench!(MNT64Big, ark_mnt6_753::Fr, ark_mnt4_753::Fr);
+    nonnative_bench!(BLS12MNT4Small, ark_bls12_381::Fr, ark_mnt4_298::Fr);
+    nonnative_bench!(BLS12, ark_bls12_381::Fq, ark_bls12_381::Fr);
+    nonnative_bench!(MNT6BigMNT4Small, ark_mnt6_753::Fr, ark_mnt4_298::Fr);
 }

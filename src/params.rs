@@ -1,10 +1,11 @@
 use crate::NonNativeFieldParams;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::ConstraintSystemRef;
-use ark_std::collections::BTreeMap;
-use core::{
+use ark_std::{
     any::{Any, TypeId},
+    boxed::Box,
     cmp::min,
+    collections::BTreeMap,
 };
 
 /// The type for a cache map for parameters
@@ -38,23 +39,19 @@ impl HitRate {
     pub fn update(pmap: &mut BTreeMap<TypeId, Box<dyn Any>>, hit: bool) {
         let hit_rate = pmap.get(&TypeId::of::<HitRate>());
 
-        if hit_rate.is_some() {
-            match hit_rate.unwrap().downcast_ref::<HitRate>() {
-                Some(stat) => {
-                    let mut hit_rate = (*stat).clone();
-                    if hit {
-                        hit_rate.hit += 1;
-                    } else {
-                        hit_rate.miss += 1;
-                    }
-                    pmap.insert(TypeId::of::<HitRate>(), Box::new(hit_rate));
-                }
-                None => (),
+        if let Some(stat) = hit_rate.and_then(|rate| rate.downcast_ref::<HitRate>()) {
+            let mut hit_rate = (*stat).clone();
+            if hit {
+                hit_rate.hit += 1;
+            } else {
+                hit_rate.miss += 1;
             }
+            pmap.insert(TypeId::of::<HitRate>(), Box::new(hit_rate));
         }
     }
 
     /// Print out the statistics
+    #[cfg(feature = "std")]
     pub fn print<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) {
         match cs {
             ConstraintSystemRef::None => (),
@@ -98,8 +95,8 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
                     Some(map) => {
                         let params =
                             map.get(&(BaseField::size_in_bits(), TargetField::size_in_bits()));
-                        if params.is_some() {
-                            let params = params.unwrap().clone();
+                        if let Some(params) = params {
+                            let params = params.clone();
                             HitRate::update(&mut *big_map, true);
                             params
                         } else {
@@ -204,26 +201,21 @@ impl ParamsSearching {
             } = self.clone();
 
             let mut min_overhead =
-                ((2 * num_of_limbs - 3) * (4 + ((num_of_limbs as f64).log2().ceil()) as usize)) + 5;
+                ((2 * num_of_limbs - 3) * (4 + ark_std::log2(num_of_limbs) as usize)) + 5;
             if min_overhead > target_field_prime_bit_length {
                 min_overhead -= target_field_prime_bit_length;
                 min_overhead = ((2 * num_of_limbs - 3)
-                    * (4 + (((num_of_limbs * min_overhead * min_overhead) as f64)
-                        .log2()
-                        .ceil()) as usize))
+                    * (4 + (ark_std::log2(num_of_limbs * min_overhead * min_overhead) as usize)))
                     + 5;
 
                 if min_overhead > target_field_prime_bit_length {
                     min_overhead -= target_field_prime_bit_length;
 
-                    if (((num_of_limbs * min_overhead * min_overhead) as f64)
-                        .log2()
-                        .ceil() as usize)
-                        + 3
+                    if (ark_std::log2(num_of_limbs * min_overhead * min_overhead) as usize) + 3
                         >= base_field_prime_length
                     {
-                        let debug_msg = format!("The program has tested up to {} limbs; at this point, we can conclude that no suitable parameters exist", num_of_limbs);
-                        dbg!(debug_msg);
+                        #[cfg(feature = "std")]
+                        dbg!(format!("The program has tested up to {} limbs; at this point, we can conclude that no suitable parameters exist", num_of_limbs));
                         self.top_limb_size = None;
                         self.non_top_limb_size = None;
                         return;
@@ -231,21 +223,10 @@ impl ParamsSearching {
                 }
             }
 
-            let log_top_limb =
-                ((1 + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1)) as f64)
-                    .log2()
-                    .ceil() as usize;
-            let log_sub_top_limb = ((1
-                + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1) * 2)
-                as f64)
-                .log2()
-                .ceil() as usize;
-            let log_other_limbs_upper_bound = ((1
-                + (num_of_additions_after_mul + 1)
-                    * (num_of_additions_after_mul + 1)
-                    * num_of_limbs) as f64)
-                .log2()
-                .ceil() as usize;
+            let top_limb = 1 + (num_of_additions_after_mul + 1) * (num_of_additions_after_mul + 1);
+            let log_top_limb = ark_std::log2(top_limb) as usize;
+            let log_sub_top_limb = ark_std::log2(top_limb * 2) as usize;
+            let log_other_limbs_upper_bound = ark_std::log2(top_limb * num_of_limbs) as usize;
 
             let mut flag = false;
             let mut cost = 0usize;
@@ -263,10 +244,10 @@ impl ParamsSearching {
                 }
 
                 // post-add reduce must succeed; otherwise, the top limb is too long
-                if !(2 * (top_limb_size + 5) <= base_field_prime_length - 1) {
+                if !(2 * (top_limb_size + 5) < base_field_prime_length) {
                     break;
                 }
-                if !(2 * (non_top_limb_size + 5) <= base_field_prime_length - 1) {
+                if !(2 * (non_top_limb_size + 5) < base_field_prime_length) {
                     continue;
                 }
 
@@ -274,17 +255,15 @@ impl ParamsSearching {
                 if 2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size + 1
                     >= 2 * (non_top_limb_size + 1) + log_sub_top_limb + 1
                 {
-                    if !(2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size + 1
-                        <= base_field_prime_length - 1)
+                    if !(2 * (top_limb_size + 1) + log_top_limb + non_top_limb_size
+                        < base_field_prime_length - 1)
                     {
                         continue;
                     }
-                } else {
-                    if !(2 * (non_top_limb_size + 1) + log_sub_top_limb + 1
-                        <= base_field_prime_length - 1)
-                    {
-                        continue;
-                    }
+                } else if !(2 * (non_top_limb_size + 1) + log_sub_top_limb
+                    < base_field_prime_length - 1)
+                {
+                    continue;
                 }
 
                 // computation on the non-top limb works

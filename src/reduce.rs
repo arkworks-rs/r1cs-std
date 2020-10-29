@@ -12,9 +12,11 @@ use ark_relations::{
     lc,
     r1cs::{LinearCombination, SynthesisError},
 };
-use core::{
+use ark_std::{
     cmp::{max, min},
     marker::PhantomData,
+    vec,
+    vec::Vec,
 };
 use num_bigint::BigUint;
 
@@ -32,7 +34,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         let params = get_params::<TargetField, BaseField>(&elem.cs);
 
         let log = overhead!(elem.num_of_additions_over_normal_form + &BaseField::one()) + 1;
-        BaseField::size_in_bits() - 1 >= params.bits_per_non_top_limb + log + 1
+        BaseField::size_in_bits() > params.bits_per_non_top_limb + log + 1
     }
 
     /// an internal method for checking whether the current two elements are ready to multiply;
@@ -67,7 +69,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             2 * (bits_per_non_top_limb + 1) + log_other_limbs_upper_bound;
 
         max(bits_per_unreduced_top_limb, bits_per_unreduced_non_top_limb)
-            <= BaseField::size_in_bits() - 1
+            < BaseField::size_in_bits()
     }
 
     /// convert limbs to bits (take at most BaseField::size_in_bits() - 1 bits)
@@ -546,8 +548,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
 
         if (2 * params.bits_per_top_limb + params.bits_per_non_top_limb + 1
             > BaseField::size_in_bits() - 1)
-            || (2 * params.bits_per_non_top_limb
-                + f64::from(params.num_limbs as u32).log2().ceil() as usize
+            || (2 * params.bits_per_non_top_limb + ark_std::log2(params.num_limbs) as usize
                 > BaseField::size_in_bits() - 1)
         {
             panic!("The current limb parameters do not support multiplication.");
