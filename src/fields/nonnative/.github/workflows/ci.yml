@@ -33,7 +33,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      RUSTFLAGS: -Dwarnings
+      RUSTFLAGS: -Dwarnings --cfg ci
     strategy:
       matrix:
         rust:
