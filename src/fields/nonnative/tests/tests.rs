@@ -11,8 +11,15 @@ use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use rand::RngCore;
 
+#[cfg(not(ci))]
 const NUM_REPETITIONS: usize = 100;
+#[cfg(ci)]
+const NUM_REPETITIONS: usize = 1;
+
+#[cfg(not(ci))]
 const TEST_COUNT: usize = 100;
+#[cfg(ci)]
+const TEST_COUNT: usize = 1;
 
 fn allocation_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
@@ -680,6 +687,7 @@ nonnative_test!(
     <Bls12_381 as PairingEngine>::Fq,
     <Bls12_381 as PairingEngine>::Fr
 );
+#[cfg(not(ci))]
 nonnative_test!(
     MNT6BigMNT4Small,
     <MNT6_753 as PairingEngine>::Fr,

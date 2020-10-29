@@ -15,7 +15,7 @@ fn allocation<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
 
     let before = cs.num_constraints();
     // there will be a check that ensures it has the reasonable number of bits
-    NonNativeFieldVar::<TargetField, BaseField>::new_witness(
+    let _ = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
         ark_relations::ns!(cs, "alloc a"),
         || Ok(a_native),
     )
@@ -110,7 +110,7 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     .unwrap();
 
     let before = cs.num_constraints();
-    num.inverse().unwrap();
+    let _ = num.inverse().unwrap();
     let after = cs.num_constraints();
 
     return after - before;
