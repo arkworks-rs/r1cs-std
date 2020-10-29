@@ -79,7 +79,8 @@ impl HitRate {
     }
 }
 
-/// Obtain the parameters from a ConstraintSystem's cache or generate a new one
+/// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
+#[must_use]
 pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
     cs: &ConstraintSystemRef<BaseField>,
 ) -> NonNativeFieldParams {
@@ -91,41 +92,37 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
             let small_map = big_map.get(&TypeId::of::<ParamsMap>());
 
             if let Some(small_map) = small_map {
-                match small_map.downcast_ref::<ParamsMap>() {
-                    Some(map) => {
-                        let params =
-                            map.get(&(BaseField::size_in_bits(), TargetField::size_in_bits()));
-                        if let Some(params) = params {
-                            let params = params.clone();
-                            HitRate::update(&mut *big_map, true);
-                            params
-                        } else {
-                            let params = gen_params::<TargetField, BaseField>();
-
-                            let mut small_map = (*map).clone();
-                            small_map.insert(
-                                (BaseField::size_in_bits(), TargetField::size_in_bits()),
-                                params.clone(),
-                            );
-                            big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
-
-                            HitRate::update(&mut *big_map, false);
-                            params
-                        }
-                    }
-                    None => {
+                if let Some(map) = small_map.downcast_ref::<ParamsMap>() {
+                    let params = map.get(&(BaseField::size_in_bits(), TargetField::size_in_bits()));
+                    if let Some(params) = params {
+                        let params = params.clone();
+                        HitRate::update(&mut *big_map, true);
+                        params
+                    } else {
                         let params = gen_params::<TargetField, BaseField>();
 
-                        let mut small_map = ParamsMap::new();
+                        let mut small_map = (*map).clone();
                         small_map.insert(
                             (BaseField::size_in_bits(), TargetField::size_in_bits()),
                             params.clone(),
                         );
-
                         big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
+
                         HitRate::update(&mut *big_map, false);
                         params
                     }
+                } else {
+                    let params = gen_params::<TargetField, BaseField>();
+
+                    let mut small_map = ParamsMap::new();
+                    small_map.insert(
+                        (BaseField::size_in_bits(), TargetField::size_in_bits()),
+                        params.clone(),
+                    );
+
+                    big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
+                    HitRate::update(&mut *big_map, false);
+                    params
                 }
             } else {
                 let params = gen_params::<TargetField, BaseField>();
@@ -145,6 +142,7 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
 }
 
 /// Generate the new params
+#[must_use]
 pub fn gen_params<TargetField: PrimeField, BaseField: PrimeField>() -> NonNativeFieldParams {
     let mut problem = ParamsSearching::new(BaseField::size_in_bits(), TargetField::size_in_bits());
     problem.solve();
@@ -178,6 +176,7 @@ pub struct ParamsSearching {
 
 impl ParamsSearching {
     /// Create the search problem
+    #[must_use]
     pub fn new(base_field_prime_length: usize, target_field_prime_bit_length: usize) -> Self {
         Self {
             base_field_prime_length,

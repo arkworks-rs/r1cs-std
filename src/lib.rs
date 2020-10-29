@@ -1,11 +1,17 @@
-//! This library provides the non-native field gadget for the Zexe constraint-writing platform.
-//! The non-native field gadget can be used as a standard FieldVar, given a reasonable non-native gadget parameters.
+//! This library provides the non-native field gadget for the `arkworks` constraint-writing platform.
+//! The non-native field gadget can be used as a standard `FieldVar`, given
+//! reasonable non-native gadget parameters.
 //!
 //! This file contains the implementation of three structs:
 //!
-//! - NonNativeFieldParams specifies the constraint prime field (called BaseField), the simulated prime field (called TargetField), and internal parameters searched by the Python script (see README).
-//! - NonNativeFieldVar implements the FieldVar for simulating the TargetField within the BaseField.
-//! - NonNativeFieldMulResultVar is an intermediate representations of the result of multiplication, which is hidden from the FieldVar interface and is left for advanced users who want better performance.
+//! - `NonNativeFieldParams` specifies the constraint prime field (called `BaseField`),
+//!     the simulated prime field (called `TargetField`), and internal parameters
+//!     searched by the Python script (see `README.md`).
+//! - `NonNativeFieldVar` implements the `FieldVar` for simulating `TargetField`
+//!     arithmetic within `BaseField`.
+//! - `NonNativeFieldMulResultVar` is an intermediate representations of the
+//!     result of multiplication, which is hidden from the `FieldVar` interface
+//!     and is left for advanced users who want better performance.
 //!
 //! The Python script mentioned above can be found in the subdirectory `scripts`.
 
@@ -18,7 +24,13 @@
     rust_2018_idioms,
     missing_docs
 )]
-#![allow(clippy::redundant_closure_call)]
+#![allow(
+    clippy::redundant_closure_call,
+    clippy::enum_glob_use,
+    clippy::missing_errors_doc,
+    clippy::cast_possible_truncation,
+    clippy::unseparated_literal_suffix
+)]
 #![forbid(unsafe_code)]
 
 #[macro_use]
@@ -48,15 +60,15 @@ use ark_std::{borrow::Borrow, cmp::max, fmt::Debug, marker::PhantomData, vec, ve
 /// example parameters of non-native field gadget
 ///
 /// Sample parameters for non-native field gadgets
-/// - BaseField:              the constraint field
-/// - TargetField:            the field being simulated
-/// - num_limbs:              how many limbs are used (searched using the Python script)
-/// - bits_per_top_limb:      the size of the most significant limb (searched using the Python script)
-/// - bits_per_non_top_limb:  the size of limbs other than the most significant one (searched using the Python script)
+/// - `BaseField`:              the constraint field
+/// - `TargetField`:            the field being simulated
+/// - `num_limbs`:              how many limbs are used (searched using the Python script)
+/// - `bits_per_top_limb`:      the size of the most significant limb (searched using the Python script)
+/// - `bits_per_non_top_limb`:  the size of limbs other than the most significant one (searched using the Python script)
 ///
 /// Some requirements for the parameters:
-/// - bits_per_top_limb <= bits_per_non_top_limb, since the current implementation does not handle the other case, and the other case would not be significantly more efficient.
-/// - BaseField's prime length - 1 > 2 * (bits_per_non_top_limb + 5), which ensures that the reducer is able to reduce the representations using the `sum of residues` method.
+/// - `bits_per_top_limb <= bits_per_non_top_limb`, since the current implementation does not handle the other case, and the other case would not be significantly more efficient.
+/// - `BaseField's prime length - 1` > `2 * (bits_per_non_top_limb + 5)`, which ensures that the reducer is able to reduce the representations using the `sum of residues` method.
 pub mod params;
 /// a submodule for reducing the representations
 #[doc(hidden)]
@@ -93,10 +105,10 @@ macro_rules! overhead {
     }};
 }
 
-/// Parameters for a specific NonNativeFieldGadget instantiation
+/// Parameters for a specific `NonNativeFieldVar` instantiation
 #[derive(Clone, Debug)]
 pub struct NonNativeFieldParams {
-    /// The number of limbs (BaseField elements) used to represent a TargetField element. Highest limb first.
+    /// The number of limbs (`BaseField` elements) used to represent a `TargetField` element. Highest limb first.
     /// Searched by the Python script
     pub num_limbs: usize,
 
@@ -109,8 +121,9 @@ pub struct NonNativeFieldParams {
     pub bits_per_non_top_limb: usize,
 }
 
-/// The allocated version of NonNativeFieldVar (introduced below)
+/// The allocated version of `NonNativeFieldVar` (introduced below)
 #[derive(Debug)]
+#[must_use]
 pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// Reference to the constraint system
     pub cs: ConstraintSystemRef<BaseField>,
@@ -120,12 +133,13 @@ pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeF
     pub num_of_additions_over_normal_form: BaseField,
     /// Whether the limb representation is the normal form (using only the bits specified in the parameters, and the representation is strictly within the range of TargetField).
     pub is_in_the_normal_form: bool,
-    /// Phantom for TargetField
+    #[doc(hidden)]
     pub target_phantom: PhantomData<TargetField>,
 }
 
-/// A gadget for representing non-native (TargetField) field elements over the constraint field (BaseField).
+/// A gadget for representing non-native (`TargetField`) field elements over the constraint field (`BaseField`).
 #[derive(Clone, Debug)]
+#[must_use]
 pub enum NonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// Constant
     Constant(TargetField),
@@ -361,7 +375,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(inverse)
     }
 
-    /// Convert a TargetField element into limbs (not constraints)
+    /// Convert a `TargetField` element into limbs (not constraints)
     /// This is an internal function that would be reused by a number of other functions
     #[tracing::instrument(target = "r1cs")]
     pub fn get_limbs_representations(
@@ -414,7 +428,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     }
 
     /// for advanced use, multiply and output the intermediate representations (without reduction)
-    /// This intermediate representations can be added with each other, and they can later be reduced back to the NonNativeFieldGadget.
+    /// This intermediate representations can be added with each other, and they can later be reduced back to the `NonNativeFieldVar`.
     pub fn mul_without_reduce(
         &self,
         other: &Self,
@@ -448,7 +462,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let mut prod_limbs: Vec<AllocatedFp<BaseField>> = Vec::new();
-        for z_i in z.iter() {
+        for z_i in &z {
             prod_limbs.push(AllocatedFp::new_witness(
                 ark_relations::ns!(self.cs, "limb product"),
                 || Ok(z_i),
@@ -640,7 +654,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
         debug_assert!(bits.len() == 2);
         debug_assert!(constants.len() == 4);
 
-        if !bits.cs().is_none() {
+        let is_variable = !bits.cs().is_none();
+        if is_variable {
             let cs = bits.cs();
 
             let params = get_params::<TargetField, BaseField>(&cs);
@@ -663,7 +678,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
             }
 
             let mut limbs = Vec::new();
-            for limbs_constant in limbs_constants.iter() {
+            for limbs_constant in &limbs_constants {
                 limbs.push(AllocatedFp::<BaseField>::two_bit_lookup(
                     bits,
                     limbs_constant,
@@ -697,7 +712,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
         debug_assert!(bits.len() == 3);
         debug_assert!(constants.len() == 4);
 
-        if !bits.cs().is_none() {
+        let is_variable = !bits.cs().is_none();
+        if is_variable {
             let params = get_params::<TargetField, BaseField>(&bits.cs());
 
             let mut limbs_constants = Vec::new();
@@ -718,7 +734,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
             }
 
             let mut limbs = Vec::new();
-            for limbs_constant in limbs_constants.iter() {
+            for limbs_constant in &limbs_constants {
                 limbs.push(AllocatedFp::<BaseField>::three_bit_cond_neg_lookup(
                     bits,
                     b0b1,
@@ -765,7 +781,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
         let elem_representations = Self::get_limbs_representations(&elem.borrow(), Some(&cs))?;
         let mut limbs = Vec::new();
 
-        for limb in elem_representations.iter() {
+        for limb in &elem_representations {
             limbs.push(AllocatedFp::<BaseField>::new_variable(
                 ark_relations::ns!(cs, "alloc"),
                 || Ok(limb),
@@ -1026,13 +1042,15 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
     ) -> Result<Self, SynthesisError> {
         debug_assert_eq!(b.len(), 2);
         debug_assert_eq!(c.len(), 4);
-        if !b.cs().is_none() {
-            AllocatedNonNativeFieldVar::two_bit_lookup(b, c).map(Self::Var)
-        } else {
+        if b.cs().is_none() {
+            // We're in the constant case
+
             let lsb = b[0].value()? as usize;
             let msb = b[1].value()? as usize;
             let index = lsb + (msb << 1);
             Ok(Self::Constant(c[index]))
+        } else {
+            AllocatedNonNativeFieldVar::two_bit_lookup(b, c).map(Self::Var)
         }
     }
 }
@@ -1051,9 +1069,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
         debug_assert_eq!(b.len(), 3);
         debug_assert_eq!(c.len(), 4);
 
-        if !b.cs().or(b0b1.cs()).is_none() {
-            AllocatedNonNativeFieldVar::three_bit_cond_neg_lookup(b, b0b1, c).map(Self::Var)
-        } else {
+        if b.cs().or(b0b1.cs()).is_none() {
+            // We're in the constant case
+
             let lsb = b[0].value()? as usize;
             let msb = b[1].value()? as usize;
             let index = lsb + (msb << 1);
@@ -1066,6 +1084,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
                 intermediate
             };
             Ok(Self::Constant(y))
+        } else {
+            AllocatedNonNativeFieldVar::three_bit_cond_neg_lookup(b, b0b1, c).map(Self::Var)
         }
     }
 }
@@ -1103,7 +1123,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetField, BaseField> {
-    /// The mul_without_reduce for NonNativeFieldVar
+    /// The `mul_without_reduce` for `NonNativeFieldVar`
     pub fn mul_without_reduce(
         &self,
         other: &Self,
@@ -1125,8 +1145,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
     }
 }
 
+/// The allocated form of `NonNativeFieldMulResultVar` (introduced below)
 #[derive(Debug)]
-/// The allocated form of NonNativeFieldMulResultVar (introduced below)
+#[must_use]
 pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// A reference to the constraint system
     pub cs: ConstraintSystemRef<BaseField>,
@@ -1138,12 +1159,15 @@ pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseFiel
     pub target_phantom: PhantomData<TargetField>,
 }
 
-#[derive(Debug)]
 /// An intermediate representation especially for the result of a multiplication, containing more limbs.
 /// It is intended for advanced usage to improve the efficiency.
 ///
-/// That is, instead of calling `mul`, one can call `mul_without_reduce` to obtain this intermediate representation, which can still be added.
-/// Then, one can call `reduce` to reduce it back to NonNativeFieldGadget. This may help cut the number of reduce operations.
+/// That is, instead of calling `mul`, one can call `mul_without_reduce` to
+/// obtain this intermediate representation, which can still be added.
+/// Then, one can call `reduce` to reduce it back to `NonNativeFieldVar`.
+/// This may help cut the number of reduce operations.
+#[derive(Debug)]
+#[must_use]
 pub enum NonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// as a constant
     Constant(TargetField),
@@ -1331,17 +1355,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 impl<TargetField: PrimeField, BaseField: PrimeField>
     NonNativeFieldMulResultVar<TargetField, BaseField>
 {
-    /// Create a zero NonNativeFieldMulResultVar (used for additions)
+    /// Create a zero `NonNativeFieldMulResultVar` (used for additions)
     pub fn zero() -> Self {
         Self::Constant(TargetField::zero())
     }
 
-    /// Create an NonNativeFieldMulResultVar from a constant
+    /// Create an `NonNativeFieldMulResultVar` from a constant
     pub fn constant(v: TargetField) -> Self {
         Self::Constant(v)
     }
 
-    /// Reduce the NonNativeFieldMulResultVar back to NonNativeFieldVar
+    /// Reduce the `NonNativeFieldMulResultVar` back to NonNativeFieldVar
     #[tracing::instrument(target = "r1cs")]
     pub fn reduce(&self) -> Result<NonNativeFieldVar<TargetField, BaseField>, SynthesisError> {
         match self {

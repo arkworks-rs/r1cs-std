@@ -71,8 +71,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             < BaseField::size_in_bits()
     }
 
-    /// convert limbs to bits (take at most BaseField::size_in_bits() - 1 bits)
-    /// This implementation would be more efficient than the original to_bits or to_non_unique_bits since we enforce that some bits are always zero.
+    /// convert limbs to bits (take at most `BaseField::size_in_bits() - 1` bits)
+    /// This implementation would be more efficient than the original `to_bits`
+    /// or `to_non_unique_bits` since we enforce that some bits are always zero.
     pub fn limb_to_bits(
         limb: &AllocatedFp<BaseField>,
         num_bits: usize,
@@ -91,7 +92,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         }
 
         let mut bits = vec![];
-        for b in bits_considered.into_iter() {
+        for b in bits_considered {
             bits.push(AllocatedBit::new_witness(
                 ark_relations::ns!(cs, "bit"),
                 || Ok(b),
@@ -268,13 +269,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             .enumerate()
             .take(params.num_limbs - 1)
         {
-            let limb_added = if i != 0 { limb.add(&add) } else { limb.clone() };
+            let limb_added = if i == 0 { limb.clone() } else { limb.add(&add) };
 
             let mut value = BaseField::zero();
             let mut lc = LinearCombination::<BaseField>::zero();
             let mut coeff = BaseField::one();
 
-            let surfeit_cur = if i != 0 { surfeit_plus_one } else { surfeit };
+            let surfeit_cur = if i == 0 { surfeit } else { surfeit_plus_one };
 
             let limbs_bits =
                 Self::limb_to_bits(&limb_added, params.bits_per_non_top_limb + surfeit_cur)?;
@@ -468,11 +469,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         // reduce
         let mut powers_of_2_mod_p = Vec::new();
         let mut cur = TargetField::one();
-        for _ in 0..(params.num_limbs - 1) * params.bits_per_non_top_limb
+        let loop_length = (params.num_limbs - 1) * params.bits_per_non_top_limb
             + params.bits_per_top_limb
-            + surfeit
-            + 1
-        {
+            + surfeit;
+        for _ in 0..=loop_length {
             powers_of_2_mod_p.push(
                 AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
                     &cur,
@@ -591,7 +591,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 Some(&cs),
             )?;
         let mut p_gadget_limbs = Vec::new();
-        for limb in p_representations.iter() {
+        for limb in &p_representations {
             p_gadget_limbs.push(AllocatedFp::<BaseField>::new_constant(cs.clone(), limb)?);
         }
         let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
@@ -633,9 +633,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 BaseField::from_repr(<BaseField as PrimeField>::BigInt::from(256)).unwrap();
 
             for byte in bytes.iter().rev() {
-                let bytes_basefield =
-                    BaseField::from_repr(<BaseField as PrimeField>::BigInt::from(*byte as u64))
-                        .unwrap();
+                let bytes_basefield = BaseField::from(*byte);
                 val += cur * bytes_basefield;
 
                 cur *= &basefield_256;
@@ -661,7 +659,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         )?;
 
         let mut kp_gadget_limbs = Vec::new();
-        for limb in p_gadget.limbs.iter() {
+        for limb in &p_gadget.limbs {
             kp_gadget_limbs.push(limb.mul(&k_gadget));
         }
         let kp_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
