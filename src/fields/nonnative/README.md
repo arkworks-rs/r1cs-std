@@ -78,7 +78,7 @@ It performs only one *reduce* operation and is roughly 2x faster than the first 
 
 Our implementation does not support arbitrary combinations of prime fields. 
 
-If the base field is drastically smaller than the target field, the program may fail to find good parameters, and even if such parameters are found, they are likely to result in inefficient constraint generation. For more information, see the [parameter searching script](https://github.com/arkworks-rs/nonnative/blob/master/src/params.rs#L162). 
+If the base field is drastically smaller than the target field, the program may fail to find good parameters, and even if such parameters are found, they are likely to result in inefficient constraint generation. For more information, see the [parameter searching script](https://github.com/arkworks-rs/nonnative/blob/master/src/params.rs#L177). 
 
 ## Inspiration and basic design
 
