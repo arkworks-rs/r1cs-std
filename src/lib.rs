@@ -1233,7 +1233,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(bits)
     }
 
-    /// Constraints for reducing the result of a multiplication mod p, to get a normalized representation.
+    /// Constraints for reducing the result of a multiplication mod p, to get an original representation.
     #[tracing::instrument(target = "r1cs")]
     pub fn reduce(
         &self,
