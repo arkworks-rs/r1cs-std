@@ -252,6 +252,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(result)
     }
 
+    /// Return cs
+    pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
+        self.cs.clone()
+    }
+
     /// Add a nonnative field element
     #[tracing::instrument(target = "r1cs")]
     pub fn add(&self, other: &Self) -> Result<Self, SynthesisError> {
@@ -314,8 +319,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             || Ok(result),
         )?;
         let result_computed = other.add(&result_gadget)?;
-        self.is_eq(&result_computed)?
-            .enforce_equal(&Boolean::constant(true))?;
+        self.conditional_enforce_equal(&result_computed, &Boolean::TRUE)?;
         Ok(result_gadget)
     }
 
@@ -328,8 +332,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             || Ok(result),
         )?;
         let result_computed = result_gadget.add_constant(&other)?;
-        self.is_eq(&result_computed)?
-            .enforce_equal(&Boolean::constant(true))?;
+        self.conditional_enforce_equal(&result_computed, &Boolean::TRUE)?;
         Ok(result_gadget)
     }
 
@@ -368,9 +371,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         let one = AllocatedNonNativeFieldVar::new_constant(self.cs.clone(), &TargetField::one())?;
 
         let actual_result = self.clone().mul(&inverse)?;
-        actual_result
-            .is_eq(&one)?
-            .enforce_equal(&Boolean::constant(true))?;
+        actual_result.conditional_enforce_equal(&one, &Boolean::TRUE)?;
 
         Ok(inverse)
     }
@@ -541,20 +542,41 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(self.clone())
     }
 
-    #[tracing::instrument(target = "r1cs")]
-    fn is_eq(&self, other: &Self) -> Result<Boolean<BaseField>, SynthesisError> {
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<BaseField>,
+    ) -> Result<(), SynthesisError> {
         let mut self_normal = self.clone();
         let mut other_normal = other.clone();
         Reducer::pre_eq_reduce(&mut self_normal)?;
         Reducer::pre_eq_reduce(&mut other_normal)?;
 
-        let mut res = Boolean::constant(true);
-
         for (left, right) in self_normal.limbs.iter().zip(other_normal.limbs.iter()) {
-            res = res.and(&left.is_eq(&right)?)?;
+            left.conditional_enforce_equal(&right, should_enforce)?;
         }
 
-        Ok(res)
+        Ok(())
+    }
+
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<BaseField>,
+    ) -> Result<(), SynthesisError> {
+        let cs = self.cs().or(other.cs()).or(should_enforce.cs());
+
+        if cs == ConstraintSystemRef::None {
+            assert!(self.value()? != other.value()?);
+        } else {
+            let val = should_enforce.select(
+                &self.sub(other)?,
+                &AllocatedNonNativeFieldVar::new_constant(cs, TargetField::one())?,
+            )?;
+            let _ = val.inverse()?;
+        }
+
+        Ok(())
     }
 }
 
@@ -944,14 +966,60 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
     for NonNativeFieldVar<TargetField, BaseField>
 {
     fn is_eq(&self, other: &Self) -> Result<Boolean<BaseField>, SynthesisError> {
+        let cs = self.cs().or(other.cs());
+
+        if cs == ConstraintSystemRef::None {
+            Ok(Boolean::Constant(self.value()? == other.value()?))
+        } else {
+            let should_enforce_equal =
+                Boolean::new_witness(cs, || Ok(self.value()? == other.value()?))?;
+
+            self.conditional_enforce_equal(other, &should_enforce_equal)?;
+            self.conditional_enforce_not_equal(other, &should_enforce_equal.not())?;
+
+            Ok(should_enforce_equal)
+        }
+    }
+
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<BaseField>,
+    ) -> Result<(), SynthesisError> {
         match (self, other) {
-            (Self::Constant(c1), Self::Constant(c2)) => Ok(Boolean::Constant(c1 == c2)),
+            (Self::Constant(c1), Self::Constant(c2)) => {
+                if c1 != c2 {
+                    should_enforce.enforce_equal(&Boolean::FALSE)?;
+                }
+                Ok(())
+            }
             (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
                 let cs = v.cs.clone();
                 let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
-                c.is_eq(v)
+                c.conditional_enforce_equal(v, should_enforce)
             }
-            (Self::Var(v1), Self::Var(v2)) => v1.is_eq(v2),
+            (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_equal(v2, should_enforce),
+        }
+    }
+
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<BaseField>,
+    ) -> Result<(), SynthesisError> {
+        match (self, other) {
+            (Self::Constant(c1), Self::Constant(c2)) => {
+                if c1 == c2 {
+                    should_enforce.enforce_equal(&Boolean::FALSE)?;
+                }
+                Ok(())
+            }
+            (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
+                let cs = v.cs.clone();
+                let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
+                c.conditional_enforce_not_equal(v, should_enforce)
+            }
+            (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_not_equal(v2, should_enforce),
         }
     }
 }
