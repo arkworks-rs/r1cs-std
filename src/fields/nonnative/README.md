@@ -26,9 +26,9 @@ Because the non-native field implements the `FieldVar` trait in arkworks, we can
 
 We can do the standard field operations, such as `+`, `-`, and `*`. See the following example:
 
-```
-let a = NonNativeFieldVar::<Fr, Fq>::new_witness(r1cs_core::ns!(cs, "a"), || Ok(a_value))?;
-let b = NonNativeFieldVar::<Fr, Fq>::new_witness(r1cs_core::ns!(cs, "b"), || Ok(b_value))?;
+```rust
+let a = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "a"), || Ok(a_value))?;
+let b = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "b"), || Ok(b_value))?;
 
 // add
 let a_plus_b = &a + &b;
@@ -114,4 +114,3 @@ Unless you explicitly state otherwise, any contribution submitted for inclusion 
 [KPS18]: A. E. Kosba, C. Papamanthou, and E. Shi. "xJsnark: a framework for efficient verifiable computation," in *Proceedings of the 39th Symposium on Security and Privacy*, ser. S&P ’18, 2018, pp. 944–961.
 
 [OWWB20]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
-
