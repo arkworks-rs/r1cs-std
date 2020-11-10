@@ -149,40 +149,25 @@ where
     /// Convert this point into affine form.
     #[tracing::instrument(target = "r1cs")]
     pub fn to_affine(&self) -> Result<AffineVar<P, F>, SynthesisError> {
-        let cs = self.cs();
-        let mode = if self.is_constant() {
+        if self.is_constant() {
             let point = self.value()?.into_affine();
             let x = F::new_constant(ConstraintSystemRef::None, point.x)?;
             let y = F::new_constant(ConstraintSystemRef::None, point.y)?;
             let infinity = Boolean::constant(point.infinity);
-            return Ok(AffineVar::new(x, y, infinity));
+            Ok(AffineVar::new(x, y, infinity))
         } else {
-            AllocationMode::Witness
-        };
+            let infinity = self.is_zero()?;
+            let zero_x = F::zero();
+            let zero_y = F::one();
 
-        let infinity = self.is_zero()?;
-        let zero_x = F::zero();
-        let zero_y = F::one();
+            let non_zero_x = &self.x * &self.z;
+            let non_zero_y = &self.y * &self.z;
 
-        let non_zero_x = F::new_variable(
-            ark_relations::ns!(cs, "non-zero x"),
-            || {
-                let z_inv = self.z.value()?.inverse().unwrap_or(P::BaseField::zero());
-                Ok(self.x.value()? * &z_inv)
-            },
-            mode,
-        )?;
-        let non_zero_y = F::new_variable(
-            ark_relations::ns!(cs, "non-zero y"),
-            || {
-                let z_inv = self.z.value()?.inverse().unwrap_or(P::BaseField::zero());
-                Ok(self.y.value()? * &z_inv)
-            },
-            mode,
-        )?;
-        let x = infinity.select(&zero_x, &non_zero_x)?;
-        let y = infinity.select(&zero_y, &non_zero_y)?;
-        Ok(AffineVar::new(x, y, infinity))
+            let x = infinity.select(&zero_x, &non_zero_x)?;
+            let y = infinity.select(&zero_y, &non_zero_y)?;
+
+            Ok(AffineVar::new(x, y, infinity))
+        }
     }
 
     /// Allocates a new variable without performing an on-curve check, which is
