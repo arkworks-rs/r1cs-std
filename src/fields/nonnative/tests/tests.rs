@@ -177,7 +177,7 @@ fn edge_cases_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
     assert!(
         zero_minus_a_native.eq(&minus_a_native),
-        "zero_minus_a = {:?}, a = {:?}",
+        "zero_minus_a = {:?}, minus_a = {:?}",
         zero_minus_a_native.into_repr().as_ref(),
         minus_a_native.into_repr().as_ref()
     );

@@ -74,12 +74,6 @@ let res = (&a_times_b + &c_times_d)?.reduce()?;
 
 It performs only one *reduce* operation and is roughly 2x faster than the first implementation.
 
-## Limitations
-
-Our implementation does not support arbitrary combinations of prime fields. 
-
-If the base field is drastically smaller than the target field, the program may fail to find good parameters, and even if such parameters are found, they are likely to result in inefficient constraint generation. For more information, see the [parameter searching script](https://github.com/arkworks-rs/nonnative/blob/master/src/params.rs#L177). 
-
 ## Inspiration and basic design
 
 The library employs the standard idea of using multiple **limbs** to represent an element of the target field. For example, an element in the TargetField may be represented by three BaseField elements (i.e., the limbs).
@@ -90,9 +84,7 @@ TargetField -> limb 1, limb 2, and limb 3 (each is a BaseField element)
 
 After some computation, the limbs become overwhelmed and need to be **reduced**, in order to engage in more computation.
 
-We use the **sum-of-residues** method described by [[KH88]](https://doi.org/10.1007/3-540-45961-8_21) and [[FJ89]](https://doi.org/10.1007/0-387-34805-0_35). Then, we implement Hopwood's idea of unbalanced limbs described in [[H19]](https://github.com/zcash/zcash/issues/4093), which can reduce the number of constraints. 
-
-Separately, we incorporate an optimization in multiplication from [[KPS18]](https://akosba.github.io/papers/xjsnark.pdf). This work addresses a similar issue, the use of long-integer arithmetic within proofs, and provides [an open-source implementation](https://github.com/akosba/xjsnark). Another related work [[OWWB20]](https://eprint.iacr.org/2019/1494) also open-sources [an implementation](https://github.com/alex-ozdemir/bellman-bignat) for multiprecision arithmetic and RSA accumulators in proof systems, built off the Bellman system.
+We heavily use the optimization techniques in [[KPS18]](https://akosba.github.io/papers/xjsnark.pdf) and [[OWWB20]](https://eprint.iacr.org/2019/1494). Both works have their own open-source libraries: [xJsnark](https://github.com/akosba/xjsnark) and [bellman-bignat](https://github.com/alex-ozdemir/bellman-bignat). Compared with them, this library works with the arkworks environment and is also optimized for density instead of number of constraints, which is useful for holographic zero-knowledge proofs like [Marlin](https://github.com/arkworks-rs/marlin).
 
 ## License
 
@@ -104,12 +96,6 @@ The library is licensed under either of the following licenses, at your discreti
 Unless you explicitly state otherwise, any contribution submitted for inclusion in this library by you shall be dual licensed as above (as defined in the Apache v2 License), without any additional terms or conditions.
 
 ## References
-
-[FJ89]: P. A. Findlay and B. A. Johnson. "Modular Exponentiation Using Recursive Sums of Residues," in Advances in Cryptology, in *Advances in Cryptology*, ser. CRYPTO '89, 1989, pp. 371-386.
-
-[H19]: D. Hopwood, "Implementing Fp arithmetic in an Fq circuit", 2019. https://github.com/zcash/zcash/issues/4093
-
-[KH88]: S. Kawamiura and K. Hirano. "A Fast Modular Arithmetic Algorithm Using a Residue Table," in Advances in Cryptology, in *Advances in Cryptology*, ser. Eurocrypt '88, 1988, pp. 245-250.
 
 [KPS18]: A. E. Kosba, C. Papamanthou, and E. Shi. "xJsnark: a framework for efficient verifiable computation," in *Proceedings of the 39th Symposium on Security and Privacy*, ser. S&P ’18, 2018, pp. 944–961.
 

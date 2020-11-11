@@ -49,6 +49,7 @@ ark-r1cs-std = { git = "https://github.com/arkworks-rs/r1cs-std", default-featur
 
 num-traits = { version = "0.2", default-features = false }
 num-bigint = { version = "0.3.0", default-features = false }
+num-integer = { version = "0.1.44", default-features = false }
 
 [dev-dependencies]
 paste = "1.0"
@@ -60,6 +61,7 @@ ark-mnt6-753 = { git = "https://github.com/arkworks-rs/curves", default-features
 
 [features]
 default = []
+density-optimized = []
 std = [ "ark-std/std", "ark-ff/std", "ark-ec/std", "ark-relations/std", "ark-r1cs-std/std", "num-traits/std", "num-bigint/std" ]
 
 [[bench]]

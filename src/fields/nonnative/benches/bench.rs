@@ -1,145 +1,199 @@
-use ark_ff::test_rng as thread_rng;
-use ark_ff::PrimeField;
+use ark_ff::{test_rng as thread_rng, PrimeField};
 use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
-use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
+use ark_relations::{
+    ns,
+    r1cs::{ConstraintSystem, ConstraintSystemRef},
+};
 use rand::RngCore;
 
-const NUM_REPETITIONS: usize = 100;
+const NUM_REPETITIONS: usize = 1;
+
+fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> usize {
+    match cs {
+        ConstraintSystemRef::None => panic!("Constraint system is none."),
+        ConstraintSystemRef::CS(r) => {
+            let mut cs_bak = r.borrow().clone();
+
+            cs_bak.outline_lcs();
+            let matrices = cs_bak.to_matrices().unwrap();
+
+            matrices.a_num_non_zero + matrices.b_num_non_zero + matrices.c_num_non_zero
+        }
+    }
+}
 
 fn allocation<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
-) -> usize {
+) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
 
-    let before = cs.num_constraints();
-    // there will be a check that ensures it has the reasonable number of bits
-    let _ = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc a"),
-        || Ok(a_native),
-    )
-    .unwrap();
-    let after = cs.num_constraints();
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
 
-    return after - before;
+    // There will be a check that ensures it has the reasonable number of bits
+    let _ = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
+        Ok(a_native)
+    })
+    .unwrap();
+
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
 }
 
 fn addition<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
-) -> usize {
+) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc a"),
-        || Ok(a_native),
-    )
+    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
+        Ok(a_native)
+    })
     .unwrap();
 
     let b_native = TargetField::rand(rng);
-    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc b"),
-        || Ok(b_native),
-    )
+    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc b"), || {
+        Ok(b_native)
+    })
     .unwrap();
 
-    let before = cs.num_constraints();
-    let _ = &a + &b;
-    let after = cs.num_constraints();
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
 
-    return after - before;
+    let _ = &a + &b;
+
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
 }
 
 fn equality<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
-) -> usize {
+) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a1 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc a1"),
-        || Ok(a_native),
-    )
+    let a1 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a1"), || {
+        Ok(a_native)
+    })
     .unwrap();
-    let a2 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc a2"),
-        || Ok(a_native),
-    )
+    let a2 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a2"), || {
+        Ok(a_native)
+    })
     .unwrap();
 
-    let before = cs.num_constraints();
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
+
     a1.enforce_equal(&a2).unwrap();
-    let after = cs.num_constraints();
 
-    return after - before;
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
 }
 
 fn multiplication<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
-) -> usize {
+) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "initial a"),
-        || Ok(a_native),
-    )
+    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial a"), || {
+        Ok(a_native)
+    })
     .unwrap();
 
     let b_native = TargetField::rand(rng);
-    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "initial b"),
-        || Ok(b_native),
-    )
+    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial b"), || {
+        Ok(b_native)
+    })
     .unwrap();
 
-    let before = cs.num_constraints();
-    let _ = &a * &b;
-    let after = cs.num_constraints();
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
 
-    return after - before;
+    let _ = &a * &b;
+
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
 }
 
 fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
-) -> usize {
+) -> (usize, usize) {
     let num_native = TargetField::rand(rng);
-    let num = NonNativeFieldVar::<TargetField, BaseField>::new_witness(
-        ark_relations::ns!(cs, "alloc"),
-        || Ok(num_native),
-    )
+    let num = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc"), || {
+        Ok(num_native)
+    })
     .unwrap();
 
-    let before = cs.num_constraints();
-    let _ = num.inverse().unwrap();
-    let after = cs.num_constraints();
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
 
-    return after - before;
+    let _ = num.inverse().unwrap();
+
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
 }
 
 macro_rules! nonnative_bench_individual {
     ($bench_method:ident, $bench_name:ident, $bench_target_field:ty, $bench_base_field:ty) => {
         let rng = &mut thread_rng();
         let mut num_constraints = 0;
+        let mut num_nonzeros = 0;
         for _ in 0..NUM_REPETITIONS {
-            let cs = ConstraintSystem::<$bench_base_field>::new();
-            let cs_ref = ConstraintSystemRef::new(cs);
-            num_constraints +=
-                $bench_method::<$bench_target_field, $bench_base_field, _>(cs_ref.clone(), rng);
-            assert!(cs_ref.is_satisfied().unwrap());
+            let cs_sys = ConstraintSystem::<$bench_base_field>::new();
+            let cs = ConstraintSystemRef::new(cs_sys);
+
+            let (cur_constraints, cur_nonzeros) =
+                $bench_method::<$bench_target_field, $bench_base_field, _>(cs.clone(), rng);
+
+            num_constraints += cur_constraints;
+            num_nonzeros += cur_nonzeros;
+
+            assert!(cs.is_satisfied().unwrap());
         }
-        let average = num_constraints / NUM_REPETITIONS;
+        let average_constraints = num_constraints / NUM_REPETITIONS;
+        let average_nonzeros = num_nonzeros / NUM_REPETITIONS;
         println!(
-            "{} takes {} constraints doing {} over {}",
-            stringify!($bench_base_field),
-            average,
+            "{} takes: {} constraints, {} non-zeros",
             stringify!($bench_method),
-            stringify!($bench_target_field),
+            average_constraints,
+            average_nonzeros,
         );
     };
 }
 
 macro_rules! nonnative_bench {
     ($bench_name:ident, $bench_target_field:ty, $bench_base_field:ty) => {
+        println!(
+            "For {} to simulate {}",
+            stringify!($bench_base_field),
+            stringify!($bench_target_field),
+        );
         nonnative_bench_individual!(
             allocation,
             $bench_name,
@@ -165,8 +219,7 @@ macro_rules! nonnative_bench {
             $bench_base_field
         );
         nonnative_bench_individual!(inverse, $bench_name, $bench_target_field, $bench_base_field);
-
-        println!("---------");
+        println!("----------------------")
     };
 }
 
