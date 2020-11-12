@@ -12,7 +12,9 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
     cs: &ConstraintSystemRef<BaseField>,
 ) -> NonNativeFieldParams {
     match cs {
-        ConstraintSystemRef::None => gen_params::<TargetField, BaseField>(),
+        ConstraintSystemRef::None => {
+            gen_params(TargetField::size_in_bits(), BaseField::size_in_bits())
+        }
         ConstraintSystemRef::CS(v) => {
             let cs_sys = v.borrow_mut();
             let mut big_map = cs_sys.cache_map.borrow_mut();
@@ -24,7 +26,8 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
                     if let Some(params) = params {
                         params.clone()
                     } else {
-                        let params = gen_params::<TargetField, BaseField>();
+                        let params =
+                            gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
 
                         let mut small_map = (*map).clone();
                         small_map.insert(
@@ -35,7 +38,7 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
                         params
                     }
                 } else {
-                    let params = gen_params::<TargetField, BaseField>();
+                    let params = gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
 
                     let mut small_map = ParamsMap::new();
                     small_map.insert(
@@ -47,7 +50,7 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
                     params
                 }
             } else {
-                let params = gen_params::<TargetField, BaseField>();
+                let params = gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
 
                 let mut small_map = ParamsMap::new();
                 small_map.insert(
@@ -64,27 +67,22 @@ pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
 
 /// Generate the new params
 #[must_use]
-pub fn gen_params<TargetField: PrimeField, BaseField: PrimeField>() -> NonNativeFieldParams {
+pub const fn gen_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
     let optimization_type = if cfg!(feature = "density-optimized") {
         OptimizationType::Density
     } else {
         OptimizationType::Constraints
     };
 
-    let mut problem = ParamsSearching::new(
-        BaseField::size_in_bits(),
-        TargetField::size_in_bits(),
-        optimization_type,
-    );
-    problem.solve();
-
+    let (num_of_limbs, limb_size) =
+        find_parameters(base_field_size, target_field_size, optimization_type);
     NonNativeFieldParams {
-        num_limbs: problem.num_of_limbs.unwrap(),
-        bits_per_limb: problem.limb_size.unwrap(),
+        num_limbs: num_of_limbs,
+        bits_per_limb: limb_size,
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, Debug)]
 /// The type of optimization target for the parameters searching
 pub enum OptimizationType {
     /// Optimized for constraints
@@ -93,77 +91,52 @@ pub enum OptimizationType {
     Density,
 }
 
-/// A search instance for parameters for nonnative field gadgets
-#[derive(Clone, Debug)]
-pub struct ParamsSearching {
-    // Problem
-    /// Prime length of the base field
-    pub base_field_prime_length: usize,
-    /// Prime length of the target field
-    pub target_field_prime_bit_length: usize,
-    /// Constraints or density
-    pub optimization_type: OptimizationType,
+/// A function to search for parameters for nonnative field gadgets
+pub const fn find_parameters(
+    base_field_prime_length: usize,
+    target_field_prime_bit_length: usize,
+    optimization_type: OptimizationType,
+) -> (usize, usize) {
+    let mut found = false;
+    let mut min_cost = 0usize;
+    let mut min_cost_limb_size = 0usize;
+    let mut min_cost_num_of_limbs = 0usize;
 
-    // Solution
-    /// Number of limbs
-    pub num_of_limbs: Option<usize>,
-    /// Size of the limb
-    pub limb_size: Option<usize>,
-}
+    let surfeit = 10;
 
-impl ParamsSearching {
-    /// Create the search problem
-    #[must_use]
-    pub fn new(
-        base_field_prime_length: usize,
-        target_field_prime_bit_length: usize,
-        optimization_type: OptimizationType,
-    ) -> Self {
-        Self {
-            base_field_prime_length,
-            target_field_prime_bit_length,
-            optimization_type,
-            num_of_limbs: None,
-            limb_size: None,
-        }
-    }
+    let max_limb_size = (base_field_prime_length - 1 - surfeit - 1) / 2 - 1;
 
-    /// Solve the search problem
-    pub fn solve(&mut self) {
-        let mut min_cost: Option<usize> = None;
-        let mut min_cost_limb_size: Option<usize> = None;
-        let mut min_cost_num_of_limbs: Option<usize> = None;
+    let mut limb_size = 1;
 
-        let surfeit = 10;
+    while limb_size <= max_limb_size {
+        let num_of_limbs = (target_field_prime_bit_length + limb_size - 1) / limb_size;
 
-        let max_limb_size = (self.base_field_prime_length - 1 - surfeit - 1) / 2 - 1;
+        let group_size =
+            (base_field_prime_length - 1 - surfeit - 1 - 1 - limb_size + limb_size - 1) / limb_size;
+        let num_of_groups = (2 * num_of_limbs - 1 + group_size - 1) / group_size;
 
-        for limb_size in 1..=max_limb_size {
-            let num_of_limbs = (self.target_field_prime_bit_length + limb_size - 1) / limb_size;
+        let mut this_cost = 0;
 
-            let group_size =
-                (self.base_field_prime_length - 1 - surfeit - 1 - 1 - limb_size + limb_size - 1)
-                    / limb_size;
-            let num_of_groups = (2 * num_of_limbs - 1 + group_size - 1) / group_size;
-
-            let mut this_cost = 0;
-
-            if self.optimization_type == OptimizationType::Constraints {
+        match optimization_type {
+            OptimizationType::Constraints => {
                 this_cost += 2 * num_of_limbs - 1;
-            } else {
+            }
+            OptimizationType::Density => {
                 this_cost += 6 * num_of_limbs * num_of_limbs;
             }
+        };
 
-            if self.optimization_type == OptimizationType::Constraints {
-                this_cost += self.target_field_prime_bit_length; // allocation of k
-                this_cost += self.target_field_prime_bit_length + num_of_limbs; // allocation of r
+        match optimization_type {
+            OptimizationType::Constraints => {
+                this_cost += target_field_prime_bit_length; // allocation of k
+                this_cost += target_field_prime_bit_length + num_of_limbs; // allocation of r
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
-            // equality check
-            } else {
-                this_cost +=
-                    self.target_field_prime_bit_length * 3 + self.target_field_prime_bit_length; // allocation of k
-                this_cost += self.target_field_prime_bit_length * 3
-                    + self.target_field_prime_bit_length
+                // equality check
+            }
+            OptimizationType::Density => {
+                this_cost += target_field_prime_bit_length * 3 + target_field_prime_bit_length; // allocation of k
+                this_cost += target_field_prime_bit_length * 3
+                    + target_field_prime_bit_length
                     + num_of_limbs; // allocation of r
                 this_cost += num_of_limbs * num_of_limbs + 2 * (2 * num_of_limbs - 1); // compute kp
                 this_cost += num_of_limbs
@@ -172,15 +145,17 @@ impl ParamsSearching {
                     + (num_of_groups - 1) * (2 * limb_size + surfeit) * 4
                     + 2; // equality check
             }
+        };
 
-            if min_cost == None || this_cost < min_cost.unwrap() {
-                min_cost = Some(this_cost);
-                min_cost_limb_size = Some(limb_size);
-                min_cost_num_of_limbs = Some(num_of_limbs);
-            }
+        if !found || this_cost < min_cost {
+            found = true;
+            min_cost = this_cost;
+            min_cost_limb_size = limb_size;
+            min_cost_num_of_limbs = num_of_limbs;
         }
 
-        self.num_of_limbs = min_cost_num_of_limbs;
-        self.limb_size = min_cost_limb_size;
+        limb_size += 1;
     }
+
+    (min_cost_num_of_limbs, min_cost_limb_size)
 }

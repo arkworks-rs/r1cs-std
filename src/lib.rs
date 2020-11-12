@@ -37,7 +37,7 @@
 extern crate ark_r1cs_std;
 
 use crate::{
-    params::{gen_params, get_params},
+    params::get_params,
     reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
 };
 use ark_ff::{to_bytes, BigInteger, FpParameters, PrimeField};
@@ -500,10 +500,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         let mut limbs: Vec<BaseField> = Vec::new();
         let mut cur = *elem;
 
-        let params = match cs {
-            Some(cs) => get_params::<TargetField, BaseField>(cs),
-            None => gen_params::<TargetField, BaseField>(),
-        };
+        let params = get_params::<TargetField, BaseField>(cs.unwrap_or(&ConstraintSystemRef::None));
 
         let num_limbs = params.num_limbs;
         let bits_per_limb = params.bits_per_limb;
