@@ -101,14 +101,15 @@ impl<P: MNT4Parameters> PairingVar<P> {
 
         let mut f = Fp4G::<P>::one();
 
-        let mut dbl_idx: usize = 0;
         let mut add_idx: usize = 0;
 
         // code below gets executed for all bits (EXCEPT the MSB itself) of
         // mnt6_param_p (skipping leading zeros) in MSB to LSB order
-        for bit in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT).skip(1) {
+        for (dbl_idx, bit) in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT)
+            .skip(1)
+            .enumerate()
+        {
             let dc = &q.double_coefficients[dbl_idx];
-            dbl_idx += 1;
 
             let g_rr_at_p = Fp4G::<P>::new(
                 &dc.c_l - &dc.c_4c - &dc.c_j * &p.x_twist,

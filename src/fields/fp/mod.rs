@@ -224,7 +224,9 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This does not create any constraints.
     #[tracing::instrument(target = "r1cs")]
     pub fn negate_in_place(&mut self) -> &mut Self {
-        self.value.as_mut().map(|val| *val = -(*val));
+        if let Some(val) = self.value.as_mut() {
+            *val = -(*val);
+        }
         self.variable = self.cs.new_lc(lc!() - self.variable).unwrap();
         self
     }
@@ -243,7 +245,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "r1cs")]
     pub fn inverse(&self) -> Result<Self, SynthesisError> {
         let inverse = Self::new_witness(self.cs.clone(), || {
-            Ok(self.value.get()?.inverse().unwrap_or(F::zero()))
+            Ok(self.value.get()?.inverse().unwrap_or_else(F::zero))
         })?;
 
         self.cs.enforce_constraint(
@@ -595,7 +597,7 @@ impl<F: PrimeField> ThreeBitCondNegLookupGadget<F> for AllocatedFp<F> {
         b.cs().enforce_constraint(
             y_lc.clone() + y_lc.clone(),
             b[2].lc(),
-            y_lc.clone() - result.variable,
+            y_lc - result.variable,
         )?;
 
         Ok(result)
@@ -625,7 +627,7 @@ impl<F: PrimeField> AllocVar<F, F> for AllocatedFp<F> {
             } else {
                 cs.new_witness_variable(value_generator)?
             };
-            Ok(Self::new(value, variable, cs.clone()))
+            Ok(Self::new(value, variable, cs))
         }
     }
 }
@@ -679,7 +681,7 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             (Var(v1), Var(v2), Var(v3)) => v1.mul_equals(v2, v3),
             (Var(v1), Var(v2), Constant(f)) => {
                 let cs = v1.cs.clone();
-                let v3 = AllocatedFp::new_constant(cs.clone(), f).unwrap();
+                let v3 = AllocatedFp::new_constant(cs, f).unwrap();
                 v1.mul_equals(v2, &v3)
             }
         }
@@ -937,7 +939,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
                             Self::Var(v) => v.clone(),
                         };
                         let false_value = match false_value {
-                            Self::Constant(f) => AllocatedFp::new_constant(cs.clone(), f)?,
+                            Self::Constant(f) => AllocatedFp::new_constant(cs, f)?,
                             Self::Var(v) => v.clone(),
                         };
                         cond.select(&true_value, &false_value).map(Self::Var)

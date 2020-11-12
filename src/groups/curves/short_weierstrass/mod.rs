@@ -103,6 +103,7 @@ where
 
         res.extend_from_slice(&self.x.to_constraint_field()?);
         res.extend_from_slice(&self.y.to_constraint_field()?);
+        res.extend_from_slice(&self.infinity.to_constraint_field()?);
 
         Ok(res)
     }
@@ -163,7 +164,7 @@ where
             // Allocate a variable whose value is either `self.z.inverse()` if the inverse exists,
             // and is zero otherwise.
             let z_inv = F::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
-                Ok(self.z.value()?.inverse().unwrap_or(P::BaseField::zero()))
+                Ok(self.z.value()?.inverse().unwrap_or_else(P::BaseField::zero))
             })?;
             // The inverse exists if `!self.is_zero()`.
             // This means that `z_inv * self.z = 1` if `self.is_not_zero()`, and
@@ -344,6 +345,20 @@ where
     #[tracing::instrument(target = "r1cs")]
     fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self::new(self.x.clone(), self.y.negate()?, self.z.clone()))
+    }
+}
+
+impl<P, F> ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField> for ProjectiveVar<P, F>
+where
+    P: SWModelParameters,
+    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    F: ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField>,
+{
+    fn to_constraint_field(
+        &self,
+    ) -> Result<Vec<FpVar<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+        self.to_affine()?.to_constraint_field()
     }
 }
 

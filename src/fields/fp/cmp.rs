@@ -86,7 +86,7 @@ impl<F: PrimeField> FpVar<F> {
         let (left, right) = match ordering {
             Ordering::Less => (self, other),
             Ordering::Greater => (other, self),
-            Ordering::Equal => Err(SynthesisError::Unsatisfiable)?,
+            Ordering::Equal => return Err(SynthesisError::Unsatisfiable),
         };
         let right_for_check = if should_also_check_equality {
             right + F::one()

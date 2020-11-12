@@ -8,6 +8,7 @@
     nonstandard_style,
     rust_2018_idioms
 )]
+#![allow(clippy::op_ref)]
 
 #[macro_use]
 extern crate ark_std;
