@@ -31,8 +31,8 @@ impl<P: Bls12Parameters> PairingVar<P> {
                 let mut c1 = coeffs.1.clone();
                 let c2 = Fp2V::<P>::new(p.y.clone(), zero);
 
-                c1.c0 = c1.c0 * &p.x;
-                c1.c1 = c1.c1 * &p.x;
+                c1.c0 *= &p.x;
+                c1.c1 *= &p.x;
                 *f = f.mul_by_014(&c0, &c1, &c2)?;
                 Ok(())
             }
@@ -41,8 +41,8 @@ impl<P: Bls12Parameters> PairingVar<P> {
                 let mut c1 = coeffs.0.clone();
                 let c2 = coeffs.1.clone();
 
-                c1.c0 = c1.c0 * &p.x;
-                c1.c1 = c1.c1 * &p.x;
+                c1.c0 *= &p.x;
+                c1.c1 *= &p.x;
                 *f = f.mul_by_034(&c0, &c1, &c2)?;
                 Ok(())
             }

@@ -284,7 +284,7 @@ where
             self.cs(),
             || {
                 self.value()
-                    .map(|f| f.inverse().unwrap_or(QuadExtField::zero()))
+                    .map(|f| f.inverse().unwrap_or_else(QuadExtField::zero))
             },
             mode,
         )?;

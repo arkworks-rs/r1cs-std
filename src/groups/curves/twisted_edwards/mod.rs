@@ -518,7 +518,7 @@ where
         B: Borrow<Boolean<<P::BaseField as Field>::BasePrimeField>>,
     {
         let scalar_bits_with_base_powers = scalar_bits_with_base_powers
-            .map(|(bit, base)| (bit.borrow().clone(), (*base).into()))
+            .map(|(bit, base)| (bit.borrow().clone(), *base))
             .collect::<Vec<(_, TEProjective<P>)>>();
         let zero = TEProjective::zero();
         for bits_base_powers in scalar_bits_with_base_powers.chunks(2) {

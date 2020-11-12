@@ -276,7 +276,7 @@ where
             self.cs(),
             || {
                 self.value()
-                    .map(|f| f.inverse().unwrap_or(CubicExtField::zero()))
+                    .map(|f| f.inverse().unwrap_or_else(CubicExtField::zero))
             },
             mode,
         )?;

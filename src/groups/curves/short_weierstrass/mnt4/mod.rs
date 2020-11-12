@@ -94,8 +94,8 @@ impl<P: MNT4Parameters> G1PreparedVar<P> {
         let x_twist = Fp2Var::new(&q.x * P::TWIST.c0, &q.x * P::TWIST.c1);
         let y_twist = Fp2Var::new(&q.y * P::TWIST.c0, &q.y * P::TWIST.c1);
         Ok(G1PreparedVar {
-            x: q.x.clone(),
-            y: q.y.clone(),
+            x: q.x,
+            y: q.y,
             x_twist,
             y_twist,
         })
