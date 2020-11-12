@@ -156,12 +156,24 @@ where
             let infinity = Boolean::constant(point.infinity);
             Ok(AffineVar::new(x, y, infinity))
         } else {
+            let cs = self.cs();
             let infinity = self.is_zero()?;
             let zero_x = F::zero();
             let zero_y = F::one();
+            // Allocate a variable whose value is either `self.z.inverse()` if the inverse exists,
+            // and is zero otherwise.
+            let z_inv = F::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
+                Ok(self.z.value()?.inverse().unwrap_or(P::BaseField::zero()))
+            })?;
+            // The inverse exists if `!self.is_zero()`.
+            // This means that `z_inv * self.z = 1` if `self.is_not_zero()`, and
+            //                 `z_inv * self.z = 0` if `self.is_zero()`.
+            //
+            // Thus, `z_inv * self.z = !self.is_zero()`.
+            z_inv.mul_equals(&self.z, &F::from(infinity.not()))?;
 
-            let non_zero_x = &self.x * &self.z;
-            let non_zero_y = &self.y * &self.z;
+            let non_zero_x = &self.x * &z_inv;
+            let non_zero_y = &self.y * &z_inv;
 
             let x = infinity.select(&zero_x, &non_zero_x)?;
             let y = infinity.select(&zero_y, &non_zero_y)?;
