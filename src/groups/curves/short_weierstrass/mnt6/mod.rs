@@ -58,10 +58,10 @@ impl<P: MNT6Parameters> G1PreparedVar<P> {
         let q = q.to_affine()?;
         let zero = FpVar::<P::Fp>::zero();
         let x_twist = Fp3Var::new(q.x.clone(), zero.clone(), zero.clone()) * P::TWIST;
-        let y_twist = Fp3Var::new(q.y.clone(), zero.clone(), zero.clone()) * P::TWIST;
+        let y_twist = Fp3Var::new(q.y.clone(), zero.clone(), zero) * P::TWIST;
         let result = G1PreparedVar {
-            x: q.x.clone(),
-            y: q.y.clone(),
+            x: q.x,
+            y: q.y,
             x_twist,
             y_twist,
         };

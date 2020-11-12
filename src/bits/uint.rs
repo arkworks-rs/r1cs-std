@@ -103,17 +103,17 @@ macro_rules! make_uint {
                     for b in bits.iter().rev() {
                         value.as_mut().map(|v| *v <<= 1);
 
-                        match b {
-                            &Boolean::Constant(b) => {
+                        match *b {
+                            Boolean::Constant(b) => {
                                 value.as_mut().map(|v| *v |= $native::from(b));
                             }
-                            &Boolean::Is(ref b) => match b.value() {
+                            Boolean::Is(ref b) => match b.value() {
                                 Ok(b) => {
                                     value.as_mut().map(|v| *v |= $native::from(b));
                                 }
                                 Err(_) => value = None,
                             },
-                            &Boolean::Not(ref b) => match b.value() {
+                            Boolean::Not(ref b) => match b.value() {
                                 Ok(b) => {
                                     value.as_mut().map(|v| *v |= $native::from(!b));
                                 }

@@ -50,7 +50,7 @@ macro_rules! impl_bounded_ops {
             type Output = $type;
 
             #[tracing::instrument(target = "r1cs", skip(self))]
-            #[allow(unused_braces)]
+            #[allow(unused_braces, clippy::redundant_closure_call)]
             fn $fn(self, other: Self) -> Self::Output {
                 ($impl)(self, other)
             }
@@ -130,7 +130,7 @@ macro_rules! impl_bounded_ops {
             type Output = $type;
 
             #[tracing::instrument(target = "r1cs", skip(self))]
-            #[allow(unused_braces)]
+            #[allow(unused_braces, clippy::redundant_closure_call)]
             fn $fn(self, other: $native) -> Self::Output {
                 ($constant_impl)(self, other)
             }
