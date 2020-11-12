@@ -874,7 +874,7 @@ impl<F: PrimeField> ToBitsGadget<F> for FpVar<F> {
 
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        use algebra::BitIteratorLE;
+        use ark_ff::BitIteratorLE;
         match self {
             Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
                 .take((F::Params::MODULUS_BITS) as usize)
