@@ -377,7 +377,6 @@ where
             process_segment_result(&result.unwrap())?;
             result = None;
         }
-
         if result.is_some() {
             process_segment_result(&result.unwrap())?;
         }
