@@ -135,14 +135,14 @@ mod montgomery_affine_impl {
 
             u.mul_equals(&self.y, &self.x)?;
 
-            let v = F::new_witness(ark_relations::ns!(cs, "v"), || {
+            let v = F::new_variable(ark_relations::ns!(cs, "v"), || {
                 let mut t0 = self.x.value()?;
                 let mut t1 = t0;
                 t0 -= &P::BaseField::one();
                 t1 += &P::BaseField::one();
 
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
-            })?;
+            }, mode)?;
 
             let xplusone = &self.x + P::BaseField::one();
             let xminusone = &self.x - P::BaseField::one();
@@ -315,6 +315,8 @@ where
         let mut ed_result: Option<AffineVar<P, F>> = None;
         let mut result: Option<MontgomeryAffineVar<P, F>> = None;
 
+        println!("p1");
+
         let mut process_segment_result = |result: &MontgomeryAffineVar<P, F>| {
             let sgmt_result = result.into_edwards()?;
             ed_result = match ed_result.as_ref() {
@@ -344,10 +346,14 @@ where
                     return Err(SynthesisError::Unsatisfiable);
                 }
 
+                println!("before from_edwards_to_coords");
+
                 let coords = coords
                     .iter()
                     .map(|p| MontgomeryAffineVar::from_edwards_to_coords(&p.into_affine()))
                     .collect::<Result<Vec<_>, _>>()?;
+
+                println!("after from_edwards_to_coords");
 
                 let x_coeffs = coords.iter().map(|p| p.0).collect::<Vec<_>>();
                 let y_coeffs = coords.iter().map(|p| p.1).collect::<Vec<_>>();
@@ -361,7 +367,11 @@ where
                     + F::from(precomp.clone())
                         * (x_coeffs[3] - &x_coeffs[2] - &x_coeffs[1] + &x_coeffs[0]);
 
+                println!("before three_bit_cond_neg_lookup");
+
                 let y = F::three_bit_cond_neg_lookup(&bits, &precomp, &y_coeffs)?;
+
+                println!("after three_bit_cond_neg_lookup");
 
                 let tmp = MontgomeryAffineVar::new(x, y);
                 result = match result.as_ref() {
@@ -370,9 +380,16 @@ where
                 };
             }
 
+            println!("p2 before process segment result");
+
             process_segment_result(&result.unwrap())?;
+
+
+            println!("p2 after process segment result");
             result = None;
         }
+
+        println!("seems finishing?");
         if result.is_some() {
             process_segment_result(&result.unwrap())?;
         }
