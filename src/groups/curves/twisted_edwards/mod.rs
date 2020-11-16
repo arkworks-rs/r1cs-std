@@ -112,15 +112,26 @@ mod montgomery_affine_impl {
         #[tracing::instrument(target = "r1cs")]
         pub fn into_edwards(&self) -> Result<AffineVar<P, F>, SynthesisError> {
             let cs = self.cs();
+
+            let mode = if cs.is_none() {
+                AllocationMode::Constant
+            } else {
+                AllocationMode::Witness
+            };
+
             // Compute u = x / y
-            let u = F::new_witness(ark_relations::ns!(cs, "u"), || {
-                let y_inv = self
-                    .y
-                    .value()?
-                    .inverse()
-                    .ok_or(SynthesisError::DivisionByZero)?;
-                Ok(self.x.value()? * &y_inv)
-            })?;
+            let u = F::new_variable(
+                ark_relations::ns!(cs, "u"),
+                || {
+                    let y_inv = self
+                        .y
+                        .value()?
+                        .inverse()
+                        .ok_or(SynthesisError::DivisionByZero)?;
+                    Ok(self.x.value()? * &y_inv)
+                },
+                mode,
+            )?;
 
             u.mul_equals(&self.y, &self.x)?;
 
