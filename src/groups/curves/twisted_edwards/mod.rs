@@ -135,14 +135,18 @@ mod montgomery_affine_impl {
 
             u.mul_equals(&self.y, &self.x)?;
 
-            let v = F::new_witness(ark_relations::ns!(cs, "v"), || {
-                let mut t0 = self.x.value()?;
-                let mut t1 = t0;
-                t0 -= &P::BaseField::one();
-                t1 += &P::BaseField::one();
+            let v = F::new_variable(
+                ark_relations::ns!(cs, "v"),
+                || {
+                    let mut t0 = self.x.value()?;
+                    let mut t1 = t0;
+                    t0 -= &P::BaseField::one();
+                    t1 += &P::BaseField::one();
 
-                Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
-            })?;
+                    Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
+                },
+                mode,
+            )?;
 
             let xplusone = &self.x + P::BaseField::one();
             let xminusone = &self.x - P::BaseField::one();
