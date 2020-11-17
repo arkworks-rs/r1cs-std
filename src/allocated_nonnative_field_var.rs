@@ -647,9 +647,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
         let cs = ns.cs();
 
         let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let zero = TargetField::zero();
 
-        let elem = f()?;
-        let elem_representations = Self::get_limbs_representations(&elem.borrow())?;
+        let elem = match f() {
+            Ok(t) => *(t.borrow()),
+            Err(_) => zero,
+        };
+        let elem_representations = Self::get_limbs_representations(&elem)?;
         let mut limbs = Vec::new();
 
         for limb in elem_representations.iter() {
