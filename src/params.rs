@@ -1,73 +1,8 @@
 use crate::NonNativeFieldParams;
-use ark_ff::PrimeField;
-use ark_relations::r1cs::ConstraintSystemRef;
-use ark_std::{any::TypeId, boxed::Box, collections::BTreeMap};
-
-/// The type for a cache map for parameters
-pub type ParamsMap = BTreeMap<(usize, usize), NonNativeFieldParams>;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]
-pub fn get_params<TargetField: PrimeField, BaseField: PrimeField>(
-    cs: &ConstraintSystemRef<BaseField>,
-) -> NonNativeFieldParams {
-    match cs {
-        ConstraintSystemRef::None => {
-            gen_params(TargetField::size_in_bits(), BaseField::size_in_bits())
-        }
-        ConstraintSystemRef::CS(v) => {
-            let cs_sys = v.borrow_mut();
-            let mut big_map = cs_sys.cache_map.borrow_mut();
-            let small_map = big_map.get(&TypeId::of::<ParamsMap>());
-
-            if let Some(small_map) = small_map {
-                if let Some(map) = small_map.downcast_ref::<ParamsMap>() {
-                    let params = map.get(&(BaseField::size_in_bits(), TargetField::size_in_bits()));
-                    if let Some(params) = params {
-                        params.clone()
-                    } else {
-                        let params =
-                            gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
-
-                        let mut small_map = (*map).clone();
-                        small_map.insert(
-                            (BaseField::size_in_bits(), TargetField::size_in_bits()),
-                            params.clone(),
-                        );
-                        big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
-                        params
-                    }
-                } else {
-                    let params = gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
-
-                    let mut small_map = ParamsMap::new();
-                    small_map.insert(
-                        (BaseField::size_in_bits(), TargetField::size_in_bits()),
-                        params.clone(),
-                    );
-
-                    big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
-                    params
-                }
-            } else {
-                let params = gen_params(TargetField::size_in_bits(), BaseField::size_in_bits());
-
-                let mut small_map = ParamsMap::new();
-                small_map.insert(
-                    (BaseField::size_in_bits(), TargetField::size_in_bits()),
-                    params.clone(),
-                );
-
-                big_map.insert(TypeId::of::<ParamsMap>(), Box::new(small_map));
-                params
-            }
-        }
-    }
-}
-
-/// Generate the new params
-#[must_use]
-pub const fn gen_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
+pub fn get_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
     let optimization_type = if cfg!(feature = "density-optimized") {
         OptimizationType::Density
     } else {
@@ -130,6 +65,7 @@ pub const fn find_parameters(
             OptimizationType::Constraints => {
                 this_cost += target_field_prime_bit_length; // allocation of k
                 this_cost += target_field_prime_bit_length + num_of_limbs; // allocation of r
+                                                                           //this_cost += 2 * num_of_limbs - 1; // compute kp
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
                 // equality check
             }
