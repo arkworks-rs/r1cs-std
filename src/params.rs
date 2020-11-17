@@ -2,7 +2,7 @@ use crate::NonNativeFieldParams;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]
-pub fn get_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
+pub const fn get_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
     let optimization_type = if cfg!(feature = "density-optimized") {
         OptimizationType::Density
     } else {
