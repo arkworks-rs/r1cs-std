@@ -297,13 +297,13 @@ impl<ConstraintF: Field> CondSelectGadget<ConstraintF> for UInt8<ConstraintF> {
             .zip(&false_value.bits)
             .map(|(t, f)| cond.select(t, f))
             .collect::<Result<Vec<_>, SynthesisError>>()?;
-                    let selected_value = cond.value().ok().and_then(|cond| {
-                    	if cond {
-                    		true_value.value().ok()
-                    	} else {
-                    		false_value.value().ok()
-                    	}
-                    });
+        let selected_value = cond.value().ok().and_then(|cond| {
+            if cond {
+                true_value.value().ok()
+            } else {
+                false_value.value().ok()
+            }
+        });
         Ok(Self {
             bits: selected_bits,
             value: selected_value,
@@ -401,8 +401,8 @@ mod test {
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {
-                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
-                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
+                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
+                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
                     _ => unreachable!(),
                 }
             }
