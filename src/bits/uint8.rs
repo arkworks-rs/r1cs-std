@@ -285,7 +285,7 @@ impl<ConstraintF: Field> EqGadget<ConstraintF> for UInt8<ConstraintF> {
 }
 
 impl<ConstraintF: Field> CondSelectGadget<ConstraintF> for UInt8<ConstraintF> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]
     fn conditionally_select(
         cond: &Boolean<ConstraintF>,
         true_value: &Self,
@@ -295,15 +295,15 @@ impl<ConstraintF: Field> CondSelectGadget<ConstraintF> for UInt8<ConstraintF> {
             .bits
             .iter()
             .zip(&false_value.bits)
-            .map(|(true_bit, false_bit)| cond.select(true_bit, false_bit))
-            .collect::<Result<Vec<Boolean<ConstraintF>>, SynthesisError>>()?;
-        let selected_value = match (cond.value(), true_value.value(), false_value.value()) {
-            (Ok(true), Err(_), _) => None,
-            (Ok(true), Ok(v), _) => Some(v),
-            (Ok(false), _, Err(_)) => None,
-            (Ok(false), _, Ok(v)) => Some(v),
-            (Err(_), _, _) => None,
-        };
+            .map(|(t, f)| cond.select(t, f))
+            .collect::<Result<Vec<_>, SynthesisError>>()?;
+                    let selected_value = cond.value().ok().and_then(|cond| {
+                    	if cond {
+                    		true_value.value().ok()
+                    	} else {
+                    		false_value.value().ok()
+                    	}
+                    });
         Ok(Self {
             bits: selected_bits,
             value: selected_value,
