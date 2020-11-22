@@ -6,9 +6,11 @@ macro_rules! make_uint {
         #[doc = $native_doc_name]
         #[doc = "`type."]
         pub mod $mod_name {
-            use ark_ff::{Field, FpParameters, PrimeField};
+            use ark_ff::{Field, FpParameters, One, PrimeField, Zero};
             use core::borrow::Borrow;
             use core::convert::TryFrom;
+            use num_bigint::BigUint;
+            use num_traits::cast::ToPrimitive;
 
             use ark_relations::r1cs::{
                 ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
@@ -183,6 +185,9 @@ macro_rules! make_uint {
                     // in the scalar field
                     assert!(F::Params::MODULUS_BITS >= 2 * $size);
 
+                    // Support up to 128
+                    assert!($size <= 128);
+
                     assert!(operands.len() >= 1);
                     assert!($size * operands.len() <= F::Params::MODULUS_BITS as usize);
 
@@ -192,10 +197,10 @@ macro_rules! make_uint {
 
                     // Compute the maximum value of the sum so we allocate enough bits for
                     // the result
-                    let mut max_value = (operands.len() as u128) * u128::from($native::max_value());
+                    let mut max_value = BigUint::from($native::max_value()) * BigUint::from(operands.len());
 
                     // Keep track of the resulting value
-                    let mut result_value = Some(0u128);
+                    let mut result_value = Some(BigUint::zero());
 
                     // This is a linear combination that we will enforce to be "zero"
                     let mut lc = LinearCombination::zero();
@@ -207,7 +212,7 @@ macro_rules! make_uint {
                         // Accumulate the value
                         match op.value {
                             Some(val) => {
-                                result_value.as_mut().map(|v| *v += u128::from(val));
+                                result_value.as_mut().map(|v| *v += BigUint::from(val));
                             }
 
                             None => {
@@ -246,7 +251,12 @@ macro_rules! make_uint {
                     }
 
                     // The value of the actual result is modulo 2^$size
-                    let modular_value = result_value.map(|v| v as $native);
+                    let modular_value = result_value.clone().map(|v|
+                        {
+                            let modulus = BigUint::from(1u64) << ($size as u32);
+                            (v % modulus).to_u128().unwrap() as $native
+                        }
+                    );
 
                     if all_constants && modular_value.is_some() {
                         // We can just return a constant, rather than
@@ -262,11 +272,9 @@ macro_rules! make_uint {
                     // Allocate each bit_gadget of the result
                     let mut coeff = F::one();
                     let mut i = 0;
-                    while max_value != 0 {
+                    while max_value != BigUint::zero() {
                         // Allocate the bit_gadget
-                        let b = AllocatedBit::new_witness(cs.clone(), || {
-                            result_value.map(|v| (v >> i) & 1 == 1).get()
-                        })?;
+                        let b = AllocatedBit::new_witness(cs.clone(), || result_value.clone().map(|v| (v >> i) & BigUint::one() == BigUint::one()).get())?;
 
                         // Subtract this bit_gadget from the linear combination to ensure the sums
                         // balance out
@@ -357,7 +365,7 @@ macro_rules! make_uint {
             mod test {
                 use super::$name;
                 use crate::{bits::boolean::Boolean, prelude::*, Vec};
-                use ark_test_curves::bls12_381::Fr;
+                use ark_test_curves::mnt4_753::Fr;
                 use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
                 use rand::{Rng, SeedableRng};
                 use rand_xorshift::XorShiftRng;
@@ -490,7 +498,6 @@ macro_rules! make_uint {
                         let r = $name::addmany(&[r, c_bit, d_bit]).unwrap();
 
                         assert!(cs.is_satisfied().unwrap());
-
                         assert!(r.value == Some(expected));
 
                         for b in r.bits.iter() {

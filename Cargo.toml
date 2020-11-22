@@ -20,13 +20,15 @@ ark-relations = { git = "https://github.com/arkworks-rs/snark", default-features
 
 derivative = { version = "2", features = ["use_core"] }
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
+num-bigint = {version = "0.3", default-features = false }
+num-traits = {version = "0.2", default-features = false }
 
 [dev-dependencies]
 rand = { version = "0.7", default-features = false }
 rand_xorshift = "0.2"
-ark-test-curves = { git = "https://github.com/arkworks-rs/algebra", default-features = false, features = ["bls12_381_scalar_field"] }
+ark-test-curves = { git = "https://github.com/arkworks-rs/algebra", default-features = false, features = ["bls12_381_scalar_field", "mnt4_753_scalar_field"] }
 
 [features]
 default = ["std"]
-std = [ "ark-ff/std", "ark-relations/std", "ark-std/std" ]
+std = [ "ark-ff/std", "ark-relations/std", "ark-std/std", "num-bigint/std" ]
 parallel = [ "std", "ark-ff/parallel" ]
