@@ -329,6 +329,33 @@ macro_rules! make_uint {
                 }
             }
 
+            impl<ConstraintF: Field> CondSelectGadget<ConstraintF> for $name<ConstraintF> {
+                #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]
+                fn conditionally_select(
+                    cond: &Boolean<ConstraintF>,
+                    true_value: &Self,
+                    false_value: &Self,
+                ) -> Result<Self, SynthesisError> {
+                    let selected_bits = true_value
+                    	.bits
+                    	.iter()
+                    	.zip(&false_value.bits)
+                        .map(|(t, f)| cond.select(t, f))
+                        .collect::<Result<Vec<_>, SynthesisError>>()?;
+                    let selected_value = cond.value().ok().and_then(|cond| {
+                    	if cond {
+                    		true_value.value().ok()
+                    	} else {
+                    		false_value.value().ok()
+                    	}
+                    });
+                    Ok(Self {
+                        bits: selected_bits,
+                        value: selected_value,
+                    })
+                }
+            }
+
             impl<ConstraintF: Field> AllocVar<$native, ConstraintF> for $name<ConstraintF> {
                 fn new_variable<T: Borrow<$native>>(
                     cs: impl Into<Namespace<ConstraintF>>,
