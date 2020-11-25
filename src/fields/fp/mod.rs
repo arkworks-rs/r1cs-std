@@ -598,7 +598,7 @@ impl<F: PrimeField> ThreeBitCondNegLookupGadget<F> for AllocatedFp<F> {
         b.cs().enforce_constraint(
             y_lc.clone(),
             b[2].lc() * F::from(2u64).neg() + (F::one(), Variable::One),
-            result.variable,
+            lc!() + result.variable,
         )?;
 
         Ok(result)
