@@ -33,7 +33,7 @@ macro_rules! make_uint {
             #[derive(Clone, Debug)]
             pub struct $name<F: Field> {
                 // Least significant bit first
-                bits: Vec<Boolean<F>>,
+                bits: [Boolean<F>; $size],
                 value: Option<$native>,
             }
 
@@ -41,7 +41,7 @@ macro_rules! make_uint {
                 type Value = $native;
 
                 fn cs(&self) -> ConstraintSystemRef<F> {
-                    self.bits.as_slice().cs()
+                    self.bits.as_ref().cs()
                 }
 
                 fn value(&self) -> Result<Self::Value, SynthesisError> {
@@ -65,16 +65,11 @@ macro_rules! make_uint {
                 #[doc = $native_doc_name]
                 #[doc = "` type."]
                 pub fn constant(value: $native) -> Self {
-                    let mut bits = Vec::with_capacity($size);
+                    let mut bits = [Boolean::FALSE; $size];
 
                     let mut tmp = value;
-                    for _ in 0..$size {
-                        if tmp & 1 == 1 {
-                            bits.push(Boolean::constant(true))
-                        } else {
-                            bits.push(Boolean::constant(false))
-                        }
-
+                    for i in 0..$size {
+                        bits[i] = Boolean::constant((tmp & 1) == 1);
                         tmp >>= 1;
                     }
 
@@ -86,7 +81,7 @@ macro_rules! make_uint {
 
                 /// Turns `self` into the underlying little-endian bits.
                 pub fn to_bits_le(&self) -> Vec<Boolean<F>> {
-                    self.bits.clone()
+                    self.bits.to_vec()
                 }
 
                 /// Construct `Self` from a slice of `Boolean`s.
@@ -99,7 +94,7 @@ macro_rules! make_uint {
                 pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
                     assert_eq!(bits.len(), $size);
 
-                    let bits = bits.to_vec();
+                    let bits = <&[Boolean<F>; $size]>::try_from(bits).unwrap().clone();
 
                     let mut value = Some(0);
                     for b in bits.iter().rev() {
@@ -130,23 +125,22 @@ macro_rules! make_uint {
                 /// Rotates `self` to the right by `by` steps, wrapping around.
                 #[tracing::instrument(target = "r1cs", skip(self))]
                 pub fn rotr(&self, by: usize) -> Self {
+                    let mut result = self.clone();
                     let by = by % $size;
 
                     let new_bits = self
                         .bits
                         .iter()
                         .skip(by)
-                        .chain(self.bits.iter())
-                        .take($size)
-                        .cloned()
-                        .collect();
+                        .chain(&self.bits)
+                        .take($size);
 
-                    $name {
-                        bits: new_bits,
-                        value: self
-                            .value
-                            .map(|v| v.rotate_right(u32::try_from(by).unwrap())),
+                    for (res, new) in result.bits.iter_mut().zip(new_bits) {
+                        *res = new.clone();
                     }
+
+                    result.value = self.value.map(|v| v.rotate_right(u32::try_from(by).unwrap()));
+                    result
                 }
 
                 /// Outputs `self ^ other`.
@@ -155,22 +149,19 @@ macro_rules! make_uint {
                 /// *does not* create any constraints or variables.
                 #[tracing::instrument(target = "r1cs", skip(self, other))]
                 pub fn xor(&self, other: &Self) -> Result<Self, SynthesisError> {
-                    let new_value = match (self.value, other.value) {
+                    let mut result = self.clone();
+                    result.value = match (self.value, other.value) {
                         (Some(a), Some(b)) => Some(a ^ b),
                         _ => None,
                     };
 
-                    let bits = self
-                        .bits
-                        .iter()
-                        .zip(other.bits.iter())
-                        .map(|(a, b)| a.xor(b))
-                        .collect::<Result<_, _>>()?;
+                    let new_bits = self.bits.iter().zip(&other.bits).map(|(a, b)| a.xor(b));
 
-                    Ok($name {
-                        bits,
-                        value: new_value,
-                    })
+                    for (res, new) in result.bits.iter_mut().zip(new_bits) {
+                        *res = new?;
+                    }
+
+                    Ok(result)
                 }
 
                 /// Perform modular addition of `operands`.
@@ -292,9 +283,10 @@ macro_rules! make_uint {
 
                     // Discard carry bits that we don't care about
                     result_bits.truncate($size);
+                    let bits = TryFrom::try_from(result_bits).unwrap();
 
                     Ok($name {
-                        bits: result_bits,
+                        bits,
                         value: modular_value,
                     })
                 }
@@ -314,7 +306,7 @@ macro_rules! make_uint {
             impl<ConstraintF: Field> EqGadget<ConstraintF> for $name<ConstraintF> {
                 #[tracing::instrument(target = "r1cs", skip(self))]
                 fn is_eq(&self, other: &Self) -> Result<Boolean<ConstraintF>, SynthesisError> {
-                    self.bits.as_slice().is_eq(&other.bits)
+                    self.bits.as_ref().is_eq(&other.bits)
                 }
 
                 #[tracing::instrument(target = "r1cs", skip(self))]
@@ -348,19 +340,20 @@ macro_rules! make_uint {
                     	.bits
                     	.iter()
                     	.zip(&false_value.bits)
-                        .map(|(t, f)| cond.select(t, f))
-                        .collect::<Result<Vec<_>, SynthesisError>>()?;
-                    let selected_value = cond.value().ok().and_then(|cond| {
+                        .map(|(t, f)| cond.select(t, f));
+                    let mut bits = [Boolean::FALSE; $size];
+                    for (result, new) in bits.iter_mut().zip(selected_bits) {
+                        *result = new?;
+                    }
+
+                    let value = cond.value().ok().and_then(|cond| {
                     	if cond {
                     		true_value.value().ok()
                     	} else {
                     		false_value.value().ok()
                     	}
                     });
-                    Ok(Self {
-                        bits: selected_bits,
-                        value: selected_value,
-                    })
+                    Ok(Self { bits, value })
                 }
             }
 
@@ -372,19 +365,18 @@ macro_rules! make_uint {
                 ) -> Result<Self, SynthesisError> {
                     let ns = cs.into();
                     let cs = ns.cs();
-                    let value = f().map(|f| *f.borrow());
-                    let values = match value {
-                        Ok(val) => (0..$size).map(|i| Some((val >> i) & 1 == 1)).collect(),
-                        _ => vec![None; $size],
-                    };
-                    let bits = values
-                        .into_iter()
-                        .map(|v| Boolean::new_variable(cs.clone(), || v.get(), mode))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    Ok(Self {
-                        bits,
-                        value: value.ok(),
-                    })
+                    let value = f().map(|f| *f.borrow()).ok();
+
+                    let mut values = [None; $size];
+                    if let Some(val) = value {
+                        values.iter_mut().enumerate().for_each(|(i, v)| *v = Some((val >> i) & 1 == 1));
+                    }
+
+                    let mut bits = [Boolean::FALSE; $size];
+                    for (b, v) in  bits.iter_mut().zip(&values) {
+                        *b = Boolean::new_variable(cs.clone(), || v.get(), mode)?;
+                    }
+                    Ok(Self { bits, value })
                 }
             }
 
