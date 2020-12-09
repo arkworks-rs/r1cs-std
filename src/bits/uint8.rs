@@ -3,14 +3,14 @@ use ark_ff::{Field, FpParameters, PrimeField, ToConstraintField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{fields::fp::AllocatedFp, prelude::*, Assignment, Vec};
-use core::borrow::Borrow;
+use core::{borrow::Borrow, convert::TryFrom};
 
 /// Represents an interpretation of 8 `Boolean` objects as an
 /// unsigned integer.
 #[derive(Clone, Debug)]
 pub struct UInt8<F: Field> {
     /// Little-endian representation: least significant bit first
-    pub(crate) bits: Vec<Boolean<F>>,
+    pub(crate) bits: [Boolean<F>; 8],
     pub(crate) value: Option<u8>,
 }
 
@@ -18,7 +18,7 @@ impl<F: Field> R1CSVar<F> for UInt8<F> {
     type Value = u8;
 
     fn cs(&self) -> ConstraintSystemRef<F> {
-        self.bits.as_slice().cs()
+        self.bits.as_ref().cs()
     }
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
@@ -84,12 +84,12 @@ impl<F: Field> UInt8<F> {
     /// # }
     /// ```
     pub fn constant(value: u8) -> Self {
-        let mut bits = Vec::with_capacity(8);
+        let mut bits = [Boolean::FALSE; 8];
 
         let mut tmp = value;
-        for _ in 0..8 {
+        for i in 0..8 {
             // If last bit is one, push one.
-            bits.push(Boolean::constant(tmp & 1 == 1));
+            bits[i] = Boolean::constant((tmp & 1) == 1);
             tmp >>= 1;
         }
 
@@ -201,8 +201,7 @@ impl<F: Field> UInt8<F> {
     #[tracing::instrument(target = "r1cs")]
     pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
         assert_eq!(bits.len(), 8);
-
-        let bits = bits.to_vec();
+        let bits = <&[Boolean<F>; 8]>::try_from(bits).unwrap().clone();
 
         let mut value = Some(0u8);
         for (i, b) in bits.iter().enumerate() {
@@ -239,29 +238,26 @@ impl<F: Field> UInt8<F> {
     /// ```
     #[tracing::instrument(target = "r1cs")]
     pub fn xor(&self, other: &Self) -> Result<Self, SynthesisError> {
-        let new_value = match (self.value, other.value) {
+        let mut result = self.clone();
+        result.value = match (self.value, other.value) {
             (Some(a), Some(b)) => Some(a ^ b),
             _ => None,
         };
 
-        let bits = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .map(|(a, b)| a.xor(b))
-            .collect::<Result<_, _>>()?;
+        let new_bits = self.bits.iter().zip(&other.bits).map(|(a, b)| a.xor(b));
 
-        Ok(Self {
-            bits,
-            value: new_value,
-        })
+        for (res, new) in result.bits.iter_mut().zip(new_bits) {
+            *res = new?;
+        }
+
+        Ok(result)
     }
 }
 
 impl<ConstraintF: Field> EqGadget<ConstraintF> for UInt8<ConstraintF> {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<ConstraintF>, SynthesisError> {
-        self.bits.as_slice().is_eq(&other.bits)
+        self.bits.as_ref().is_eq(&other.bits)
     }
 
     #[tracing::instrument(target = "r1cs")]
@@ -295,19 +291,20 @@ impl<ConstraintF: Field> CondSelectGadget<ConstraintF> for UInt8<ConstraintF> {
             .bits
             .iter()
             .zip(&false_value.bits)
-            .map(|(t, f)| cond.select(t, f))
-            .collect::<Result<Vec<_>, SynthesisError>>()?;
-        let selected_value = cond.value().ok().and_then(|cond| {
+            .map(|(t, f)| cond.select(t, f));
+        let mut bits = [Boolean::FALSE; 8];
+        for (result, new) in bits.iter_mut().zip(selected_bits) {
+            *result = new?;
+        }
+
+        let value = cond.value().ok().and_then(|cond| {
             if cond {
                 true_value.value().ok()
             } else {
                 false_value.value().ok()
             }
         });
-        Ok(Self {
-            bits: selected_bits,
-            value: selected_value,
-        })
+        Ok(Self { bits, value })
     }
 }
 
@@ -319,19 +316,21 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let value = f().map(|f| *f.borrow());
-        let values = match value {
-            Ok(val) => (0..8).map(|i| Some((val >> i) & 1 == 1)).collect(),
-            _ => vec![None; 8],
-        };
-        let bits = values
-            .into_iter()
-            .map(|v| Boolean::new_variable(cs.clone(), || v.get(), mode))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self {
-            bits,
-            value: value.ok(),
-        })
+        let value = f().map(|f| *f.borrow()).ok();
+
+        let mut values = [None; 8];
+        if let Some(val) = value {
+            values
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, v)| *v = Some((val >> i) & 1 == 1));
+        }
+
+        let mut bits = [Boolean::FALSE; 8];
+        for (b, v) in bits.iter_mut().zip(&values) {
+            *b = Boolean::new_variable(cs.clone(), || v.get(), mode)?;
+        }
+        Ok(Self { bits, value })
     }
 }
 
