@@ -90,9 +90,9 @@ impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
 
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut bytes = self.0.x.to_bytes()?;
-        let y_bytes = self.0.y.to_bytes()?;
-        let inf_bytes = self.0.infinity.to_bytes()?;
+        let mut bytes = self.0.x.to_non_unique_bytes()?;
+        let y_bytes = self.0.y.to_non_unique_bytes()?;
+        let inf_bytes = self.0.infinity.to_non_unique_bytes()?;
         bytes.extend_from_slice(&y_bytes);
         bytes.extend_from_slice(&inf_bytes);
         Ok(bytes)
