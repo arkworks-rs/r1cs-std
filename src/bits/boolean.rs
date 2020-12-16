@@ -689,7 +689,8 @@ impl<F: Field> Boolean<F> {
     /// `self`:
     ///
     /// If `self.is_eq(&Boolean::TRUE)`, this outputs `first`; else, it outputs
-    /// `second`. ```
+    /// `second`.
+    /// ```
     /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
@@ -710,6 +711,7 @@ impl<F: Field> Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
+    ///
     #[tracing::instrument(target = "r1cs", skip(first, second))]
     pub fn select<T: CondSelectGadget<F>>(
         &self,
