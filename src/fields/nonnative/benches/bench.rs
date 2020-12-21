@@ -1,4 +1,4 @@
-use ark_ff::{test_rng as thread_rng, PrimeField};
+use ark_ff::PrimeField;
 use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
 use ark_relations::{
@@ -161,7 +161,7 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
 
 macro_rules! nonnative_bench_individual {
     ($bench_method:ident, $bench_name:ident, $bench_target_field:ty, $bench_base_field:ty) => {
-        let rng = &mut thread_rng();
+        let rng = &mut ark_std::test_rng();
         let mut num_constraints = 0;
         let mut num_nonzeros = 0;
         for _ in 0..NUM_REPETITIONS {

@@ -541,7 +541,7 @@ macro_rules! nonnative_test_individual {
         paste::item! {
             #[test]
             fn [<$test_method _ $test_name:lower>]() {
-                let rng = &mut ark_ff::test_rng();
+                let rng = &mut ark_std::test_rng();
                 /*{
                     let cs = ConstraintSystem::<$test_base_field>::new();
                     let cs_ref = ConstraintSystemRef::new(cs);
