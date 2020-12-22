@@ -501,7 +501,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
         let mut bytes = Vec::<UInt8<BaseField>>::new();
         bits.chunks(8).for_each(|bits_per_byte| {
             let mut bits_per_byte: Vec<Boolean<BaseField>> = bits_per_byte.to_vec();
-            if bits_per_byte.len() == 8 {
+            if bits_per_byte.len() < 8 {
                 bits_per_byte.resize_with(8, || Boolean::<BaseField>::constant(false));
             }
             bits_per_byte.reverse();
