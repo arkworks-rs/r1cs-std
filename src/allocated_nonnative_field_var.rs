@@ -495,8 +495,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
-        let mut bits = self.to_bits_le()?;
-        bits.reverse();
+        let bits = self.to_bits_le()?;
 
         let mut bytes = Vec::<UInt8<BaseField>>::new();
         bits.chunks(8).for_each(|bits_per_byte| {
@@ -504,7 +503,6 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
             if bits_per_byte.len() < 8 {
                 bits_per_byte.resize_with(8, || Boolean::<BaseField>::constant(false));
             }
-            bits_per_byte.reverse();
 
             bytes.push(UInt8::<BaseField>::from_bits_le(&bits_per_byte));
         });
