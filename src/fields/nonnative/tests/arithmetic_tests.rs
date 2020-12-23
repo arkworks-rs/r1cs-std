@@ -542,15 +542,6 @@ macro_rules! nonnative_test_individual {
             #[test]
             fn [<$test_method _ $test_name:lower>]() {
                 let rng = &mut ark_std::test_rng();
-                /*{
-                    let cs = ConstraintSystem::<$test_base_field>::new();
-                    let cs_ref = ConstraintSystemRef::new(cs);
-                    HitRate::init(&cs_ref);
-                    $test_method::<$test_target_field, $test_base_field, _>(cs_ref.clone(), rng);
-                    assert!(cs_ref.is_satisfied().unwrap());
-                    println!("In test {} for {}: ", stringify!($test_method), stringify!($test_name));
-                    HitRate::print(&cs_ref);
-                }*/
 
                 for _ in 0..NUM_REPETITIONS {
                     let cs = ConstraintSystem::<$test_base_field>::new_ref();
