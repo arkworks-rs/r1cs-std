@@ -484,7 +484,16 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
             )?);
         }
         bits.reverse();
-        Boolean::enforce_in_field_le(&bits)?;
+
+        let mut b = TargetField::characteristic().to_vec();
+        assert_eq!(b[0] % 2, 1);
+        b[0] -= 1; // This works, because the LSB is one, so there's no borrows.
+        let run = Boolean::<BaseField>::enforce_smaller_or_equal_than_le(&bits, b)?;
+
+        // We should always end in a "run" of zeros, because
+        // the characteristic is an odd prime. So, this should
+        // be empty.
+        assert!(run.is_empty());
 
         Ok(bits)
     }

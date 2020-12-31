@@ -1,6 +1,6 @@
 use crate::{AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
-use ark_ff::to_bytes;
 use ark_ff::PrimeField;
+use ark_ff::{to_bytes, FpParameters};
 use ark_r1cs_std::boolean::Boolean;
 use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::fields::FieldVar;
@@ -295,7 +295,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
     fn to_non_unique_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseField>>> {
         use ark_ff::BitIteratorLE;
         match self {
-            Self::Constant(c) => Ok(BitIteratorLE::without_trailing_zeros(&c.into_repr())
+            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
+                .take((TargetField::Params::MODULUS_BITS) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),

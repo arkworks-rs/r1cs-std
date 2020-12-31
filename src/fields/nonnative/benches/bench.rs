@@ -15,7 +15,7 @@ fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> us
         ConstraintSystemRef::CS(r) => {
             let mut cs_bak = r.borrow().clone();
 
-            cs_bak.outline_lcs();
+            cs_bak.reduce_constraint_weight();
             let matrices = cs_bak.to_matrices().unwrap();
 
             matrices.a_num_non_zero + matrices.b_num_non_zero + matrices.c_num_non_zero

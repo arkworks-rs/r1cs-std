@@ -53,6 +53,7 @@ num-integer = { version = "0.1.44", default-features = false }
 
 [dev-dependencies]
 paste = "1.0"
+ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
 ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
 ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
 ark-mnt4-753 = { git = "https://github.com/arkworks-rs/curves", features = ["curve"], default-features = false  }
