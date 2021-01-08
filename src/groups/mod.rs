@@ -92,14 +92,28 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         &self,
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
     ) -> Result<Self, SynthesisError> {
-        let mut res = Self::zero();
-        let mut multiple = self.clone();
-        for bit in bits {
-            let tmp = res.clone() + &multiple;
-            res = bit.select(&tmp, &res)?;
-            multiple.double_in_place()?;
+        if self.is_constant() {
+            let mut value = self.value().unwrap();
+            let bits_and_multiples = bits.map(|b| {
+                let multiple = value;
+                value.double_in_place();
+                (b, multiple)
+            }).collect::<Vec<_>>();
+            let mut result = self.clone();
+            result.precomputed_base_scalar_mul_le(
+                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c))
+            )?;
+            Ok(result)
+        } else {
+            let mut res = Self::zero();
+            let mut multiple = self.clone();
+            for bit in bits {
+                let tmp = res.clone() + &multiple;
+                res = bit.select(&tmp, &res)?;
+                multiple.double_in_place()?;
+            }
+            Ok(res)
         }
-        Ok(res)
     }
 
     /// Computes a `I * self` in place, where `I` is a `Boolean` *little-endian*
