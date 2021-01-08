@@ -93,8 +93,10 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
     ) -> Result<Self, SynthesisError> {
         if self.is_constant() {
-            // Compute multiples of powers of two (these will be used by
-            // (`precomputed_base_scalar_mul_le`).
+            // Compute 2^i * self for i in 0..bits.len()
+            // (these will be used by`precomputed_base_scalar_mul_le`, to perform
+            // a conditional addition.).
+            //
             // TODO: if `bits.len()` is small n, it might be cheaper to
             // conditinally select between 2^n options.
             let mut value = self.value().unwrap();
@@ -104,13 +106,15 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
                     value.double_in_place();
                     (b, multiple)
                 })
-                .collect::<Vec<_>>();
+                .collect::<ark_std::vec::Vec<_>>();
             let mut result = self.clone();
             result.precomputed_base_scalar_mul_le(
                 bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
             )?;
             Ok(result)
         } else {
+            // Computes the standard little-endian double-and-add algorithm
+            // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
             let mut res = Self::zero();
             let mut multiple = self.clone();
             for bit in bits {
@@ -125,7 +129,7 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
     /// Computes a `I * self` in place, where `I` is a `Boolean` *little-endian*
     /// representation of the scalar.
     ///
-    /// The base powers are precomputed power-of-two multiples of a single
+    /// The bases are precomputed power-of-two multiples of a single
     /// base.
     #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
@@ -137,14 +141,22 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         B: Borrow<Boolean<ConstraintF>>,
         C: 'a,
     {
+        // Computes the standard little-endian double-and-add algorithm
+        // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+
+        // Let `original` be the initial value of `self`.
         for (bit, base) in scalar_bits_with_bases {
-            let new_encoded = self.clone() + *base;
-            *self = bit.borrow().select(&new_encoded, self)?;
+            // Compute `self + 2^i * original`
+            let self_plus_base = self.clone() + *base;
+            // If `bit == 1`, set self = self + 2^i * original;
+            // else, set self = self;
+            *self = bit.borrow().select(&self_plus_base, self)?;
         }
         Ok(())
     }
 
-    /// Computes a `\sum_j I_j * B_j`, where `I_j` is a `Boolean`
+    /// Computes `Σⱼ(scalarⱼ * baseⱼ)` for all j,
+    /// where `scalarⱼ` is a `Boolean` *little-endian*
     /// representation of the j-th scalar.
     #[tracing::instrument(target = "r1cs", skip(bases, scalars))]
     fn precomputed_base_multiscalar_mul_le<'a, T, I, B>(
@@ -157,7 +169,7 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         B: Borrow<[C]>,
     {
         let mut result = Self::zero();
-        // Compute ∏(h_i^{m_i}) for all i.
+        // Compute Σᵢ(bitᵢ * baseᵢ) for all i.
         for (bits, bases) in scalars.zip(bases) {
             let bases = bases.borrow();
             let bits = bits.to_bits_le()?;
