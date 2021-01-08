@@ -221,6 +221,43 @@ where
 
         Ok(Self::new(x, y, z))
     }
+
+    /// Mixed addition, which is useful when `other` is known to have z = 1.
+    #[tracing::instrument(target = "r1cs", skip(self, other_x, other_y))]
+    pub(crate) fn add_mixed(&self, (other_x, other_y): (&F, &F)) -> Result<Self, SynthesisError> {
+        // Complete mixed addition formula from Renes-Costello-Batina 2015
+        // Algorithm 2
+        // (https://eprint.iacr.org/2015/1060).
+        //
+        // Adapted from code in
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+        let three_b = P::COEFF_B.double() + &P::COEFF_B;
+
+        let xx = &self.x * other_x; // 1
+        let yy = &self.y * other_y; // 2
+        let xy_pairs = ((&self.x + &self.y) * &(other_x + other_y)) - (&xx + &yy); // 4, 5, 6, 7, 8
+        let xz_pairs = (other_x * &self.z) + &self.x; // 8, 9
+        let yz_pairs = (other_y * &self.z) + &self.y; // 10, 11
+
+        let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 12
+
+        let bz3_part = &axz + &self.z * three_b; // 13, 14
+
+        let yy_m_bz3 = &yy - &bz3_part; // 15
+        let yy_p_bz3 = &yy + &bz3_part; // 16
+
+        let azz = mul_by_coeff_a::<P, F>(&self.z); // 20
+        let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 18, 19, 22
+
+        let bxz3 = &xz_pairs * three_b; // 21
+        let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 23, 24, 25
+
+        let x = (&yy_m_bz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 28,29, 30
+        let y = (&yy_p_bz3 * &yy_m_bz3) + &xx3_p_azz * b3_xz_pairs; // 17, 26, 27
+        let z = (&yy_p_bz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 31, 32, 33
+
+        Ok(ProjectiveVar::new(x, y, z))
+    }
 }
 
 impl<P, F> CurveVar<SWProjective<P>, <P::BaseField as Field>::BasePrimeField>
@@ -288,18 +325,19 @@ where
     // formulae are incomplete for even-order points.
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
-        let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        unimplemented!("cannot enforce prime order");
+        // let r_minus_1 = (-P::ScalarField::one()).into_repr();
 
-        let mut result = Self::zero();
-        for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
-            result.double_in_place()?;
+        // let mut result = Self::zero();
+        // for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
+        //     result.double_in_place()?;
 
-            if b {
-                result += self;
-            }
-        }
-        self.negate()?.enforce_equal(&result)?;
-        Ok(())
+        //     if b {
+        //         result += self;
+        //     }
+        // }
+        // self.negate()?.enforce_equal(&result)?;
+        // Ok(())
     }
 
     #[inline]
@@ -346,6 +384,54 @@ where
     fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self::new(self.x.clone(), self.y.negate()?, self.z.clone()))
     }
+
+    /// Computes `bits * self`, where `bits` is a little-endian
+    /// `Boolean` representation of a scalar.
+    #[tracing::instrument(target = "r1cs", skip(bits))]
+    fn scalar_mul_le<'a>(
+        &self,
+        bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
+    ) -> Result<Self, SynthesisError> {
+        if self.is_constant() {
+            // Compute 2^i * self for i in 0..bits.len()
+            // (these will be used by`precomputed_base_scalar_mul_le`, to perform
+            // a conditional addition.).
+            //
+            // TODO: if `bits.len()` is small n, it might be cheaper to
+            // conditinally select between 2^n options.
+            let mut value = self.value().unwrap();
+            let bits_and_multiples = bits
+                .map(|b| {
+                    let multiple = value;
+                    value.double_in_place();
+                    (b, multiple)
+                })
+                .collect::<ark_std::vec::Vec<_>>();
+            let mut result = self.clone();
+            result.precomputed_base_scalar_mul_le(
+                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
+            )?;
+            Ok(result)
+        } else {
+            let mut bits = bits.collect::<Vec<_>>();
+            bits.reverse();
+            // Computes the standard big-endian double-and-add algorithm
+            // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+            let mut res = Self::zero();
+            for bit in bits {
+                res.double_in_place()?;
+                let tmp = res.add_mixed((&self.x, &self.y))?;
+                res = bit.select(&tmp, &res)?;
+            }
+            // The foregoing algorithm relies on mixed addition, and so does not
+            // work when the input (`self`) is zero. We hence have to perform
+            // a check to ensure that if the input is zero, then so is the output.
+            // The cost of this check should be less than the benefit of using
+            // mixed addition in almost all cases.
+            let self_is_zero = self.is_zero()?;
+            self_is_zero.select(&Self::zero(), &res)
+        }
+    }
 }
 
 impl<P, F> ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField> for ProjectiveVar<P, F>
@@ -390,40 +476,10 @@ impl_bounded_ops!(
             // we'll just act like `other` is constant.
             core::mem::swap(&mut this, &mut other);
         }
-        let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
         if other.is_constant() {
-            // Complete mixed addition formula from Renes-Costello-Batina 2015
-            // Algorithm 2
-            // (https://eprint.iacr.org/2015/1060).
-            //
-            // Adapted from code in
-            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
-
-            let xx = &this.x * &other.x; // 1
-            let yy = &this.y * &other.y; // 2
-            let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
-            let xz_pairs = (&other.x * &this.z) + &this.x; // 8, 9
-            let yz_pairs = (&other.y * &this.z) + &this.y; // 10, 11
-
-            let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 12
-
-            let bz3_part = &axz + &this.z * three_b; // 13, 14
-
-            let yy_m_bz3 = &yy - &bz3_part; // 15
-            let yy_p_bz3 = &yy + &bz3_part; // 16
-
-            let azz = mul_by_coeff_a::<P, F>(&this.z); // 20
-            let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 18, 19, 22
-
-            let bxz3 = &xz_pairs * three_b; // 21
-            let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 23, 24, 25
-
-            let x = (&yy_m_bz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 28,29, 30
-            let y = (&yy_p_bz3 * &yy_m_bz3) + &xx3_p_azz * b3_xz_pairs; // 17, 26, 27
-            let z = (&yy_p_bz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 31, 32, 33
-
-            ProjectiveVar::new(x, y, z)
+            assert!(!other.value().unwrap().is_zero());
+            this.add_mixed((&other.x, &other.y)).unwrap()
         } else {
             // Complete addition formula from Renes-Costello-Batina 2015
             // Algorithm 1
@@ -431,6 +487,7 @@ impl_bounded_ops!(
             //
             // Adapted from code in
             // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+            let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
             let xx = &this.x * &other.x; // 1
             let yy = &this.y * &other.y; // 2

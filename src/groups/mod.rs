@@ -142,7 +142,7 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         C: 'a,
     {
         // Computes the standard little-endian double-and-add algorithm
-        // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+        // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
 
         // Let `original` be the initial value of `self`.
         for (bit, base) in scalar_bits_with_bases {
