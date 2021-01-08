@@ -94,14 +94,16 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
     ) -> Result<Self, SynthesisError> {
         if self.is_constant() {
             let mut value = self.value().unwrap();
-            let bits_and_multiples = bits.map(|b| {
-                let multiple = value;
-                value.double_in_place();
-                (b, multiple)
-            }).collect::<Vec<_>>();
+            let bits_and_multiples = bits
+                .map(|b| {
+                    let multiple = value;
+                    value.double_in_place();
+                    (b, multiple)
+                })
+                .collect::<Vec<_>>();
             let mut result = self.clone();
             result.precomputed_base_scalar_mul_le(
-                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c))
+                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
             )?;
             Ok(result)
         } else {
