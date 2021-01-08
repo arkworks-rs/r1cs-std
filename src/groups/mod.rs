@@ -93,6 +93,10 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
     ) -> Result<Self, SynthesisError> {
         if self.is_constant() {
+            // Compute multiples of powers of two (these will be used by
+            // (`precomputed_base_scalar_mul_le`).
+            // TODO: if `bits.len()` is small n, it might be cheaper to
+            // conditinally select between 2^n options.
             let mut value = self.value().unwrap();
             let bits_and_multiples = bits
                 .map(|b| {
@@ -123,18 +127,18 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
     ///
     /// The base powers are precomputed power-of-two multiples of a single
     /// base.
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_base_powers))]
+    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
-        scalar_bits_with_base_powers: I,
+        scalar_bits_with_bases: I,
     ) -> Result<(), SynthesisError>
     where
         I: Iterator<Item = (B, &'a C)>,
         B: Borrow<Boolean<ConstraintF>>,
         C: 'a,
     {
-        for (bit, base_power) in scalar_bits_with_base_powers {
-            let new_encoded = self.clone() + *base_power;
+        for (bit, base) in scalar_bits_with_bases {
+            let new_encoded = self.clone() + *base;
             *self = bit.borrow().select(&new_encoded, self)?;
         }
         Ok(())
@@ -154,10 +158,10 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
     {
         let mut result = Self::zero();
         // Compute ∏(h_i^{m_i}) for all i.
-        for (bits, base_powers) in scalars.zip(bases) {
-            let base_powers = base_powers.borrow();
+        for (bits, bases) in scalars.zip(bases) {
+            let bases = bases.borrow();
             let bits = bits.to_bits_le()?;
-            result.precomputed_base_scalar_mul_le(bits.iter().zip(base_powers))?;
+            result.precomputed_base_scalar_mul_le(bits.iter().zip(bases))?;
         }
         Ok(result)
     }

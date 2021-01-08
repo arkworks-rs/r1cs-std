@@ -385,41 +385,80 @@ impl_bounded_ops!(
     add,
     AddAssign,
     add_assign,
-    |this: &'a ProjectiveVar<P, F>, other: &'a ProjectiveVar<P, F>| {
-        // Complete addition formula from Renes-Costello-Batina 2015
-        // Algorithm 1
-        // (https://eprint.iacr.org/2015/1060).
-        //
-        // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
-
+    |mut this: &'a ProjectiveVar<P, F>, mut other: &'a ProjectiveVar<P, F>| {
+        if this.is_constant() {
+            // we'll just act like `other` is constant.
+            core::mem::swap(&mut this, &mut other);
+        }
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
-        let xx = &this.x * &other.x; // 1
-        let yy = &this.y * &other.y; // 2
-        let zz = &this.z * &other.z; // 3
-        let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
-        let xz_pairs = ((&this.x + &this.z) * &(&other.x + &other.z)) - (&xx + &zz); // 9, 10, 11, 12, 13
-        let yz_pairs = ((&this.y + &this.z) * &(&other.y + &other.z)) - (&yy + &zz); // 14, 15, 16, 17, 18
+        if other.is_constant() {
+            // Complete mixed addition formula from Renes-Costello-Batina 2015
+            // Algorithm 2
+            // (https://eprint.iacr.org/2015/1060).
+            //
+            // Adapted from code in
+            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
 
-        let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 19
+            let xx = &this.x * &other.x; // 1
+            let yy = &this.y * &other.y; // 2
+            let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
+            let xz_pairs = (&other.x * &this.z) + &this.x; // 8, 9
+            let yz_pairs = (&other.y * &this.z) + &this.y; // 10, 11
 
-        let bzz3_part = &axz + &zz * three_b; // 20, 21
+            let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 12
 
-        let yy_m_bzz3 = &yy - &bzz3_part; // 22
-        let yy_p_bzz3 = &yy + &bzz3_part; // 23
+            let bz3_part = &axz + &this.z * three_b; // 13, 14
 
-        let azz = mul_by_coeff_a::<P, F>(&zz);
-        let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 25, 26, 27, 29
+            let yy_m_bz3 = &yy - &bz3_part; // 15
+            let yy_p_bz3 = &yy + &bz3_part; // 16
 
-        let bxz3 = &xz_pairs * three_b; // 28
-        let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 30, 31, 32
+            let azz = mul_by_coeff_a::<P, F>(&this.z); // 20
+            let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 18, 19, 22
 
-        let x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
-        let y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
-        let z = (&yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
+            let bxz3 = &xz_pairs * three_b; // 21
+            let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 23, 24, 25
 
-        ProjectiveVar::new(x, y, z)
+            let x = (&yy_m_bz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 28,29, 30
+            let y = (&yy_p_bz3 * &yy_m_bz3) + &xx3_p_azz * b3_xz_pairs; // 17, 26, 27
+            let z = (&yy_p_bz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 31, 32, 33
+
+            ProjectiveVar::new(x, y, z)
+        } else {
+            // Complete addition formula from Renes-Costello-Batina 2015
+            // Algorithm 1
+            // (https://eprint.iacr.org/2015/1060).
+            //
+            // Adapted from code in
+            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+
+            let xx = &this.x * &other.x; // 1
+            let yy = &this.y * &other.y; // 2
+            let zz = &this.z * &other.z; // 3
+            let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
+            let xz_pairs = ((&this.x + &this.z) * &(&other.x + &other.z)) - (&xx + &zz); // 9, 10, 11, 12, 13
+            let yz_pairs = ((&this.y + &this.z) * &(&other.y + &other.z)) - (&yy + &zz); // 14, 15, 16, 17, 18
+
+            let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 19
+
+            let bzz3_part = &axz + &zz * three_b; // 20, 21
+
+            let yy_m_bzz3 = &yy - &bzz3_part; // 22
+            let yy_p_bzz3 = &yy + &bzz3_part; // 23
+
+            let azz = mul_by_coeff_a::<P, F>(&zz);
+            let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 25, 26, 27, 29
+
+            let bxz3 = &xz_pairs * three_b; // 28
+            let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 30, 31, 32
+
+            let x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
+            let y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
+            let z = (&yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
+
+            ProjectiveVar::new(x, y, z)
+        }
+
     },
     |this: &'a ProjectiveVar<P, F>, other: SWProjective<P>| {
         this + ProjectiveVar::constant(other)
