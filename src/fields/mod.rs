@@ -160,8 +160,8 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// It is up to the caller to ensure that denominator is non-zero,
     /// since in that case the result is unconstrained.
     fn mul_by_inverse(&self, denominator: &Self) -> Result<Self, SynthesisError> {
-        if self.is_constant() && denominator.is_constant() {
-            Ok(self.clone() * denominator.value()?.inverse().unwrap())
+        if denominator.is_constant() {
+            Ok(denominator.inverse()? * self)
         } else {
             let result = Self::new_witness(self.cs(), || {
                 let denominator_inv_native = denominator.value()?.inverse().get()?;
