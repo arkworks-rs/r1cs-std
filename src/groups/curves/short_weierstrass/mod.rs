@@ -230,7 +230,7 @@ where
         // (https://eprint.iacr.org/2015/1060).
         //
         // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
         let xx = &self.x * other_x; // 1
@@ -348,7 +348,7 @@ where
         // (https://eprint.iacr.org/2015/1060).
         //
         // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
         let xx = self.x.square()?; // 1
@@ -413,10 +413,13 @@ where
             )?;
             Ok(result)
         } else {
-            let mut bits = bits.collect::<Vec<_>>();
-            bits.reverse();
             // Computes the standard big-endian double-and-add algorithm
             // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+            // the input is little-endian, so we need to reverse it to get it in
+            // big-endian.
+            let mut bits = bits.collect::<Vec<_>>();
+            bits.reverse();
+
             let mut res = Self::zero();
             let self_affine = self.to_affine()?;
             for bit in bits {
@@ -472,16 +475,25 @@ impl_bounded_ops!(
     AddAssign,
     add_assign,
     |mut this: &'a ProjectiveVar<P, F>, mut other: &'a ProjectiveVar<P, F>| {
+        // Implement complete addition for Short Weierstrass curves, following
+        // the complete addition formula from Renes-Costello-Batina 2015
+        // Algorithm 1
+        // (https://eprint.iacr.org/2015/1060).
+        //
+        // We special case handling of constants to get better constraint weight.
         if this.is_constant() {
             // we'll just act like `other` is constant.
             core::mem::swap(&mut this, &mut other);
         }
 
         if other.is_constant() {
+            // The value should exist because `other` is a constant.
             let other = other.value().unwrap();
             if other.is_zero() {
+                // this + 0 = this
                 this.clone()
             } else {
+                // We'll use mixed addition to add non-zero constants.
                 let x = F::constant(other.x);
                 let y = F::constant(other.y);
                 this.add_mixed((&x, &y)).unwrap()
@@ -492,7 +504,7 @@ impl_bounded_ops!(
             // (https://eprint.iacr.org/2015/1060).
             //
             // Adapted from code in
-            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
             let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
             let xx = &this.x * &other.x; // 1
