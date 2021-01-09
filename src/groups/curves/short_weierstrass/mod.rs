@@ -222,9 +222,9 @@ where
         Ok(Self::new(x, y, z))
     }
 
-    /// Mixed addition, which is useful when `other` is known to have z = 1.
-    #[tracing::instrument(target = "r1cs", skip(self, other_x, other_y))]
-    pub(crate) fn add_mixed(&self, (other_x, other_y): (&F, &F)) -> Result<Self, SynthesisError> {
+    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
+    #[tracing::instrument(target = "r1cs", skip(self, x2, y2))]
+    pub(crate) fn add_mixed(&self, (x2, y2): (&F, &F)) -> Result<Self, SynthesisError> {
         // Complete mixed addition formula from Renes-Costello-Batina 2015
         // Algorithm 2
         // (https://eprint.iacr.org/2015/1060).
@@ -232,21 +232,22 @@ where
         // Adapted from code in
         // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
+        let (x1, y1, z1) = (&self.x, &self.y, &self.z);
 
-        let xx = &self.x * other_x; // 1
-        let yy = &self.y * other_y; // 2
-        let xy_pairs = ((&self.x + &self.y) * &(other_x + other_y)) - (&xx + &yy); // 4, 5, 6, 7, 8
-        let xz_pairs = (other_x * &self.z) + &self.x; // 8, 9
-        let yz_pairs = (other_y * &self.z) + &self.y; // 10, 11
+        let xx = x1 * x2; // 1
+        let yy = y1 * y2; // 2
+        let xy_pairs = ((x1 + y1) * &(x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
+        let xz_pairs = (x2 * z1) + x1; // 8, 9
+        let yz_pairs = (y2 * z1) + y1; // 10, 11
 
         let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 12
 
-        let bz3_part = &axz + &self.z * three_b; // 13, 14
+        let bz3_part = &axz + z1 * three_b; // 13, 14
 
         let yy_m_bz3 = &yy - &bz3_part; // 15
         let yy_p_bz3 = &yy + &bz3_part; // 16
 
-        let azz = mul_by_coeff_a::<P, F>(&self.z); // 20
+        let azz = mul_by_coeff_a::<P, F>(z1); // 20
         let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 18, 19, 22
 
         let bxz3 = &xz_pairs * three_b; // 21
@@ -506,13 +507,15 @@ impl_bounded_ops!(
             // Adapted from code in
             // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
             let three_b = P::COEFF_B.double() + &P::COEFF_B;
+            let (x1, y1, z1) = (&this.x, &this.y, &this.z);
+            let (x2, y2, z2) = (&other.x, &other.y, &other.z);
 
-            let xx = &this.x * &other.x; // 1
-            let yy = &this.y * &other.y; // 2
-            let zz = &this.z * &other.z; // 3
-            let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
-            let xz_pairs = ((&this.x + &this.z) * &(&other.x + &other.z)) - (&xx + &zz); // 9, 10, 11, 12, 13
-            let yz_pairs = ((&this.y + &this.z) * &(&other.y + &other.z)) - (&yy + &zz); // 14, 15, 16, 17, 18
+            let xx = x1 * x2; // 1
+            let yy = y1 * y2; // 2
+            let zz = z1 * z2; // 3
+            let xy_pairs = ((x1 + y1) * &(x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
+            let xz_pairs = ((x1 + z1) * &(x2 + z2)) - (&xx + &zz); // 9, 10, 11, 12, 13
+            let yz_pairs = ((y1 + z1) * &(y2 + z2)) - (&yy + &zz); // 14, 15, 16, 17, 18
 
             let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 19
 
