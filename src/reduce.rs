@@ -21,9 +21,9 @@ pub fn limbs_to_bigint<BaseField: PrimeField>(
     let mut big_cur = BigUint::one();
     let two = BigUint::from(2u32);
     for limb in limbs.iter().rev() {
-        let limb_repr = limb.into_repr().to_bits();
+        let limb_repr = limb.into_repr().to_bits_le();
         let mut small_cur = big_cur.clone();
-        for limb_bit in limb_repr.iter().rev() {
+        for limb_bit in limb_repr.iter() {
             if *limb_bit {
                 val += &small_cur;
             }

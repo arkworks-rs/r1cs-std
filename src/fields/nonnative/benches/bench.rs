@@ -3,7 +3,7 @@ use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
 use ark_relations::{
     ns,
-    r1cs::{ConstraintSystem, ConstraintSystemRef},
+    r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
 };
 use rand::RngCore;
 
@@ -15,7 +15,7 @@ fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> us
         ConstraintSystemRef::CS(r) => {
             let mut cs_bak = r.borrow().clone();
 
-            cs_bak.reduce_constraint_weight();
+            cs_bak.finalize();
             let matrices = cs_bak.to_matrices().unwrap();
 
             matrices.a_num_non_zero + matrices.b_num_non_zero + matrices.c_num_non_zero
@@ -167,6 +167,7 @@ macro_rules! nonnative_bench_individual {
         for _ in 0..NUM_REPETITIONS {
             let cs_sys = ConstraintSystem::<$bench_base_field>::new();
             let cs = ConstraintSystemRef::new(cs_sys);
+            cs.set_optimization_goal(OptimizationGoal::Constraints);
 
             let (cur_constraints, cur_nonzeros) =
                 $bench_method::<$bench_target_field, $bench_base_field, _>(cs.clone(), rng);
