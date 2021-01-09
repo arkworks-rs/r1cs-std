@@ -145,13 +145,15 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
 
         // Let `original` be the initial value of `self`.
+        let mut result = Self::zero();
         for (bit, base) in scalar_bits_with_bases {
             // Compute `self + 2^i * original`
-            let self_plus_base = self.clone() + *base;
+            let self_plus_base = result.clone() + *base;
             // If `bit == 1`, set self = self + 2^i * original;
             // else, set self = self;
-            *self = bit.borrow().select(&self_plus_base, self)?;
+            result = bit.borrow().select(&self_plus_base, &result)?;
         }
+        *self = result;
         Ok(())
     }
 

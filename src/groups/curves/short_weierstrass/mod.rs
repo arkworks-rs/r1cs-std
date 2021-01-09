@@ -398,8 +398,8 @@ where
             // a conditional addition.).
             //
             // TODO: if `bits.len()` is small n, it might be cheaper to
-            // conditinally select between 2^n options.
-            let mut value = self.value().unwrap();
+            // conditionally select between 2^n options.
+            let mut value = self.value()?;
             let bits_and_multiples = bits
                 .map(|b| {
                     let multiple = value;
@@ -418,9 +418,10 @@ where
             // Computes the standard big-endian double-and-add algorithm
             // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
             let mut res = Self::zero();
+            let self_affine = self.to_affine()?;
             for bit in bits {
                 res.double_in_place()?;
-                let tmp = res.add_mixed((&self.x, &self.y))?;
+                let tmp = res.add_mixed((&self_affine.x, &self_affine.y))?;
                 res = bit.select(&tmp, &res)?;
             }
             // The foregoing algorithm relies on mixed addition, and so does not
@@ -428,8 +429,7 @@ where
             // a check to ensure that if the input is zero, then so is the output.
             // The cost of this check should be less than the benefit of using
             // mixed addition in almost all cases.
-            let self_is_zero = self.is_zero()?;
-            self_is_zero.select(&Self::zero(), &res)
+            self_affine.infinity.select(&Self::zero(), &res)
         }
     }
 }
@@ -478,8 +478,14 @@ impl_bounded_ops!(
         }
 
         if other.is_constant() {
-            assert!(!other.value().unwrap().is_zero());
-            this.add_mixed((&other.x, &other.y)).unwrap()
+            let other = other.value().unwrap();
+            if other.is_zero() {
+                this.clone()
+            } else {
+                let x = F::constant(other.x);
+                let y = F::constant(other.y);
+                this.add_mixed((&x, &y)).unwrap()
+            }
         } else {
             // Complete addition formula from Renes-Costello-Batina 2015
             // Algorithm 1
