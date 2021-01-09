@@ -228,6 +228,8 @@ where
         // Complete mixed addition formula from Renes-Costello-Batina 2015
         // Algorithm 2
         // (https://eprint.iacr.org/2015/1060).
+        // Below, comments at the end of a line denote the corresponding
+        // step(s) of the algorithm
         //
         // Adapted from code in
         // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
@@ -347,6 +349,8 @@ where
         // Complete doubling formula from Renes-Costello-Batina 2015
         // Algorithm 3
         // (https://eprint.iacr.org/2015/1060).
+        // Below, comments at the end of a line denote the corresponding
+        // step(s) of the algorithm
         //
         // Adapted from code in
         // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
@@ -478,7 +482,6 @@ impl_bounded_ops!(
     |mut this: &'a ProjectiveVar<P, F>, mut other: &'a ProjectiveVar<P, F>| {
         // Implement complete addition for Short Weierstrass curves, following
         // the complete addition formula from Renes-Costello-Batina 2015
-        // Algorithm 1
         // (https://eprint.iacr.org/2015/1060).
         //
         // We special case handling of constants to get better constraint weight.
@@ -503,6 +506,8 @@ impl_bounded_ops!(
             // Complete addition formula from Renes-Costello-Batina 2015
             // Algorithm 1
             // (https://eprint.iacr.org/2015/1060).
+            // Below, comments at the end of a line denote the corresponding
+            // step(s) of the algorithm
             //
             // Adapted from code in
             // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
