@@ -221,6 +221,46 @@ where
 
         Ok(Self::new(x, y, z))
     }
+
+    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
+    #[tracing::instrument(target = "r1cs", skip(self, x2, y2))]
+    pub(crate) fn add_mixed(&self, (x2, y2): (&F, &F)) -> Result<Self, SynthesisError> {
+        // Complete mixed addition formula from Renes-Costello-Batina 2015
+        // Algorithm 2
+        // (https://eprint.iacr.org/2015/1060).
+        // Below, comments at the end of a line denote the corresponding
+        // step(s) of the algorithm
+        //
+        // Adapted from code in
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
+        let three_b = P::COEFF_B.double() + &P::COEFF_B;
+        let (x1, y1, z1) = (&self.x, &self.y, &self.z);
+
+        let xx = x1 * x2; // 1
+        let yy = y1 * y2; // 2
+        let xy_pairs = ((x1 + y1) * &(x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
+        let xz_pairs = (x2 * z1) + x1; // 8, 9
+        let yz_pairs = (y2 * z1) + y1; // 10, 11
+
+        let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 12
+
+        let bz3_part = &axz + z1 * three_b; // 13, 14
+
+        let yy_m_bz3 = &yy - &bz3_part; // 15
+        let yy_p_bz3 = &yy + &bz3_part; // 16
+
+        let azz = mul_by_coeff_a::<P, F>(z1); // 20
+        let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 18, 19, 22
+
+        let bxz3 = &xz_pairs * three_b; // 21
+        let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 23, 24, 25
+
+        let x = (&yy_m_bz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 28,29, 30
+        let y = (&yy_p_bz3 * &yy_m_bz3) + &xx3_p_azz * b3_xz_pairs; // 17, 26, 27
+        let z = (&yy_p_bz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 31, 32, 33
+
+        Ok(ProjectiveVar::new(x, y, z))
+    }
 }
 
 impl<P, F> CurveVar<SWProjective<P>, <P::BaseField as Field>::BasePrimeField>
@@ -288,18 +328,19 @@ where
     // formulae are incomplete for even-order points.
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
-        let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        unimplemented!("cannot enforce prime order");
+        // let r_minus_1 = (-P::ScalarField::one()).into_repr();
 
-        let mut result = Self::zero();
-        for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
-            result.double_in_place()?;
+        // let mut result = Self::zero();
+        // for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
+        //     result.double_in_place()?;
 
-            if b {
-                result += self;
-            }
-        }
-        self.negate()?.enforce_equal(&result)?;
-        Ok(())
+        //     if b {
+        //         result += self;
+        //     }
+        // }
+        // self.negate()?.enforce_equal(&result)?;
+        // Ok(())
     }
 
     #[inline]
@@ -308,9 +349,11 @@ where
         // Complete doubling formula from Renes-Costello-Batina 2015
         // Algorithm 3
         // (https://eprint.iacr.org/2015/1060).
+        // Below, comments at the end of a line denote the corresponding
+        // step(s) of the algorithm
         //
         // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
         let xx = self.x.square()?; // 1
@@ -345,6 +388,57 @@ where
     #[tracing::instrument(target = "r1cs")]
     fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self::new(self.x.clone(), self.y.negate()?, self.z.clone()))
+    }
+
+    /// Computes `bits * self`, where `bits` is a little-endian
+    /// `Boolean` representation of a scalar.
+    #[tracing::instrument(target = "r1cs", skip(bits))]
+    fn scalar_mul_le<'a>(
+        &self,
+        bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
+    ) -> Result<Self, SynthesisError> {
+        if self.is_constant() {
+            // Compute 2^i * self for i in 0..bits.len()
+            // (these will be used by`precomputed_base_scalar_mul_le`, to perform
+            // a conditional addition.).
+            //
+            // TODO: if `bits.len()` is small n, it might be cheaper to
+            // conditionally select between 2^n options.
+            let mut value = self.value()?;
+            let bits_and_multiples = bits
+                .map(|b| {
+                    let multiple = value;
+                    value.double_in_place();
+                    (b, multiple)
+                })
+                .collect::<ark_std::vec::Vec<_>>();
+            let mut result = self.clone();
+            result.precomputed_base_scalar_mul_le(
+                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
+            )?;
+            Ok(result)
+        } else {
+            // Computes the standard big-endian double-and-add algorithm
+            // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+            // the input is little-endian, so we need to reverse it to get it in
+            // big-endian.
+            let mut bits = bits.collect::<Vec<_>>();
+            bits.reverse();
+
+            let mut res = Self::zero();
+            let self_affine = self.to_affine()?;
+            for bit in bits {
+                res.double_in_place()?;
+                let tmp = res.add_mixed((&self_affine.x, &self_affine.y))?;
+                res = bit.select(&tmp, &res)?;
+            }
+            // The foregoing algorithm relies on mixed addition, and so does not
+            // work when the input (`self`) is zero. We hence have to perform
+            // a check to ensure that if the input is zero, then so is the output.
+            // The cost of this check should be less than the benefit of using
+            // mixed addition in almost all cases.
+            self_affine.infinity.select(&Self::zero(), &res)
+        }
     }
 }
 
@@ -385,41 +479,69 @@ impl_bounded_ops!(
     add,
     AddAssign,
     add_assign,
-    |this: &'a ProjectiveVar<P, F>, other: &'a ProjectiveVar<P, F>| {
-        // Complete addition formula from Renes-Costello-Batina 2015
-        // Algorithm 1
+    |mut this: &'a ProjectiveVar<P, F>, mut other: &'a ProjectiveVar<P, F>| {
+        // Implement complete addition for Short Weierstrass curves, following
+        // the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060).
         //
-        // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
+        // We special case handling of constants to get better constraint weight.
+        if this.is_constant() {
+            // we'll just act like `other` is constant.
+            core::mem::swap(&mut this, &mut other);
+        }
 
-        let three_b = P::COEFF_B.double() + &P::COEFF_B;
+        if other.is_constant() {
+            // The value should exist because `other` is a constant.
+            let other = other.value().unwrap();
+            if other.is_zero() {
+                // this + 0 = this
+                this.clone()
+            } else {
+                // We'll use mixed addition to add non-zero constants.
+                let x = F::constant(other.x);
+                let y = F::constant(other.y);
+                this.add_mixed((&x, &y)).unwrap()
+            }
+        } else {
+            // Complete addition formula from Renes-Costello-Batina 2015
+            // Algorithm 1
+            // (https://eprint.iacr.org/2015/1060).
+            // Below, comments at the end of a line denote the corresponding
+            // step(s) of the algorithm
+            //
+            // Adapted from code in
+            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
+            let three_b = P::COEFF_B.double() + &P::COEFF_B;
+            let (x1, y1, z1) = (&this.x, &this.y, &this.z);
+            let (x2, y2, z2) = (&other.x, &other.y, &other.z);
 
-        let xx = &this.x * &other.x; // 1
-        let yy = &this.y * &other.y; // 2
-        let zz = &this.z * &other.z; // 3
-        let xy_pairs = ((&this.x + &this.y) * &(&other.x + &other.y)) - (&xx + &yy); // 4, 5, 6, 7, 8
-        let xz_pairs = ((&this.x + &this.z) * &(&other.x + &other.z)) - (&xx + &zz); // 9, 10, 11, 12, 13
-        let yz_pairs = ((&this.y + &this.z) * &(&other.y + &other.z)) - (&yy + &zz); // 14, 15, 16, 17, 18
+            let xx = x1 * x2; // 1
+            let yy = y1 * y2; // 2
+            let zz = z1 * z2; // 3
+            let xy_pairs = ((x1 + y1) * &(x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
+            let xz_pairs = ((x1 + z1) * &(x2 + z2)) - (&xx + &zz); // 9, 10, 11, 12, 13
+            let yz_pairs = ((y1 + z1) * &(y2 + z2)) - (&yy + &zz); // 14, 15, 16, 17, 18
 
-        let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 19
+            let axz = mul_by_coeff_a::<P, F>(&xz_pairs); // 19
 
-        let bzz3_part = &axz + &zz * three_b; // 20, 21
+            let bzz3_part = &axz + &zz * three_b; // 20, 21
 
-        let yy_m_bzz3 = &yy - &bzz3_part; // 22
-        let yy_p_bzz3 = &yy + &bzz3_part; // 23
+            let yy_m_bzz3 = &yy - &bzz3_part; // 22
+            let yy_p_bzz3 = &yy + &bzz3_part; // 23
 
-        let azz = mul_by_coeff_a::<P, F>(&zz);
-        let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 25, 26, 27, 29
+            let azz = mul_by_coeff_a::<P, F>(&zz);
+            let xx3_p_azz = xx.double().unwrap() + &xx + &azz; // 25, 26, 27, 29
 
-        let bxz3 = &xz_pairs * three_b; // 28
-        let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 30, 31, 32
+            let bxz3 = &xz_pairs * three_b; // 28
+            let b3_xz_pairs = mul_by_coeff_a::<P, F>(&(&xx - &azz)) + &bxz3; // 30, 31, 32
 
-        let x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
-        let y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
-        let z = (&yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
+            let x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
+            let y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
+            let z = (&yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
 
-        ProjectiveVar::new(x, y, z)
+            ProjectiveVar::new(x, y, z)
+        }
+
     },
     |this: &'a ProjectiveVar<P, F>, other: SWProjective<P>| {
         this + ProjectiveVar::constant(other)
