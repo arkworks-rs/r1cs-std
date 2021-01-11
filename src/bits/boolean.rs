@@ -1,4 +1,4 @@
-use ark_ff::{BitIteratorBE, Field, PrimeField, FpParameters};
+use ark_ff::{BitIteratorBE, Field, FpParameters, PrimeField};
 
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use ark_relations::r1cs::{
@@ -610,39 +610,53 @@ impl<F: Field> Boolean<F> {
 
     /// Convert a little-endian bitwise representation of a field element to `FpVar<F>`
     #[tracing::instrument(target = "r1cs", skip(bits))]
-    pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError> 
-        where F: PrimeField,
+    pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError>
+    where
+        F: PrimeField,
     {
+        // Compute the value of the `FpVar` variable via double-and-add.
         let mut value = None;
-        let mut power = F::one();
-        for b in bits {
-            if let Some(b) = b.value().ok() {
-                if let Some(value) = value.as_mut() {
-                    *value += power * &F::from(b);
+        let cs = bits.cs();
+        if !cs.is_in_setup_mode() {
+            // Don't assign a value when `cs` is not in setup mode.
+            let mut power = F::one();
+            for b in bits {
+                if let Some(b) = b.value().ok() {
+                    if let Some(value) = value.as_mut() {
+                        if b {
+                            *value += power;
+                        }
+                    } else {
+                        // On the first iteration, set the value to be the first bit.
+                        value = Some(F::from(b));
+                    }
                     power.double_in_place();
-                } else {
-                    value = Some(F::from(b)); // first iteration
                 }
             }
         }
+
         if bits.is_constant() {
             Ok(FpVar::constant(value.unwrap()))
         } else {
             let mut power = F::one();
+            // Compute a linear combination for the new field variable, again
+            // via double and add.
             let mut combined_lc = LinearCombination::zero();
-            bits.iter().for_each(|b| { 
+            bits.iter().for_each(|b| {
                 combined_lc = &combined_lc + (power, b.lc());
                 power.double_in_place();
             });
-            let cs = bits.cs();
+            // Allocate the new variable as a SymbolicLc
             let variable = cs.new_lc(combined_lc)?;
+            // If the number of bits is less than the size of the field,
+            // then we do not need to enforce that the element is less than
+            // the modulus.
             if bits.len() >= F::Params::MODULUS_BITS as usize {
                 Self::enforce_in_field_le(bits)?;
             }
             Ok(crate::fields::fp::AllocatedFp::new(value, variable, cs.clone()).into())
         }
     }
-
 
     /// Enforces that `bits`, when interpreted as a integer, is less than
     /// `F::characteristic()`, That is, interpret bits as a little-endian
