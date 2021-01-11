@@ -1787,4 +1787,21 @@ mod test {
         }
         Ok(())
     }
+
+    #[test]
+    fn test_bits_to_fp() -> Result<(), SynthesisError> {
+        let rng = &mut ark_std::test_rng();
+        let cs = ConstraintSystem::<Fr>::new_ref();
+
+        for _ in 0..1000 {
+            let f = Fr::rand(rng);
+            let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
+            let bits: Vec<_> = AllocVar::new_witness(cs.clone(), || Ok(bits.as_slice()))?;
+            let f = AllocVar::new_witness(cs.clone(), || Ok(f))?;
+            let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
+            claimed_f.enforce_equal(&f)?;
+        }
+        assert!(cs.is_satisfied().unwrap());
+        Ok(())
+    }
 }
