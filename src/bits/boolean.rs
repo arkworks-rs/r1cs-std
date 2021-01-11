@@ -1,4 +1,4 @@
-use ark_ff::{BitIteratorBE, Field, PrimeField};
+use ark_ff::{BitIteratorBE, Field, PrimeField, FpParameters};
 
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use ark_relations::r1cs::{
@@ -607,6 +607,42 @@ impl<F: Field> Boolean<F> {
             }
         }
     }
+
+    /// Convert a little-endian bitwise representation of a field element to `FpVar<F>`
+    #[tracing::instrument(target = "r1cs", skip(bits))]
+    pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError> 
+        where F: PrimeField,
+    {
+        let mut value = None;
+        let mut power = F::one();
+        for b in bits {
+            if let Some(b) = b.value().ok() {
+                if let Some(value) = value.as_mut() {
+                    *value += power * &F::from(b);
+                    power.double_in_place();
+                } else {
+                    value = Some(F::from(b)); // first iteration
+                }
+            }
+        }
+        if bits.is_constant() {
+            Ok(FpVar::constant(value.unwrap()))
+        } else {
+            let mut power = F::one();
+            let mut combined_lc = LinearCombination::zero();
+            bits.iter().for_each(|b| { 
+                combined_lc = &combined_lc + (power, b.lc());
+                power.double_in_place();
+            });
+            let cs = bits.cs();
+            let variable = cs.new_lc(combined_lc)?;
+            if bits.len() >= F::Params::MODULUS_BITS as usize {
+                Self::enforce_in_field_le(bits)?;
+            }
+            Ok(crate::fields::fp::AllocatedFp::new(value, variable, cs.clone()).into())
+        }
+    }
+
 
     /// Enforces that `bits`, when interpreted as a integer, is less than
     /// `F::characteristic()`, That is, interpret bits as a little-endian
