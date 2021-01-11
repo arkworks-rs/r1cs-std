@@ -617,8 +617,9 @@ impl<F: Field> Boolean<F> {
         // Compute the value of the `FpVar` variable via double-and-add.
         let mut value = None;
         let cs = bits.cs();
-        if !cs.is_in_setup_mode() {
-            // Don't assign a value when `cs` is not in setup mode.
+        let should_construct_value = (!cs.is_in_setup_mode()) || bits.is_constant();
+        if should_construct_value {
+            // Don't assign a value when `cs` is not in setup mode, or if we.
             let mut power = F::one();
             for b in bits {
                 if let Some(b) = b.value().ok() {
