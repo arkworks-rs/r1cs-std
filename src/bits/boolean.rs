@@ -617,23 +617,19 @@ impl<F: Field> Boolean<F> {
         // Compute the value of the `FpVar` variable via double-and-add.
         let mut value = None;
         let cs = bits.cs();
+        // Assign a value only when `cs` is in setup mode, or if we are constructing
+        // a constant.
         let should_construct_value = (!cs.is_in_setup_mode()) || bits.is_constant();
         if should_construct_value {
-            // Don't assign a value when `cs` is not in setup mode, or if we.
-            let mut power = F::one();
-            for b in bits {
-                if let Some(b) = b.value().ok() {
-                    if let Some(value) = value.as_mut() {
-                        if b {
-                            *value += power;
-                        }
-                    } else {
-                        // On the first iteration, set the value to be the first bit.
-                        value = Some(F::from(b));
-                    }
-                    power.double_in_place();
+            let bits = bits.iter().map(|b| b.value().unwrap()).collect::<Vec<_>>();
+            let bytes = bits.chunks(8).map(|c| {
+                let mut value = 0u8;
+                for (i, &bit) in c.iter().enumerate() {
+                    value += (bit as u8) << i;
                 }
-            }
+                value
+            }).collect::<Vec<_>>();
+            value = Some(F::from_le_bytes_mod_order(&bytes));
         }
 
         if bits.is_constant() {
@@ -1791,18 +1787,32 @@ mod test {
 
     #[test]
     fn test_bits_to_fp() -> Result<(), SynthesisError> {
+        use AllocationMode::*;
         let rng = &mut ark_std::test_rng();
         let cs = ConstraintSystem::<Fr>::new_ref();
 
-        for _ in 0..1000 {
-            let f = Fr::rand(rng);
-            let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
-            let bits: Vec<_> = AllocVar::new_witness(cs.clone(), || Ok(bits.as_slice()))?;
-            let f = AllocVar::new_witness(cs.clone(), || Ok(f))?;
-            let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
-            claimed_f.enforce_equal(&f)?;
+        let modes = [Input, Witness, Constant];
+        for &mode in modes.iter() {
+            for _ in 0..1000 {
+                let f = Fr::rand(rng);
+                let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
+                let bits: Vec<_> = AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
+                let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
+                let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
+                claimed_f.enforce_equal(&f)?;
+            }
+
+            for _ in 0..1000 {
+                let f = Fr::from(u64::rand(rng));
+                let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
+                let bits: Vec<_> = AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
+                let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
+                let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
+                claimed_f.enforce_equal(&f)?;
+            }
+            assert!(cs.is_satisfied().unwrap());
         }
-        assert!(cs.is_satisfied().unwrap());
+        
         Ok(())
     }
 }
