@@ -335,8 +335,9 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-/// Converts `Vec<UInt8<ConstraintF>>`, which is assumed to be little-endian, to its
-/// `Vec<FpVar<ConstraintF>>` representation.
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::Params::CAPACITY` chunks and
+/// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
+/// representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
 /// [ToConstraintField](ark_ff::ToConstraintField).
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
