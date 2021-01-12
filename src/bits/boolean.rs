@@ -622,13 +622,16 @@ impl<F: Field> Boolean<F> {
         let should_construct_value = (!cs.is_in_setup_mode()) || bits.is_constant();
         if should_construct_value {
             let bits = bits.iter().map(|b| b.value().unwrap()).collect::<Vec<_>>();
-            let bytes = bits.chunks(8).map(|c| {
-                let mut value = 0u8;
-                for (i, &bit) in c.iter().enumerate() {
-                    value += (bit as u8) << i;
-                }
-                value
-            }).collect::<Vec<_>>();
+            let bytes = bits
+                .chunks(8)
+                .map(|c| {
+                    let mut value = 0u8;
+                    for (i, &bit) in c.iter().enumerate() {
+                        value += (bit as u8) << i;
+                    }
+                    value
+                })
+                .collect::<Vec<_>>();
             value = Some(F::from_le_bytes_mod_order(&bytes));
         }
 
@@ -1796,7 +1799,8 @@ mod test {
             for _ in 0..1000 {
                 let f = Fr::rand(rng);
                 let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
-                let bits: Vec<_> = AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
+                let bits: Vec<_> =
+                    AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
                 let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
                 claimed_f.enforce_equal(&f)?;
@@ -1805,14 +1809,15 @@ mod test {
             for _ in 0..1000 {
                 let f = Fr::from(u64::rand(rng));
                 let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
-                let bits: Vec<_> = AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
+                let bits: Vec<_> =
+                    AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
                 let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
                 claimed_f.enforce_equal(&f)?;
             }
             assert!(cs.is_satisfied().unwrap());
         }
-        
+
         Ok(())
     }
 }
