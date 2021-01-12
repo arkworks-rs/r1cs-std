@@ -335,14 +335,24 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-// Assumes bytes are little endian
-impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8<ConstraintF>> {
+/// Converts `Vec<UInt8<ConstraintF>>`, which is assumed to be little-endian, to its
+/// `Vec<FpVar<ConstraintF>>` representation.
+/// This is the gadget counterpart to the `[u8]` implementation of
+/// [ToConstraintField](ark_ff::ToConstraintField).
+impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
         let max_size = (ConstraintF::Params::CAPACITY / 8) as usize;
         self.chunks(max_size)
             .map(|chunk| Boolean::le_bits_to_fp_var(chunk.to_bits_le()?.as_slice()))
             .collect::<Result<Vec<_>, SynthesisError>>()
+    }
+}
+
+impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8<ConstraintF>> {
+    #[tracing::instrument(target = "r1cs")]
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
+        self.as_slice().to_constraint_field()
     }
 }
 
