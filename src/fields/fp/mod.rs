@@ -205,7 +205,8 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "r1cs")]
     pub fn double(&self) -> Result<Self, SynthesisError> {
         let value = self.value.map(|val| val.double());
-        let variable = self.cs.new_lc(lc!() + self.variable + self.variable)?;
+        // self.variable + self.variable = (2, self.variable)
+        let variable = self.cs.new_lc(lc!() + (F::from(2u8), self.variable))?;
         Ok(Self::new(value, variable, self.cs.clone()))
     }
 
@@ -227,6 +228,7 @@ impl<F: PrimeField> AllocatedFp<F> {
         if let Some(val) = self.value.as_mut() {
             *val = -(*val);
         }
+        // We can't mutate the lc in place since it might be used in other vars.
         self.variable = self.cs.new_lc(lc!() - self.variable).unwrap();
         self
     }
