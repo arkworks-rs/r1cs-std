@@ -92,39 +92,73 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         &self,
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
     ) -> Result<Self, SynthesisError> {
-        let mut res = Self::zero();
-        let mut multiple = self.clone();
-        for bit in bits {
-            let tmp = res.clone() + &multiple;
-            res = bit.select(&tmp, &res)?;
-            multiple.double_in_place()?;
+        if self.is_constant() {
+            // Compute 2^i * self for i in 0..bits.len()
+            // (these will be used by`precomputed_base_scalar_mul_le`, to perform
+            // a conditional addition.).
+            //
+            // TODO: if `bits.len()` is small n, it might be cheaper to
+            // conditinally select between 2^n options.
+            let mut value = self.value().unwrap();
+            let bits_and_multiples = bits
+                .map(|b| {
+                    let multiple = value;
+                    value.double_in_place();
+                    (b, multiple)
+                })
+                .collect::<ark_std::vec::Vec<_>>();
+            let mut result = self.clone();
+            result.precomputed_base_scalar_mul_le(
+                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
+            )?;
+            Ok(result)
+        } else {
+            // Computes the standard little-endian double-and-add algorithm
+            // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
+            let mut res = Self::zero();
+            let mut multiple = self.clone();
+            for bit in bits {
+                let tmp = res.clone() + &multiple;
+                res = bit.select(&tmp, &res)?;
+                multiple.double_in_place()?;
+            }
+            Ok(res)
         }
-        Ok(res)
     }
 
     /// Computes a `I * self` in place, where `I` is a `Boolean` *little-endian*
     /// representation of the scalar.
     ///
-    /// The base powers are precomputed power-of-two multiples of a single
+    /// The bases are precomputed power-of-two multiples of a single
     /// base.
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_base_powers))]
+    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
-        scalar_bits_with_base_powers: I,
+        scalar_bits_with_bases: I,
     ) -> Result<(), SynthesisError>
     where
         I: Iterator<Item = (B, &'a C)>,
         B: Borrow<Boolean<ConstraintF>>,
         C: 'a,
     {
-        for (bit, base_power) in scalar_bits_with_base_powers {
-            let new_encoded = self.clone() + *base_power;
-            *self = bit.borrow().select(&new_encoded, self)?;
+        // Computes the standard little-endian double-and-add algorithm
+        // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
+
+        // Let `original` be the initial value of `self`.
+        let mut result = Self::zero();
+        for (bit, base) in scalar_bits_with_bases {
+            // Compute `self + 2^i * original`
+            let self_plus_base = result.clone() + *base;
+            // If `bit == 1`, set self = self + 2^i * original;
+            // else, set self = self;
+            result = bit.borrow().select(&self_plus_base, &result)?;
         }
+        *self = result;
         Ok(())
     }
 
-    /// Computes a `\sum_j I_j * B_j`, where `I_j` is a `Boolean`
+    /// Computes `Σⱼ(scalarⱼ * baseⱼ)` for all j,
+    /// where `scalarⱼ` is a `Boolean` *little-endian*
     /// representation of the j-th scalar.
     #[tracing::instrument(target = "r1cs", skip(bases, scalars))]
     fn precomputed_base_multiscalar_mul_le<'a, T, I, B>(
@@ -137,11 +171,11 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         B: Borrow<[C]>,
     {
         let mut result = Self::zero();
-        // Compute ∏(h_i^{m_i}) for all i.
-        for (bits, base_powers) in scalars.zip(bases) {
-            let base_powers = base_powers.borrow();
+        // Compute Σᵢ(bitᵢ * baseᵢ) for all i.
+        for (bits, bases) in scalars.zip(bases) {
+            let bases = bases.borrow();
             let bits = bits.to_bits_le()?;
-            result.precomputed_base_scalar_mul_le(bits.iter().zip(base_powers))?;
+            result.precomputed_base_scalar_mul_le(bits.iter().zip(bases))?;
         }
         Ok(result)
     }

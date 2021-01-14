@@ -160,14 +160,18 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// It is up to the caller to ensure that denominator is non-zero,
     /// since in that case the result is unconstrained.
     fn mul_by_inverse(&self, denominator: &Self) -> Result<Self, SynthesisError> {
-        let result = Self::new_witness(self.cs(), || {
-            let denominator_inv_native = denominator.value()?.inverse().get()?;
-            let result = self.value()? * &denominator_inv_native;
-            Ok(result)
-        })?;
-        result.mul_equals(&denominator, &self)?;
+        if denominator.is_constant() {
+            Ok(denominator.inverse()? * self)
+        } else {
+            let result = Self::new_witness(self.cs(), || {
+                let denominator_inv_native = denominator.value()?.inverse().get()?;
+                let result = self.value()? * &denominator_inv_native;
+                Ok(result)
+            })?;
+            result.mul_equals(&denominator, &self)?;
 
-        Ok(result)
+            Ok(result)
+        }
     }
 
     /// Computes the frobenius map over `self`.

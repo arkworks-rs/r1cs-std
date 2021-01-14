@@ -2,7 +2,8 @@ use ark_ff::{Field, FpParameters, PrimeField, ToConstraintField};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::{fields::fp::AllocatedFp, prelude::*, Assignment, Vec};
+use crate::fields::fp::{AllocatedFp, FpVar};
+use crate::{prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use core::{borrow::Borrow, convert::TryFrom};
 
 /// Represents an interpretation of 8 `Boolean` objects as an
@@ -334,12 +335,38 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::Params::CAPACITY` chunks and
+/// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
+/// representation.
+/// This is the gadget counterpart to the `[u8]` implementation of
+/// [ToConstraintField](ark_ff::ToConstraintField).
+impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
+    #[tracing::instrument(target = "r1cs")]
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
+        let max_size = (ConstraintF::Params::CAPACITY / 8) as usize;
+        self.chunks(max_size)
+            .map(|chunk| Boolean::le_bits_to_fp_var(chunk.to_bits_le()?.as_slice()))
+            .collect::<Result<Vec<_>, SynthesisError>>()
+    }
+}
+
+impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8<ConstraintF>> {
+    #[tracing::instrument(target = "r1cs")]
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
+        self.as_slice().to_constraint_field()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::UInt8;
-    use crate::{prelude::*, Vec};
+    use crate::fields::fp::FpVar;
+    use crate::prelude::AllocationMode::{Constant, Input, Witness};
+    use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+    use ark_ff::{FpParameters, PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
     use ark_test_curves::bls12_381::Fr;
+    use rand::distributions::Uniform;
     use rand::{Rng, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -443,6 +470,37 @@ mod test {
                 expected >>= 1;
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_uint8_to_constraint_field() -> Result<(), SynthesisError> {
+        let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+        let max_size = (<Fr as PrimeField>::Params::CAPACITY / 8) as usize;
+
+        let modes = [Input, Witness, Constant];
+        for mode in &modes {
+            for _ in 0..1000 {
+                let cs = ConstraintSystem::<Fr>::new_ref();
+
+                let bytes: Vec<u8> = (&mut rng)
+                    .sample_iter(&Uniform::new_inclusive(0, u8::max_value()))
+                    .take(max_size * 3 + 5)
+                    .collect();
+
+                let bytes_var = bytes
+                    .iter()
+                    .map(|byte| UInt8::new_variable(cs.clone(), || Ok(*byte), *mode))
+                    .collect::<Result<Vec<_>, SynthesisError>>()?;
+
+                let f_vec: Vec<Fr> = bytes.to_field_elements().unwrap();
+                let f_var_vec: Vec<FpVar<Fr>> = bytes_var.to_constraint_field()?;
+
+                assert!(cs.is_satisfied().unwrap());
+                assert_eq!(f_vec, f_var_vec.value()?);
+            }
+        }
+
         Ok(())
     }
 }
