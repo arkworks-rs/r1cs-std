@@ -21,6 +21,8 @@ pub mod mnt4;
 ///  family of bilinear groups.
 pub mod mnt6;
 
+mod non_zero_affine;
+
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](https://eprint.iacr.org/2015/1060).
