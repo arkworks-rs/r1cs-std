@@ -728,11 +728,13 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             (Var(s), Constant(d)) => Ok(Var(s.mul_constant(d.inverse().get()?))),
             (Constant(s), Var(d)) => Ok(Var(d.inverse()?.mul_constant(*s))),
             (Var(s), Var(d)) => {
-                d_inv = Self::new_witness(self.cs(), || {
-                    let d_inv = d.value()?.inverse().ok_or(F::zero())?;
-                    let result = self.value()? * &d_inv;
-                    Ok(result)
-                });
+                let d_inv = Self::new_witness(self.cs(), || {
+                    let d_inv = d.value()?.inverse().ok_or(F::zero());
+                    match d_inv {
+                        Ok(v) => Ok(self.value()? * &v),
+                        Err(v) => Ok(v),
+                    }
+                })?;
                 Ok(s.mul(d_inv))
             }
         }
