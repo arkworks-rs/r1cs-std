@@ -716,30 +716,6 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
         }
     }
 
-    /// Returns (self / denominator), but requires fewer constraints than
-    /// self * denominator.inverse()
-    /// It is up to the caller to ensure that denominator is non-zero,
-    /// since in that case the result is unconstrained.
-    #[tracing::instrument(target = "r1cs")]
-    fn mul_by_inverse(&self, denominator: &Self) -> Result<Self, SynthesisError> {
-        use FpVar::*;
-        match (self, denominator) {
-            (Constant(s), Constant(d)) => Ok(Constant(*s / *d)),
-            (Var(s), Constant(d)) => Ok(Var(s.mul_constant(d.inverse().get()?))),
-            (Constant(s), Var(d)) => Ok(Var(d.inverse()?.mul_constant(*s))),
-            (Var(s), Var(d)) => {
-                let d_inv = Self::new_witness(self.cs(), || {
-                    let d_inv = d.value()?.inverse().ok_or(F::zero());
-                    match d_inv {
-                        Ok(v) => Ok(self.value()? * &v),
-                        Err(v) => Ok(v),
-                    }
-                })?;
-                Ok(s.mul(d_inv))
-            }
-        }
-    }
-
     #[tracing::instrument(target = "r1cs")]
     fn frobenius_map(&self, power: usize) -> Result<Self, SynthesisError> {
         match self {
