@@ -727,7 +727,11 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             (Constant(s), Constant(d)) => Ok(Constant(*s / *d)),
             (Var(s), Constant(d)) => Ok(Var(s.mul_constant(d.inverse().get()?))),
             (Constant(s), Var(d)) => Ok(Var(d.inverse()?.mul_constant(*s))),
-            (Var(s), Var(d)) => Ok(Var(d.inverse()?.mul(s))),
+            (Var(s), Var(d)) => Self::new_witness(self.cs(), || {
+                let denominator_inv_native = denominator.value()?.inverse().get()?;
+                let result = self.value()? * &denominator_inv_native;
+                Ok(result)
+            }),
         }
     }
 
