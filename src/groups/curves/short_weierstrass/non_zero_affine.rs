@@ -1,5 +1,5 @@
 use super::*;
-/// An affine representation of a curve point that is guaranteed
+/// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
@@ -69,7 +69,8 @@ where
         }
     }
 
-    /// Doubles `self`
+    /// Doubles `self`. As this is a prime order curve point, 
+    /// the output is guaranteed to not be the point at infinity.
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
