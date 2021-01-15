@@ -266,14 +266,14 @@ where
     }
 
     /// Computes a scalar multiplication with a little-endian scalar of size `P::ScalarField::MODULUS_BITS`.
-    // #[tracing::instrument(target = "r1cs", skip(self, non_zero_self, mul_result, multiple_power_of_two, bits))]
+    #[tracing::instrument(target = "r1cs", skip(self, mul_result, multiple_of_power_of_two, bits))]
     fn fixed_scalar_mul_le(
         &self,
         mul_result: &mut Self,
         multiple_of_power_of_two: &mut NonZeroAffineVar<P, F>,
         bits: &[&Boolean<<P::BaseField as Field>::BasePrimeField>],
     ) -> Result<(), SynthesisError> {
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
+        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
 
         assert!(scalar_modulus_bits >= bits.len());
         let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
@@ -466,7 +466,7 @@ where
 
     /// Computes `bits * self`, where `bits` is a little-endian
     /// `Boolean` representation of a scalar.
-    // #[tracing::instrument(target = "r1cs", skip(bits))]
+    #[tracing::instrument(target = "r1cs", skip(bits))]
     fn scalar_mul_le<'a>(
         &self,
         bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
@@ -486,7 +486,7 @@ where
         if bits.len() == 0 {
             return Ok(Self::zero());
         }
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
+        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
         // We chunk up `bits` into `p`-sized chunks.
