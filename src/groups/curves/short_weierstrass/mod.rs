@@ -266,7 +266,10 @@ where
     }
 
     /// Computes a scalar multiplication with a little-endian scalar of size `P::ScalarField::MODULUS_BITS`.
-    #[tracing::instrument(target = "r1cs", skip(self, mul_result, multiple_of_power_of_two, bits))]
+    #[tracing::instrument(
+        target = "r1cs",
+        skip(self, mul_result, multiple_of_power_of_two, bits)
+    )]
     fn fixed_scalar_mul_le(
         &self,
         mul_result: &mut Self,
