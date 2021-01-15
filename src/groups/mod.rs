@@ -92,6 +92,9 @@ pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
         &self,
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
     ) -> Result<Self, SynthesisError> {
+        // TODO: in the constant case we should call precomputed_scalar_mul_le,
+        // but rn there's a bug when doing this with TE curves.
+
         // Computes the standard little-endian double-and-add algorithm
         // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
         let mut res = Self::zero();
