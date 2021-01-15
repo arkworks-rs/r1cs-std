@@ -282,10 +282,10 @@ where
         // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
         //
         // We rely on *incomplete* affine formulae for partially computing this.
-        // However, we avoid exceptional edge cases because we partition the scalar 
-        // into two chunks: one guaranteed to be less than p - 2, and the rest. 
+        // However, we avoid exceptional edge cases because we partition the scalar
+        // into two chunks: one guaranteed to be less than p - 2, and the rest.
         // We only use incomplete formulae for the first chunk, which means we avoid exceptions:
-        // 
+        //
         // `add_unchecked(a, b)` is incomplete when either `b.is_zero()`, or when
         // `b = ±a`. During scalar multiplication, we don't hit either case:
         // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`.
@@ -297,12 +297,12 @@ where
 
         // Unlike normal double-and-add, here we start off with a non-zero `accumulator`,
         // because `NonZeroAffineVar::add_unchecked` doesn't support addition with `zero`.
-        // In more detail, we initialize `accumulator` to be the initial value of 
+        // In more detail, we initialize `accumulator` to be the initial value of
         // `multiple_of_power_of_two`. This ensures that all unchecked additions of `accumulator`
         // with later values of `multiple_of_power_of_two` are safe.
         // However, to do this correctly, we need to perform two steps:
-        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we will 
-        //   conditionally subtract the initial value of `accumulator`: 
+        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we will
+        //   conditionally subtract the initial value of `accumulator`:
         //     if LSB == 0: subtract initial_acc_value; else, subtract 0.
         // * Because we are assuming the first bit, we must double `multiple_of_power_of_two`.
 
@@ -507,11 +507,7 @@ where
             let mut power_of_two_times_self = non_zero_self;
             // We chunk up `bits` into `p`-sized chunks.
             for bits in bits.chunks(scalar_modulus_bits) {
-                self.fixed_scalar_mul_le(
-                    &mut mul_result,
-                    &mut power_of_two_times_self,
-                    bits,
-                )?;
+                self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
             }
 
             // The foregoing algorithms rely on mixed/incomplete addition, and so do not
