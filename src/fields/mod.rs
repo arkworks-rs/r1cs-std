@@ -163,8 +163,10 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
         if self.is_constant() || denominator.is_constant() {
             Ok(denominator.inverse()? * self)
         } else {
-            let d_inv = Self::new_witness(self.cs(), || Ok(denominator.value()?.inverse().unwrap_or(F::zero())))?;
-	        Ok(d_inv * self)
+            let d_inv = Self::new_witness(self.cs(), || {
+                Ok(denominator.value()?.inverse().unwrap_or(F::zero()))
+            })?;
+            Ok(d_inv * self)
         }
     }
 
