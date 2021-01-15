@@ -5,7 +5,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::{prelude::*, Assignment};
+use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field
 /// variables. That is, it implements the R1CS equivalent of
@@ -155,23 +155,16 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// Computes `result` such that `self * result == Self::one()`.
     fn inverse(&self) -> Result<Self, SynthesisError>;
 
-    /// Returns `(self / denominator)`. but requires fewer constraints than
-    /// `self * denominator.inverse()`.
-    /// It is up to the caller to ensure that denominator is non-zero,
+    /// Returns `(self / d)`. but requires fewer constraints than `self * d.inverse()`.
+    /// It is up to the caller to ensure that `d` is non-zero,
     /// since in that case the result is unconstrained.
-    fn mul_by_inverse(&self, denominator: &Self) -> Result<Self, SynthesisError> {
-        if denominator.is_constant() {
-            Ok(denominator.inverse()? * self)
+    fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
+        let d_inv = if self.is_constant() || d.is_constant() {
+            d.inverse()?
         } else {
-            let result = Self::new_witness(self.cs(), || {
-                let denominator_inv_native = denominator.value()?.inverse().get()?;
-                let result = self.value()? * &denominator_inv_native;
-                Ok(result)
-            })?;
-            result.mul_equals(&denominator, &self)?;
-
-            Ok(result)
-        }
+            Self::new_witness(self.cs(), || Ok(d.value()?.inverse().unwrap_or(F::zero())))?
+        };
+        Ok(d_inv * self)
     }
 
     /// Computes the frobenius map over `self`.
