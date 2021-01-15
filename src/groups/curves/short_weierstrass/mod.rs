@@ -2,9 +2,10 @@ use ark_ec::{
     short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
     AffineCurve, ProjectiveCurve, SWModelParameters,
 };
-use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
+use ark_ff::{BigInteger, BitIteratorBE, Field, FpParameters, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
+use non_zero_affine::NonZeroAffineVar;
 
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
 
@@ -22,7 +23,6 @@ pub mod mnt4;
 pub mod mnt6;
 
 mod non_zero_affine;
-
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](https://eprint.iacr.org/2015/1060).
@@ -225,8 +225,8 @@ where
     }
 
     /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
-    #[tracing::instrument(target = "r1cs", skip(self, x2, y2))]
-    pub(crate) fn add_mixed(&self, (x2, y2): (&F, &F)) -> Result<Self, SynthesisError> {
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    pub(crate) fn add_mixed(&self, other: &NonZeroAffineVar<P, F>) -> Result<Self, SynthesisError> {
         // Complete mixed addition formula from Renes-Costello-Batina 2015
         // Algorithm 2
         // (https://eprint.iacr.org/2015/1060).
@@ -237,6 +237,7 @@ where
         // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
         let (x1, y1, z1) = (&self.x, &self.y, &self.z);
+        let (x2, y2) = (&other.x, &other.y);
 
         let xx = x1 * x2; // 1
         let yy = y1 * y2; // 2
@@ -262,6 +263,77 @@ where
         let z = (&yy_p_bz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 31, 32, 33
 
         Ok(ProjectiveVar::new(x, y, z))
+    }
+
+    /// Computes a scalar multiplication with a little-endian scalar of size `P::ScalarField::MODULUS_BITS`.
+    // #[tracing::instrument(target = "r1cs", skip(self, non_zero_self, mul_result, multiple_power_of_two, bits))]
+    fn fixed_scalar_mul_le(
+        &self,
+        mul_result: &mut Self,
+        multiple_of_power_of_two: &mut NonZeroAffineVar<P, F>,
+        bits: &[&Boolean<<P::BaseField as Field>::BasePrimeField>],
+    ) -> Result<(), SynthesisError> {
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
+
+        assert!(scalar_modulus_bits >= bits.len());
+        let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
+        let (affine_bits, proj_bits) = bits.split_at(split_len);
+        // Computes the standard little-endian double-and-add algorithm
+        // (Algorithm 3.26, Guide to Elliptic Curve Cryptography)
+        //
+        // We rely on *incomplete* affine formulae for partially computing this.
+        // However, we avoid exceptional edge cases because we partition the scalar 
+        // into two chunks: one guaranteed to be less than p - 2, and the rest. 
+        // We only use incomplete formulae for the first chunk, which means we avoid exceptions:
+        // 
+        // `add_unchecked(a, b)` is incomplete when either `b.is_zero()`, or when
+        // `b = ±a`. During scalar multiplication, we don't hit either case:
+        // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`.
+        //   This implies that `k != p ± 1`, and so `b != (p ± 1) * a`.
+        //   Because the group is finite, this in turn means that `b != ±a`, as required.
+        // * `a` or `b` is zero: for `a`, we handle the zero case after the loop; for `b`, notice
+        //    that it is monotonically increasing, and furthermore, equals `k * a`, where
+        //    `k != p = 0 mod p`.
+
+        // Unlike normal double-and-add, here we start off with a non-zero `accumulator`,
+        // because `NonZeroAffineVar::add_unchecked` doesn't support addition with `zero`.
+        // In more detail, we initialize `accumulator` to be the initial value of 
+        // `multiple_of_power_of_two`. This ensures that all unchecked additions of `accumulator`
+        // with later values of `multiple_of_power_of_two` are safe.
+        // However, to do this correctly, we need to perform two steps:
+        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we will 
+        //   conditionally subtract the initial value of `accumulator`: 
+        //     if LSB == 0: subtract initial_acc_value; else, subtract 0.
+        // * Because we are assuming the first bit, we must double `multiple_of_power_of_two`.
+
+        let mut accumulator = multiple_of_power_of_two.clone();
+        let initial_acc_value = accumulator.into_projective();
+
+        // The powers start at 2 (instead of 1) because we're skipping the first bit.
+        multiple_of_power_of_two.double_in_place()?;
+
+        // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
+        for bit in affine_bits.iter().skip(1) {
+            let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+            accumulator = bit.select(&temp, &accumulator)?;
+            multiple_of_power_of_two.double_in_place()?;
+        }
+        // Perform conditional subtraction:
+
+        // We can convert to projective safely because the result is guaranteed to be non-zero
+        // by the condition on `affine_bits.len()`, and by the fact that `accumulator` is non-zero
+        let result = accumulator.into_projective();
+        // If bits[0] is 0, then we have to subtract `self`; else, we subtract zero.
+        let subtrahend = bits[0].select(&Self::zero(), &initial_acc_value)?;
+        *mul_result += result - subtrahend;
+
+        // Now, let's finish off the rest of the bits using our complete formulae
+        for bit in proj_bits {
+            let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
+            *mul_result = bit.select(&temp, &mul_result)?;
+            multiple_of_power_of_two.double_in_place()?;
+        }
+        Ok(())
     }
 }
 
@@ -394,7 +466,7 @@ where
 
     /// Computes `bits * self`, where `bits` is a little-endian
     /// `Boolean` representation of a scalar.
-    #[tracing::instrument(target = "r1cs", skip(bits))]
+    // #[tracing::instrument(target = "r1cs", skip(bits))]
     fn scalar_mul_le<'a>(
         &self,
         bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
@@ -404,7 +476,7 @@ where
             // (these will be used by`precomputed_base_scalar_mul_le`, to perform
             // a conditional addition.).
             //
-            // TODO: if `bits.len()` is small n, it might be cheaper to
+            // TODO: if `n = bits.len()` is small, it might be cheaper to
             // conditionally select between 2^n options.
             let mut value = self.value()?;
             let bits_and_multiples = bits
@@ -420,26 +492,34 @@ where
             )?;
             Ok(result)
         } else {
-            // Computes the standard big-endian double-and-add algorithm
-            // (Algorithm 3.27, Guide to Elliptic Curve Cryptography)
-            // the input is little-endian, so we need to reverse it to get it in
-            // big-endian.
-            let mut bits = bits.collect::<Vec<_>>();
-            bits.reverse();
-
-            let mut res = Self::zero();
             let self_affine = self.to_affine()?;
-            for bit in bits {
-                res.double_in_place()?;
-                let tmp = res.add_mixed((&self_affine.x, &self_affine.y))?;
-                res = bit.select(&tmp, &res)?;
+            let (x, y, infinity) = (self_affine.x, self_affine.y, self_affine.infinity);
+            // We first handle the non-zero case, and then later
+            // will conditionally select zero if `self` was zero.
+            let non_zero_self = NonZeroAffineVar::new(x, y);
+
+            let bits = bits.collect::<Vec<_>>();
+            if bits.len() == 0 {
+                return Ok(Self::zero());
             }
-            // The foregoing algorithm relies on mixed addition, and so does not
+            let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
+            let mut mul_result = Self::zero();
+            let mut power_of_two_times_self = non_zero_self;
+            // We chunk up `bits` into `p`-sized chunks.
+            for bits in bits.chunks(scalar_modulus_bits) {
+                self.fixed_scalar_mul_le(
+                    &mut mul_result,
+                    &mut power_of_two_times_self,
+                    bits,
+                )?;
+            }
+
+            // The foregoing algorithms rely on mixed/incomplete addition, and so do not
             // work when the input (`self`) is zero. We hence have to perform
             // a check to ensure that if the input is zero, then so is the output.
             // The cost of this check should be less than the benefit of using
             // mixed addition in almost all cases.
-            self_affine.infinity.select(&Self::zero(), &res)
+            infinity.select(&Self::zero(), &mul_result)
         }
     }
 }
@@ -502,7 +582,7 @@ impl_bounded_ops!(
                 // We'll use mixed addition to add non-zero constants.
                 let x = F::constant(other.x);
                 let y = F::constant(other.y);
-                this.add_mixed((&x, &y)).unwrap()
+                this.add_mixed(&NonZeroAffineVar::new(x, y)).unwrap()
             }
         } else {
             // Complete addition formula from Renes-Costello-Batina 2015
