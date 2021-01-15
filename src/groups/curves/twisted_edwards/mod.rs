@@ -523,43 +523,35 @@ where
         Ok(Self::new(self.x.negate()?, self.y.clone()))
     }
 
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_base_powers))]
+    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_base_multiples))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
-        scalar_bits_with_base_powers: I,
+        scalar_bits_with_base_multiples: I,
     ) -> Result<(), SynthesisError>
     where
         I: Iterator<Item = (B, &'a TEProjective<P>)>,
         B: Borrow<Boolean<<P::BaseField as Field>::BasePrimeField>>,
     {
-        let scalar_bits_with_base_powers = scalar_bits_with_base_powers
+        let (bits, multiples): (Vec<_>, Vec<_>) = scalar_bits_with_base_multiples
             .map(|(bit, base)| (bit.borrow().clone(), *base))
-            .collect::<Vec<(_, TEProjective<P>)>>();
-        let zero = TEProjective::zero();
-        for bits_base_powers in scalar_bits_with_base_powers.chunks(2) {
-            if bits_base_powers.len() == 2 {
-                let bits = [bits_base_powers[0].0.clone(), bits_base_powers[1].0.clone()];
-                let base_powers = [&bits_base_powers[0].1, &bits_base_powers[1].1];
-
-                let mut table = [
-                    zero,
-                    *base_powers[0],
-                    *base_powers[1],
-                    *base_powers[0] + base_powers[1],
-                ];
+            .unzip();
+        let zero: TEAffine<P> = TEProjective::zero().into_affine();
+        for (bits, multiples) in bits.chunks(2).zip(multiples.chunks(2)) {
+            if bits.len() == 2 {
+                let mut table = [multiples[0], multiples[1], multiples[0] + multiples[1]];
 
                 TEProjective::batch_normalization(&mut table);
-                let x_s = [table[0].x, table[1].x, table[2].x, table[3].x];
-                let y_s = [table[0].y, table[1].y, table[2].y, table[3].y];
+                let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
+                let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
                 let x = F::two_bit_lookup(&bits, &x_s)?;
                 let y = F::two_bit_lookup(&bits, &y_s)?;
                 *self += Self::new(x, y);
-            } else if bits_base_powers.len() == 1 {
-                let bit = bits_base_powers[0].0.clone();
-                let base_power = bits_base_powers[0].1;
-                let new_encoded = &*self + base_power;
-                *self = bit.select(&new_encoded, &self)?;
+            } else if bits.len() == 1 {
+                // println!("Here");
+                let bit = &bits[0];
+                let tmp = &*self + multiples[0];
+                *self = bit.select(&tmp, &*self)?;
             }
         }
 
