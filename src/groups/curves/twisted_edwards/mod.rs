@@ -548,7 +548,6 @@ where
                 let y = F::two_bit_lookup(&bits, &y_s)?;
                 *self += Self::new(x, y);
             } else if bits.len() == 1 {
-                // println!("Here");
                 let bit = &bits[0];
                 let tmp = &*self + multiples[0];
                 *self = bit.select(&tmp, &*self)?;
