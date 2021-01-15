@@ -69,7 +69,7 @@ where
         }
     }
 
-    /// Doubles `self`. As this is a prime order curve point, 
+    /// Doubles `self`. As this is a prime order curve point,
     /// the output is guaranteed to not be the point at infinity.
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
