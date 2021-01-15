@@ -473,7 +473,7 @@ where
     ) -> Result<Self, SynthesisError> {
         if self.is_constant() {
             if self.value().unwrap().is_zero() {
-                return Ok(self.clone())
+                return Ok(self.clone());
             }
         }
         let self_affine = self.to_affine()?;
@@ -512,7 +512,9 @@ where
         B: Borrow<Boolean<<P::BaseField as Field>::BasePrimeField>>,
     {
         // We just ignore the provided bases and use the faster scalar multiplication.
-        let (bits, bases): (Vec<_>, Vec<_>) = scalar_bits_with_bases.map(|(b, c)| (b.borrow().clone(), *c)).unzip();
+        let (bits, bases): (Vec<_>, Vec<_>) = scalar_bits_with_bases
+            .map(|(b, c)| (b.borrow().clone(), *c))
+            .unzip();
         let base = bases[0];
         *self = Self::constant(base).scalar_mul_le(bits.iter())?;
         Ok(())
