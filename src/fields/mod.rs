@@ -5,7 +5,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::{prelude::*, Assignment};
+use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field
 /// variables. That is, it implements the R1CS equivalent of
@@ -160,17 +160,11 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// It is up to the caller to ensure that denominator is non-zero,
     /// since in that case the result is unconstrained.
     fn mul_by_inverse(&self, denominator: &Self) -> Result<Self, SynthesisError> {
-        if denominator.is_constant() {
+        if self.is_constant() || denominator.is_constant() {
             Ok(denominator.inverse()? * self)
         } else {
-            let result = Self::new_witness(self.cs(), || {
-                let denominator_inv_native = denominator.value()?.inverse().get()?;
-                let result = self.value()? * &denominator_inv_native;
-                Ok(result)
-            })?;
-            result.mul_equals(&denominator, &self)?;
-
-            Ok(result)
+            let d_inv = Self::new_witness(self.cs(), || Ok(denominator.value()?.inverse().unwrap_or(F::zero())))?;
+	        Ok(d_inv * self)
         }
     }
 
