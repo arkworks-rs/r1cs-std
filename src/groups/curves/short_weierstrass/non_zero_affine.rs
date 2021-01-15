@@ -46,10 +46,6 @@ where
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
-<<<<<<< HEAD
-=======
-            let cs = [self, other].cs();
->>>>>>> 52470fd85cfb987ad0fcb40f04733c9d08aa7ff8
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
             // Then,
