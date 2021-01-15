@@ -23,6 +23,7 @@
 - #9 Fix bug in short weierstrass projective curve point's to_affine method
 - #29 Fix `to_non_unique_bytes` for `BLS12::G1Prepared`
 - #34 Fix `mul_by_inverse` for constants
+- #42 Fix regression in `mul_by_inverse` constraint count
 
 ## v0.1.0
 
