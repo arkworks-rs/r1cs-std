@@ -472,51 +472,50 @@ where
         bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
     ) -> Result<Self, SynthesisError> {
         if self.is_constant() {
-            // Compute 2^i * self for i in 0..bits.len()
-            // (these will be used by`precomputed_base_scalar_mul_le`, to perform
-            // a conditional addition.).
-            //
-            // TODO: if `n = bits.len()` is small, it might be cheaper to
-            // conditionally select between 2^n options.
-            let mut value = self.value()?;
-            let bits_and_multiples = bits
-                .map(|b| {
-                    let multiple = value;
-                    value.double_in_place();
-                    (b, multiple)
-                })
-                .collect::<ark_std::vec::Vec<_>>();
-            let mut result = self.clone();
-            result.precomputed_base_scalar_mul_le(
-                bits_and_multiples.iter().map(|&(ref b, ref c)| (*b, c)),
-            )?;
-            Ok(result)
-        } else {
-            let self_affine = self.to_affine()?;
-            let (x, y, infinity) = (self_affine.x, self_affine.y, self_affine.infinity);
-            // We first handle the non-zero case, and then later
-            // will conditionally select zero if `self` was zero.
-            let non_zero_self = NonZeroAffineVar::new(x, y);
-
-            let bits = bits.collect::<Vec<_>>();
-            if bits.len() == 0 {
-                return Ok(Self::zero());
+            if self.value().unwrap().is_zero() {
+                return Ok(self.clone())
             }
-            let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
-            let mut mul_result = Self::zero();
-            let mut power_of_two_times_self = non_zero_self;
-            // We chunk up `bits` into `p`-sized chunks.
-            for bits in bits.chunks(scalar_modulus_bits) {
-                self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
-            }
-
-            // The foregoing algorithms rely on mixed/incomplete addition, and so do not
-            // work when the input (`self`) is zero. We hence have to perform
-            // a check to ensure that if the input is zero, then so is the output.
-            // The cost of this check should be less than the benefit of using
-            // mixed addition in almost all cases.
-            infinity.select(&Self::zero(), &mul_result)
         }
+        let self_affine = self.to_affine()?;
+        let (x, y, infinity) = (self_affine.x, self_affine.y, self_affine.infinity);
+        // We first handle the non-zero case, and then later
+        // will conditionally select zero if `self` was zero.
+        let non_zero_self = NonZeroAffineVar::new(x, y);
+
+        let bits = bits.collect::<Vec<_>>();
+        if bits.len() == 0 {
+            return Ok(Self::zero());
+        }
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::Params::MODULUS_BITS as usize;
+        let mut mul_result = Self::zero();
+        let mut power_of_two_times_self = non_zero_self;
+        // We chunk up `bits` into `p`-sized chunks.
+        for bits in bits.chunks(scalar_modulus_bits) {
+            self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
+        }
+
+        // The foregoing algorithms rely on mixed/incomplete addition, and so do not
+        // work when the input (`self`) is zero. We hence have to perform
+        // a check to ensure that if the input is zero, then so is the output.
+        // The cost of this check should be less than the benefit of using
+        // mixed addition in almost all cases.
+        infinity.select(&Self::zero(), &mul_result)
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
+    fn precomputed_base_scalar_mul_le<'a, I, B>(
+        &mut self,
+        scalar_bits_with_bases: I,
+    ) -> Result<(), SynthesisError>
+    where
+        I: Iterator<Item = (B, &'a SWProjective<P>)>,
+        B: Borrow<Boolean<<P::BaseField as Field>::BasePrimeField>>,
+    {
+        // We just ignore the provided bases and use the faster scalar multiplication.
+        let (bits, bases): (Vec<_>, Vec<_>) = scalar_bits_with_bases.map(|(b, c)| (b.borrow().clone(), *c)).unzip();
+        let base = bases[0];
+        *self = Self::constant(base).scalar_mul_le(bits.iter())?;
+        Ok(())
     }
 }
 

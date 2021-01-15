@@ -44,8 +44,6 @@ where
         if [self, other].is_constant() {
             let result =
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
-            // Panic is the result is zero.
-            assert!(!result.is_zero());
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
             let cs = [self, other].cs();
@@ -76,7 +74,7 @@ where
     pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
             let result = self.value()?.into_projective().double().into_affine();
-            // Panic is the result is zero.
+            // Panic if the result is zero.
             assert!(!result.is_zero());
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
