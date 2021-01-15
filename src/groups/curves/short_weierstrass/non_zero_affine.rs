@@ -46,6 +46,10 @@ where
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
+<<<<<<< HEAD
+=======
+            let cs = [self, other].cs();
+>>>>>>> 52470fd85cfb987ad0fcb40f04733c9d08aa7ff8
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
             // Then,
@@ -73,12 +77,12 @@ where
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let x1_sqr = x1.square()?;
-            let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
-            let denominator = y1.double()?;
             // Then,
             // tangent lambda := (3 * x1^2 + a) / y1·;
             // x3 = lambda^2 - 2x1
             // y3 = lambda * (x1 - x3) - y1
+            let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
+            let denominator = y1.double()?;
             let lambda = numerator.mul_by_inverse(&denominator)?;
             let x3 = lambda.square()? - x1.double()?;
             let y3 = lambda * &(x1 - &x3) - y1;
