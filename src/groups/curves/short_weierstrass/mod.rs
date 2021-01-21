@@ -505,6 +505,7 @@ where
             // Skip leading zeros, if they are constants.
             .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
             .collect();
+        bits.reverse();
         let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
