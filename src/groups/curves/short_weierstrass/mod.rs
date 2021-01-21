@@ -2,7 +2,7 @@ use ark_ec::{
     short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
     AffineCurve, ProjectiveCurve, SWModelParameters,
 };
-use ark_ff::{BigInteger, BitIteratorBE, Field, FpParameters, One, PrimeField, Zero};
+use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 use non_zero_affine::NonZeroAffineVar;
@@ -276,7 +276,7 @@ where
         multiple_of_power_of_two: &mut NonZeroAffineVar<P, F>,
         bits: &[&Boolean<<P::BaseField as Field>::BasePrimeField>],
     ) -> Result<(), SynthesisError> {
-        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
 
         assert!(scalar_modulus_bits >= bits.len());
         let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
@@ -493,11 +493,16 @@ where
         // will conditionally select zero if `self` was zero.
         let non_zero_self = NonZeroAffineVar::new(x, y);
 
-        let bits = bits.collect::<Vec<_>>();
+        let mut bits = bits.collect::<Vec<_>>();
         if bits.len() == 0 {
             return Ok(Self::zero());
         }
-        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
+        // Skip leading zeros.
+        if bits.is_constant() {
+            // We iterate from the MSB down.
+            bits = bits.into_iter().rev().skip_while(|b| !b.value().unwrap()).collect();
+        }
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
         // We chunk up `bits` into `p`-sized chunks.
