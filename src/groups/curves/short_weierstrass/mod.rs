@@ -317,8 +317,12 @@ where
 
         // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
         for bit in affine_bits.iter().skip(1) {
-            let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
-            accumulator = bit.select(&temp, &accumulator)?;
+            if bit.is_constant() && *bit == &Boolean::TRUE {
+                accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+            } else {
+                let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                accumulator = bit.select(&temp, &accumulator)?;
+            }
             multiple_of_power_of_two.double_in_place()?;
         }
         // Perform conditional subtraction:
@@ -332,8 +336,12 @@ where
 
         // Now, let's finish off the rest of the bits using our complete formulae
         for bit in proj_bits {
-            let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
-            *mul_result = bit.select(&temp, &mul_result)?;
+            if bit.is_constant() && *bit == &Boolean::TRUE {
+                *mul_result += &multiple_of_power_of_two.into_projective();
+            } else {
+                let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
+                *mul_result = bit.select(&temp, &mul_result)?;
+            }
             multiple_of_power_of_two.double_in_place()?;
         }
         Ok(())
@@ -497,7 +505,7 @@ where
             self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
         }
 
-        // The foregoing algorithms rely on mixed/incomplete addition, and so do not
+        // The foregoing algorithm relies on incomplete addition, and so do not
         // work when the input (`self`) is zero. We hence have to perform
         // a check to ensure that if the input is zero, then so is the output.
         // The cost of this check should be less than the benefit of using
