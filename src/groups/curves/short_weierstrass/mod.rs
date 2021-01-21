@@ -497,15 +497,14 @@ where
         if bits.len() == 0 {
             return Ok(Self::zero());
         }
-        // Skip leading zeros.
-        if bits.is_constant() {
+        // Remove unnecessary constant zeros in the most-significant positions.
+        bits = bits
+            .into_iter()
             // We iterate from the MSB down.
-            bits = bits
-                .into_iter()
-                .rev()
-                .skip_while(|b| !b.value().unwrap())
-                .collect();
-        }
+            .rev()
+            // Skip leading zeros, if they are constants.
+            .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
+            .collect();
         let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
