@@ -500,7 +500,11 @@ where
         // Skip leading zeros.
         if bits.is_constant() {
             // We iterate from the MSB down.
-            bits = bits.into_iter().rev().skip_while(|b| !b.value().unwrap()).collect();
+            bits = bits
+                .into_iter()
+                .rev()
+                .skip_while(|b| !b.value().unwrap())
+                .collect();
         }
         let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
