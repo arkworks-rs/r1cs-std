@@ -514,7 +514,7 @@ where
             self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
         }
 
-        // The foregoing algorithm relies on incomplete addition, and so do not
+        // The foregoing algorithm relies on incomplete addition, and so does not
         // work when the input (`self`) is zero. We hence have to perform
         // a check to ensure that if the input is zero, then so is the output.
         // The cost of this check should be less than the benefit of using
