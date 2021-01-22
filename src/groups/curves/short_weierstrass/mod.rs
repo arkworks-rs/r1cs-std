@@ -2,7 +2,7 @@ use ark_ec::{
     short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
     AffineCurve, ProjectiveCurve, SWModelParameters,
 };
-use ark_ff::{BigInteger, BitIteratorBE, Field, FpParameters, One, PrimeField, Zero};
+use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 use non_zero_affine::NonZeroAffineVar;
@@ -276,7 +276,7 @@ where
         multiple_of_power_of_two: &mut NonZeroAffineVar<P, F>,
         bits: &[&Boolean<<P::BaseField as Field>::BasePrimeField>],
     ) -> Result<(), SynthesisError> {
-        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
 
         assert!(scalar_modulus_bits >= bits.len());
         let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
@@ -317,8 +317,14 @@ where
 
         // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
         for bit in affine_bits.iter().skip(1) {
-            let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
-            accumulator = bit.select(&temp, &accumulator)?;
+            if bit.is_constant() {
+                if *bit == &Boolean::TRUE {
+                    accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                }
+            } else {
+                let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                accumulator = bit.select(&temp, &accumulator)?;
+            }
             multiple_of_power_of_two.double_in_place()?;
         }
         // Perform conditional subtraction:
@@ -332,8 +338,14 @@ where
 
         // Now, let's finish off the rest of the bits using our complete formulae
         for bit in proj_bits {
-            let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
-            *mul_result = bit.select(&temp, &mul_result)?;
+            if bit.is_constant() {
+                if *bit == &Boolean::TRUE {
+                    *mul_result += &multiple_of_power_of_two.into_projective();
+                }
+            } else {
+                let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
+                *mul_result = bit.select(&temp, &mul_result)?;
+            }
             multiple_of_power_of_two.double_in_place()?;
         }
         Ok(())
@@ -485,11 +497,23 @@ where
         // will conditionally select zero if `self` was zero.
         let non_zero_self = NonZeroAffineVar::new(x, y);
 
-        let bits = bits.collect::<Vec<_>>();
+        let mut bits = bits.collect::<Vec<_>>();
         if bits.len() == 0 {
             return Ok(Self::zero());
         }
-        let scalar_modulus_bits = <<P::ScalarField as PrimeField>::Params>::MODULUS_BITS as usize;
+        // Remove unnecessary constant zeros in the most-significant positions.
+        bits = bits
+            .into_iter()
+            // We iterate from the MSB down.
+            .rev()
+            // Skip leading zeros, if they are constants.
+            .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
+            .collect();
+        // After collecting we are in big-endian form; we have to reverse to get back to
+        // little-endian.
+        bits.reverse();
+
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
         // We chunk up `bits` into `p`-sized chunks.
@@ -497,7 +521,7 @@ where
             self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
         }
 
-        // The foregoing algorithms rely on mixed/incomplete addition, and so do not
+        // The foregoing algorithm relies on incomplete addition, and so does not
         // work when the input (`self`) is zero. We hence have to perform
         // a check to ensure that if the input is zero, then so is the output.
         // The cost of this check should be less than the benefit of using

@@ -74,7 +74,7 @@ where
             let (x1, y1) = (&self.x, &self.y);
             let x1_sqr = x1.square()?;
             // Then,
-            // tangent lambda := (3 * x1^2 + a) / y1·;
+            // tangent lambda := (3 * x1^2 + a) / (2 * y1);
             // x3 = lambda^2 - 2x1
             // y3 = lambda * (x1 - x3) - y1
             let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
@@ -83,6 +83,37 @@ where
             let x3 = lambda.square()? - x1.double()?;
             let y3 = lambda * &(x1 - &x3) - y1;
             Ok(Self::new(x3, y3))
+        }
+    }
+
+    /// Computes `(self + other) + self`. This method requires only 5 constraints,
+    /// less than the 7 required when computing via `self.double() + other`.
+    ///
+    /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
+    #[tracing::instrument(target = "r1cs", skip(self))]
+    pub(crate) fn double_and_add(&self, other: &Self) -> Result<Self, SynthesisError> {
+        if [self].is_constant() || other.is_constant() {
+            self.double()?.add_unchecked(other)
+        } else {
+            let (x1, y1) = (&self.x, &self.y);
+            let (x2, y2) = (&other.x, &other.y);
+
+            // Calculate self + other:
+            // slope lambda := (y2 - y1)/(x2 - x1);
+            // x3 = lambda^2 - x1 - x2;
+            // y3 = lambda * (x1 - x3) - y1
+            let numerator = y2 - y1;
+            let denominator = x2 - x1;
+            let lambda_1 = numerator.mul_by_inverse(&denominator)?;
+
+            let x3 = lambda_1.square()? - x1 - x2;
+
+            // Calculate final addition slope:
+            let lambda_2 = (lambda_1 + y1.double()?.mul_by_inverse(&(&x3 - x1))?).negate()?;
+
+            let x4 = lambda_2.square()? - x1 - x3;
+            let y4 = lambda_2 * &(x1 - &x4) - y1;
+            Ok(Self::new(x4, y4))
         }
     }
 
