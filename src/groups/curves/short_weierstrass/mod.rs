@@ -317,8 +317,10 @@ where
 
         // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
         for bit in affine_bits.iter().skip(1) {
-            if bit.is_constant() && *bit == &Boolean::TRUE {
-                accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+            if bit.is_constant() {
+                if *bit == &Boolean::TRUE {
+                    accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                }
             } else {
                 let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
                 accumulator = bit.select(&temp, &accumulator)?;
@@ -336,8 +338,10 @@ where
 
         // Now, let's finish off the rest of the bits using our complete formulae
         for bit in proj_bits {
-            if bit.is_constant() && *bit == &Boolean::TRUE {
-                *mul_result += &multiple_of_power_of_two.into_projective();
+            if bit.is_constant() {
+                if *bit == &Boolean::TRUE {
+                    *mul_result += &multiple_of_power_of_two.into_projective();
+                }
             } else {
                 let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
                 *mul_result = bit.select(&temp, &mul_result)?;
@@ -505,7 +509,10 @@ where
             // Skip leading zeros, if they are constants.
             .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
             .collect();
+        // After collecting we are in big-endian form; we have to reverse to get back to
+        // little-endian.
         bits.reverse();
+
         let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
