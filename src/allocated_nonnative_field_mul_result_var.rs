@@ -23,6 +23,28 @@ pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseFiel
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
+    From<&AllocatedNonNativeFieldVar<TargetField, BaseField>>
+    for AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
+{
+    fn from(src: &AllocatedNonNativeFieldVar<TargetField, BaseField>) -> Self {
+        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+
+        let mut limbs = src.limbs.clone();
+        limbs.reverse();
+        limbs.resize(2 * params.num_limbs - 1, FpVar::<BaseField>::zero());
+        limbs.reverse();
+
+        let prod_of_num_of_additions = src.num_of_additions_over_normal_form + &BaseField::one();
+
+        Self {
+            limbs,
+            prod_of_num_of_additions,
+            target_phantom: PhantomData,
+        }
+    }
+}
+
+impl<TargetField: PrimeField, BaseField: PrimeField>
     AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
 {
     /// Get the CS

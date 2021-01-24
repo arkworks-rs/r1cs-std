@@ -41,6 +41,23 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     }
 }
 
+impl<TargetField: PrimeField, BaseField: PrimeField>
+    From<&NonNativeFieldVar<TargetField, BaseField>>
+    for NonNativeFieldMulResultVar<TargetField, BaseField>
+{
+    fn from(src: &NonNativeFieldVar<TargetField, BaseField>) -> Self {
+        match src {
+            NonNativeFieldVar::Constant(c) => NonNativeFieldMulResultVar::Constant(*c),
+            NonNativeFieldVar::Var(v) => {
+                NonNativeFieldMulResultVar::Var(AllocatedNonNativeFieldMulResultVar::<
+                    TargetField,
+                    BaseField,
+                >::from(v))
+            }
+        }
+    }
+}
+
 impl_bounded_ops!(
     NonNativeFieldMulResultVar<TargetField, BaseField>,
     TargetField,
