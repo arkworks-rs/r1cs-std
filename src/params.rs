@@ -38,9 +38,10 @@ pub const fn find_parameters(
     let mut min_cost_num_of_limbs = 0usize;
 
     let surfeit = 10;
-
-    let max_limb_size = (base_field_prime_length - 1 - surfeit - 1) / 2 - 1;
-
+    let mut max_limb_size = (base_field_prime_length - 1 - surfeit - 1) / 2 - 1;
+    if max_limb_size > target_field_prime_bit_length {
+        max_limb_size = target_field_prime_bit_length;
+    }
     let mut limb_size = 1;
 
     while limb_size <= max_limb_size {

@@ -684,3 +684,15 @@ nonnative_test!(
     <MNT6_753 as PairingEngine>::Fr,
     <MNT4_298 as PairingEngine>::Fr
 );
+nonnative_test!(
+    PallasFrMNT6Fr,
+    ark_pallas::Fr,
+    <MNT6_753 as PairingEngine>::Fr
+);
+nonnative_test!(
+    MNT6FrPallasFr,
+    <MNT6_753 as PairingEngine>::Fr,
+    ark_pallas::Fr
+);
+nonnative_test!(PallasFqFr, ark_pallas::Fq, ark_pallas::Fr);
+nonnative_test!(PallasFrFq, ark_pallas::Fr, ark_pallas::Fq);

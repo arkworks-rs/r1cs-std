@@ -203,13 +203,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         right: &[FpVar<BaseField>],
     ) -> R1CSResult<()> {
         let cs = left.cs().or(right.cs());
-
         let zero = FpVar::<BaseField>::zero();
 
         let mut limb_pairs = Vec::<(FpVar<BaseField>, FpVar<BaseField>)>::new();
-        let num_limb_in_a_group =
-            (BaseField::size_in_bits() - 1 - surfeit - 1 - 1 - (bits_per_limb - shift_per_limb))
-                / shift_per_limb;
+        let num_limb_in_a_group = (BaseField::size_in_bits()
+            - 1
+            - surfeit
+            - 1
+            - 1
+            - 1
+            - (bits_per_limb - shift_per_limb))
+            / shift_per_limb;
 
         let shift_array = {
             let mut array = Vec::new();

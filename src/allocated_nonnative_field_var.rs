@@ -41,8 +41,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
 
         let mut base_repr: <TargetField as PrimeField>::BigInt = TargetField::one().into_repr();
-        base_repr.muln(params.bits_per_limb as u32);
-        let base: TargetField = TargetField::from_repr(base_repr).unwrap();
+
+        // Convert 2^{(params.bits_per_limb - 1)} into the TargetField and then double the base
+        // This is because 2^{(params.bits_per_limb)} might indeed be larger than the target field's prime.
+        base_repr.muln((params.bits_per_limb - 1) as u32);
+        let mut base: TargetField = TargetField::from_repr(base_repr).unwrap();
+        base = base + &base;
 
         let mut result = TargetField::zero();
         let mut power = TargetField::one();
