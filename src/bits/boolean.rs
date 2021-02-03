@@ -435,7 +435,7 @@ impl<F: Field> Boolean<F> {
         match (self, other) {
             (&Constant(false), x) | (x, &Constant(false)) => Ok(x.clone()),
             (&Constant(true), _) | (_, &Constant(true)) => Ok(Constant(true)),
-            // a OR b = NOT ((NOT a) AND b)
+            // a OR b = NOT ((NOT a) AND (NOT b))
             (a @ &Is(_), b @ &Not(_)) | (b @ &Not(_), a @ &Is(_)) | (b @ &Not(_), a @ &Not(_)) => {
                 Ok(a.not().and(&b.not())?.not())
             }

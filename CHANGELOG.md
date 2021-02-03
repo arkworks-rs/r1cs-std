@@ -1,7 +1,7 @@
 ## Pending
 
 ### Breaking changes
-- #12 Make the `ToBitsGadget` impl for `FpVar` output fixed-size
+- #12 Make the output of the `ToBitsGadget` impl for `FpVar` fixed-size
 
 ### Features
 
@@ -17,7 +17,7 @@
 - #33 Speedup scalar multiplication by a constant
 - #35 Construct a `FpVar` from bits
 - #36 Implement `ToConstraintFieldGadget` for `Vec<Uint8>`
-- #40 Faster scalar multiplication for Short Weierstrass curves by relying on affine formulae
+- #40, #43 Faster scalar multiplication for Short Weierstrass curves by relying on affine formulae
 
 ### Bug fixes
 - #8 Fix bug in `three_bit_cond_neg_lookup` when using a constant lookup bit
