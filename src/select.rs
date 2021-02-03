@@ -6,6 +6,7 @@ use ark_relations::r1cs::SynthesisError;
 pub trait CondSelectGadget<ConstraintF: Field>
 where
     Self: Sized,
+    Self: Clone,
 {
     /// If `cond == &Boolean::TRUE`, then this returns `true_value`; else,
     /// returns `false_value`.
@@ -18,6 +19,48 @@ where
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError>;
+
+    /// Returns an element of `values` whose index in represented by `position`.
+    /// `position` is an array of boolean that represents an unsigned integer in big endian order.
+    ///
+    /// # Example
+    /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`) to `position = [True, True, False]`,
+    /// and call `conditionally_select_power_of_two_vector(position, values)`.
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<ConstraintF>],
+        values: &[Self],
+    ) -> Result<Self, SynthesisError> {
+        let m = values.len();
+        let n = position.len();
+
+        // Assert m is a power of 2, and n = log(m)
+        assert!(m.is_power_of_two());
+        assert_eq!(1 << n, m);
+
+        // Assert `position` is not empty
+        let mut cur_mux_values = values.to_vec();
+
+        // Traverse the evaluation tree from bottom to top in level order traversal.
+        for i in 0..n {
+            // Size of current layer.
+            let cur_size = 1 << (n - i);
+            assert_eq!(cur_mux_values.len(), cur_size);
+
+            let mut next_mux_values = Vec::new();
+            for j in (0..cur_size).step_by(2) {
+                let cur = Self::conditionally_select(
+                    &position[n - 1 - i],
+                    // true case
+                    &cur_mux_values[j + 1],
+                    &cur_mux_values[j],
+                )?;
+                next_mux_values.push(cur);
+            }
+            cur_mux_values = next_mux_values;
+        }
+
+        Ok(cur_mux_values[0].clone())
+    }
 }
 
 /// Performs a lookup in a 4-element table using two bits.
