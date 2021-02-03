@@ -37,10 +37,11 @@ where
         assert!(m.is_power_of_two());
         assert_eq!(1 << n, m);
 
-        // Assert `position` is not empty
         let mut cur_mux_values = values.to_vec();
 
         // Traverse the evaluation tree from bottom to top in level order traversal.
+        // This is method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
+        // TODO: Add method 5.2/5.3
         for i in 0..n {
             // Size of current layer.
             let cur_size = 1 << (n - i);
