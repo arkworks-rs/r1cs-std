@@ -40,8 +40,39 @@ impl<F: PrimeField> DensePolynomialVar<F> {
 
 #[cfg(test)]
 mod tests {
+    use crate::alloc::AllocVar;
+    use crate::fields::fp::FpVar;
+    use crate::poly::polynomial::univariate::dense::DensePolynomialVar;
+    use crate::R1CSVar;
+    use ark_poly::polynomial::univariate::DensePolynomial;
+    use ark_poly::{Polynomial, UVPolynomial};
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{UniformRand, XorShiftRng};
+    use ark_test_curves::bls12_381::Fr;
+    use rand::SeedableRng;
+
     #[test]
     fn test_evaluate() {
-        // todo
+        let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+        for _ in 0..100 {
+            let cs = ConstraintSystem::new_ref();
+            let poly: DensePolynomial<Fr> = DensePolynomial::rand(10, &mut rng);
+            let poly_var = {
+                let coeff: Vec<_> = poly
+                    .coeffs
+                    .iter()
+                    .map(|&x| FpVar::new_witness(ns!(cs, "coeff"), || Ok(x)).unwrap())
+                    .collect();
+                DensePolynomialVar::from_coefficients_vec(coeff)
+            };
+            let point = Fr::rand(&mut rng);
+            let point_var = FpVar::new_witness(ns!(cs, "point"), || Ok(point)).unwrap();
+
+            let expected = poly.evaluate(&point);
+            let actual = poly_var.evaluate(&point_var).unwrap();
+
+            assert_eq!(actual.value().unwrap(), expected);
+            assert!(cs.is_satisfied().unwrap());
+        }
     }
 }
