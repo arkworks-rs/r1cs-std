@@ -2,7 +2,7 @@
 
 ### Breaking changes
 - #12 Make the output of the `ToBitsGadget` impl for `FpVar` fixed-size
-
+- #48 Add `Clone` trait bound to `CondSelectGadget`.
 ### Features
 
 
@@ -18,6 +18,7 @@
 - #35 Construct a `FpVar` from bits
 - #36 Implement `ToConstraintFieldGadget` for `Vec<Uint8>`
 - #40, #43 Faster scalar multiplication for Short Weierstrass curves by relying on affine formulae
+- #46 Add mux gadget as an auto-impl in `CondSelectGadget` to support random access of an array
 
 ### Bug fixes
 - #8 Fix bug in `three_bit_cond_neg_lookup` when using a constant lookup bit
@@ -25,6 +26,7 @@
 - #29 Fix `to_non_unique_bytes` for `BLS12::G1Prepared`
 - #34 Fix `mul_by_inverse` for constants
 - #42 Fix regression in `mul_by_inverse` constraint count
+- #47 Compile with `panic='abort'` in release mode, for safety of the library across FFI boundaries.
 
 ## v0.1.0
 

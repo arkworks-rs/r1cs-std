@@ -12,6 +12,12 @@ include = ["Cargo.toml", "src", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 license = "MIT/Apache-2.0"
 edition = "2018"
 
+[profile.release]
+panic = 'abort'
+
+[profile.dev]
+panic = 'abort'
+
 [dependencies]
 ark-ff = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
 ark-ec = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
@@ -24,8 +30,6 @@ num-bigint = {version = "0.3", default-features = false }
 num-traits = {version = "0.2", default-features = false }
 
 [dev-dependencies]
-rand = { version = "0.7", default-features = false }
-rand_xorshift = "0.2"
 ark-test-curves = { git = "https://github.com/arkworks-rs/algebra", default-features = false, features = ["bls12_381_scalar_field", "mnt4_753_scalar_field"] }
 ark-poly = { git = "https://github.com/arkworks-rs/algebra", default-features = false }
 
