@@ -53,6 +53,7 @@ where
                     &position[n - 1 - i],
                     // true case
                     &cur_mux_values[j + 1],
+                    // false case
                     &cur_mux_values[j],
                 )?;
                 next_mux_values.push(cur);
