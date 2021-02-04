@@ -31,7 +31,7 @@ num-traits = {version = "0.2", default-features = false }
 
 [dev-dependencies]
 rand = { version = "0.7", default-features = false }
-rand_xorshift = "0.2"
+rand_xorshift = "0.3"
 ark-test-curves = { git = "https://github.com/arkworks-rs/algebra", default-features = false, features = ["bls12_381_scalar_field", "mnt4_753_scalar_field"] }
 
 [features]
