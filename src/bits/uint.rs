@@ -386,12 +386,11 @@ macro_rules! make_uint {
                 use crate::{bits::boolean::Boolean, prelude::*, Vec};
                 use ark_test_curves::mnt4_753::Fr;
                 use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-                use rand::{Rng, SeedableRng};
-                use rand_xorshift::XorShiftRng;
+                use ark_std::rand::Rng;
 
                 #[test]
                 fn test_from_bits() -> Result<(), SynthesisError> {
-                    let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+                    let mut rng = ark_std::test_rng();
 
                     for _ in 0..1000 {
                         let v = (0..$size)
@@ -425,7 +424,7 @@ macro_rules! make_uint {
                 #[test]
                 fn test_xor() -> Result<(), SynthesisError> {
                     use Boolean::*;
-                    let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+                    let mut rng = ark_std::test_rng();
 
                     for _ in 0..1000 {
                         let cs = ConstraintSystem::<Fr>::new_ref();
@@ -462,7 +461,7 @@ macro_rules! make_uint {
 
                 #[test]
                 fn test_addmany_constants() -> Result<(), SynthesisError> {
-                    let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+                    let mut rng = ark_std::test_rng();
 
                     for _ in 0..1000 {
                         let cs = ConstraintSystem::<Fr>::new_ref();
@@ -496,7 +495,7 @@ macro_rules! make_uint {
 
                 #[test]
                 fn test_addmany() -> Result<(), SynthesisError> {
-                    let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+                    let mut rng = ark_std::test_rng();
 
                     for _ in 0..1000 {
                         let cs = ConstraintSystem::<Fr>::new_ref();
@@ -534,7 +533,7 @@ macro_rules! make_uint {
 
                 #[test]
                 fn test_rotr() -> Result<(), SynthesisError> {
-                    let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+                    let mut rng = ark_std::test_rng();
 
                     let mut num = rng.gen();
 
