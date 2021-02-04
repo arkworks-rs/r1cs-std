@@ -1,2 +1,2 @@
 /// Module defining data structures for univariate polynomials.
-mod univariate;
+pub mod univariate;
