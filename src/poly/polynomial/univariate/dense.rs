@@ -47,10 +47,10 @@ mod tests {
     use ark_poly::polynomial::univariate::DensePolynomial;
     use ark_poly::{Polynomial, UVPolynomial};
     use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::vec::Vec;
     use ark_std::{UniformRand, XorShiftRng};
     use ark_test_curves::bls12_381::Fr;
     use rand::SeedableRng;
-
     #[test]
     fn test_evaluate() {
         let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
