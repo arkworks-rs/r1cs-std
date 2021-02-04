@@ -36,7 +36,6 @@ debug-assertions = false
 ################################# Dependencies ################################
 
 [dependencies]
-rand = { version = "0.7", default-features = false }
 derivative = { version = "2", features = [ "use_core" ] }
 
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }

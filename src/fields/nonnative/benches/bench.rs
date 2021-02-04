@@ -5,7 +5,7 @@ use ark_relations::{
     ns,
     r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
 };
-use rand::RngCore;
+use ark_std::rand::RngCore;
 
 const NUM_REPETITIONS: usize = 1;
 

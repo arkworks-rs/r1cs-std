@@ -9,7 +9,7 @@ use ark_mnt6_753::MNT6_753;
 use ark_nonnative_field::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
-use rand::RngCore;
+use ark_std::rand::RngCore;
 
 #[cfg(not(ci))]
 const NUM_REPETITIONS: usize = 100;
