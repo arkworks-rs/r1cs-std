@@ -153,9 +153,8 @@ impl<F: PrimeField> FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use rand::{Rng, SeedableRng};
-    use rand_xorshift::XorShiftRng;
-    use std::cmp::Ordering;
+    use ark_std::cmp::Ordering;
+    use ark_std::rand::Rng;
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
     use ark_ff::{PrimeField, UniformRand};
@@ -164,10 +163,7 @@ mod test {
 
     #[test]
     fn test_cmp() {
-        let mut rng = &mut XorShiftRng::from_seed([
-            0x5d, 0xbe, 0x62, 0x59, 0x8d, 0x31, 0x3d, 0x76, 0x32, 0x37, 0xdb, 0x17, 0xe5, 0xbc,
-            0x06, 0x54,
-        ]);
+        let mut rng = ark_std::test_rng();
         fn rand_in_range<R: Rng>(rng: &mut R) -> Fr {
             let pminusonedivtwo: Fr = Fr::modulus_minus_one_div_two().into();
             let mut r;
