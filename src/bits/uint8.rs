@@ -503,4 +503,42 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn test_uint8_random_access() {
+        let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+
+        for _ in 0..100 {
+            let cs = ConstraintSystem::<Fr>::new_ref();
+
+            // value array
+            let values: Vec<u8> = (0..128).map(|_| rng.gen()).collect();
+            let values_const: Vec<UInt8<Fr>> = values.iter().map(|x| UInt8::constant(*x)).collect();
+
+            // index array
+            let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+            let position_var: Vec<Boolean<Fr>> = position
+                .iter()
+                .map(|b| {
+                    Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                        .unwrap()
+                })
+                .collect();
+
+            // index
+            let mut index = 0;
+            for x in position {
+                index *= 2;
+                index += if x { 1 } else { 0 };
+            }
+
+            assert_eq!(
+                UInt8::conditionally_select_power_of_two_vector(&position_var, &values_const)
+                    .unwrap()
+                    .value()
+                    .unwrap(),
+                values[index]
+            )
+        }
+    }
 }
