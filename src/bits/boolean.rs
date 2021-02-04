@@ -959,8 +959,6 @@ mod test {
     use ark_ff::{BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero};
     use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
     use ark_test_curves::bls12_381::Fr;
-    use rand::SeedableRng;
-    use rand_xorshift::XorShiftRng;
 
     #[test]
     fn test_boolean_to_byte() -> Result<(), SynthesisError> {
@@ -1634,7 +1632,7 @@ mod test {
 
     #[test]
     fn test_smaller_than_or_equal_to() -> Result<(), SynthesisError> {
-        let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+        let mut rng = ark_std::test_rng();
         for _ in 0..1000 {
             let mut r = Fr::rand(&mut rng);
             let mut s = Fr::rand(&mut rng);
@@ -1688,7 +1686,7 @@ mod test {
             assert!(!cs.is_satisfied().unwrap());
         }
 
-        let mut rng = XorShiftRng::seed_from_u64(1231275789u64);
+        let mut rng = ark_std::test_rng();
 
         for _ in 0..1000 {
             let r = Fr::rand(&mut rng);
