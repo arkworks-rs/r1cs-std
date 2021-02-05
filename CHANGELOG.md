@@ -3,15 +3,16 @@
 ### Breaking changes
 - #12 Make the output of the `ToBitsGadget` impl for `FpVar` fixed-size
 - #48 Add `Clone` trait bound to `CondSelectGadget`.
-### Features
 
+### Features
+- #21 Add `UInt128`
+- #50 Add `DensePolynomialVar`
 
 ### Improvements
 - #5 Speedup BLS-12 pairing
 - #13 Add `ToConstraintFieldGadget` to `ProjectiveVar`
 - #15, #16 Allow `cs` to be `None` when converting a Montgomery point into a Twisted Edwards point
 - #20 Add `CondSelectGadget` impl for `UInt`s
-- #21 Add `UInt128`
 - #22 Reduce density of `three_bit_cond_neg_lookup`
 - #23 Reduce allocations in `UInt`s
 - #33 Speedup scalar multiplication by a constant
