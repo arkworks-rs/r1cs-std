@@ -1,3 +1,4 @@
+use crate::params::OptimizationType;
 use crate::{AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
 use ark_ff::PrimeField;
 use ark_ff::{to_bytes, FpParameters};
@@ -437,11 +438,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseField>>> {
+        // Use one group element to represent the optimization type.
+        //
+        // By default, the constant is converted in the weight-optimized type, because it results in fewer elements.
         match self {
-            Self::Constant(c) => Ok(AllocatedNonNativeFieldVar::get_limbs_representations(c)?
-                .into_iter()
-                .map(FpVar::constant)
-                .collect()),
+            Self::Constant(c) => Ok(AllocatedNonNativeFieldVar::get_limbs_representations(
+                c,
+                OptimizationType::Weight,
+            )?
+            .into_iter()
+            .map(FpVar::constant)
+            .collect()),
             Self::Var(v) => v.to_constraint_field(),
         }
     }

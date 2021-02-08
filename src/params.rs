@@ -2,13 +2,11 @@ use crate::NonNativeFieldParams;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]
-pub const fn get_params(target_field_size: usize, base_field_size: usize) -> NonNativeFieldParams {
-    let optimization_type = if cfg!(feature = "density-optimized") {
-        OptimizationType::Density
-    } else {
-        OptimizationType::Constraints
-    };
-
+pub const fn get_params(
+    target_field_size: usize,
+    base_field_size: usize,
+    optimization_type: OptimizationType,
+) -> NonNativeFieldParams {
     let (num_of_limbs, limb_size) =
         find_parameters(base_field_size, target_field_size, optimization_type);
     NonNativeFieldParams {
@@ -17,13 +15,13 @@ pub const fn get_params(target_field_size: usize, base_field_size: usize) -> Non
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// The type of optimization target for the parameters searching
 pub enum OptimizationType {
     /// Optimized for constraints
     Constraints,
-    /// Optimized for density
-    Density,
+    /// Optimized for weight
+    Weight,
 }
 
 /// A function to search for parameters for nonnative field gadgets
@@ -57,7 +55,7 @@ pub const fn find_parameters(
             OptimizationType::Constraints => {
                 this_cost += 2 * num_of_limbs - 1;
             }
-            OptimizationType::Density => {
+            OptimizationType::Weight => {
                 this_cost += 6 * num_of_limbs * num_of_limbs;
             }
         };
@@ -70,7 +68,7 @@ pub const fn find_parameters(
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
                 // equality check
             }
-            OptimizationType::Density => {
+            OptimizationType::Weight => {
                 this_cost += target_field_prime_bit_length * 3 + target_field_prime_bit_length; // allocation of k
                 this_cost += target_field_prime_bit_length * 3
                     + target_field_prime_bit_length

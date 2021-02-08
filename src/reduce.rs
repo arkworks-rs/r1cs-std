@@ -129,7 +129,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn post_add_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
     ) -> R1CSResult<()> {
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            elem.get_optimization_type(),
+        );
         let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
 
         if BaseField::size_in_bits() > 2 * params.bits_per_limb + surfeit + 1 {
@@ -145,7 +149,16 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
         elem_other: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
     ) -> R1CSResult<()> {
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        assert_eq!(
+            elem.get_optimization_type(),
+            elem_other.get_optimization_type()
+        );
+
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            elem.get_optimization_type(),
+        );
 
         if 2 * params.bits_per_limb + ark_std::log2(params.num_limbs) as usize
             > BaseField::size_in_bits() - 1

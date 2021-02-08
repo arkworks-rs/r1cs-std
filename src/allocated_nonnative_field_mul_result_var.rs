@@ -1,10 +1,10 @@
-use crate::params::get_params;
+use crate::params::{get_params, OptimizationType};
 use crate::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
 use crate::AllocatedNonNativeFieldVar;
 use ark_ff::{FpParameters, PrimeField};
 use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::prelude::*;
-use ark_relations::r1cs::Result as R1CSResult;
+use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{ns, r1cs::ConstraintSystemRef};
 use ark_std::marker::PhantomData;
 use ark_std::vec::Vec;
@@ -27,7 +27,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     for AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
 {
     fn from(src: &AllocatedNonNativeFieldVar<TargetField, BaseField>) -> Self {
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            src.get_optimization_type(),
+        );
 
         let mut limbs = src.limbs.clone();
         limbs.reverse();
@@ -54,11 +58,16 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
     /// Get the value of the multiplication result
     pub fn value(&self) -> R1CSResult<TargetField> {
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            self.get_optimization_type(),
+        );
 
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
-                &<TargetField as PrimeField>::Params::MODULUS
+                &<TargetField as PrimeField>::Params::MODULUS,
+                self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
 
@@ -74,12 +83,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
     /// Constraints for reducing the result of a multiplication mod p, to get an original representation.
     pub fn reduce(&self) -> R1CSResult<AllocatedNonNativeFieldVar<TargetField, BaseField>> {
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            self.get_optimization_type(),
+        );
 
         // Step 1: get p
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::Params::MODULUS,
+                self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
 
@@ -164,7 +178,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             || Ok(self.value()?),
         )?;
 
-        let params = get_params(TargetField::size_in_bits(), BaseField::size_in_bits());
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            self.get_optimization_type(),
+        );
 
         // Step 1: reduce `self` and `other` if neceessary
         let mut prod_limbs = Vec::new();
@@ -207,6 +225,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     /// Add unreduced elements.
     #[tracing::instrument(target = "r1cs")]
     pub fn add(&self, other: &Self) -> R1CSResult<Self> {
+        assert_eq!(self.get_optimization_type(), other.get_optimization_type());
+
         let mut new_limbs = Vec::new();
 
         for (l1, l2) in self.limbs.iter().zip(other.limbs.iter()) {
@@ -226,7 +246,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     #[tracing::instrument(target = "r1cs")]
     pub fn add_constant(&self, other: &TargetField) -> R1CSResult<Self> {
         let mut other_limbs =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(other)?;
+            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
+                other,
+                self.get_optimization_type(),
+            )?;
         other_limbs.reverse();
 
         let mut new_limbs = Vec::new();
@@ -246,5 +269,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             prod_of_num_of_additions: self.prod_of_num_of_additions + BaseField::one(),
             target_phantom: PhantomData,
         })
+    }
+
+    pub(crate) fn get_optimization_type(&self) -> OptimizationType {
+        match self.cs().optimization_goal() {
+            OptimizationGoal::None => OptimizationType::Constraints,
+            OptimizationGoal::Constraints => OptimizationType::Constraints,
+            OptimizationGoal::Weight => OptimizationType::Weight,
+        }
     }
 }

@@ -62,7 +62,6 @@ ark-pallas = { git = "https://github.com/arkworks-rs/curves", features = ["curve
 
 [features]
 default = []
-density-optimized = []
 std = [ "ark-std/std", "ark-ff/std", "ark-ec/std", "ark-relations/std", "ark-r1cs-std/std", "num-traits/std", "num-bigint/std" ]
 
 [[bench]]
