@@ -14,6 +14,8 @@ use num_bigint::BigUint;
 #[derive(Debug)]
 #[must_use]
 pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
+    /// Constraint system reference
+    pub cs: ConstraintSystemRef<BaseField>,
     /// Limbs of the intermediate representations
     pub limbs: Vec<FpVar<BaseField>>,
     /// The cumulative num of additions
@@ -41,6 +43,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         let prod_of_num_of_additions = src.num_of_additions_over_normal_form + &BaseField::one();
 
         Self {
+            cs: src.cs(),
             limbs,
             prod_of_num_of_additions,
             target_phantom: PhantomData,
@@ -53,7 +56,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 {
     /// Get the CS
     pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
-        self.limbs.cs()
+        self.cs.clone()
     }
 
     /// Get the value of the multiplication result
@@ -102,6 +105,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             p_gadget_limbs.push(FpVar::<BaseField>::new_constant(self.cs(), limb)?);
         }
         let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseField::one(),
             is_in_the_normal_form: false,
@@ -165,13 +169,14 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         };
 
         let k_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs: self.cs(),
             limbs: k_limbs,
             num_of_additions_over_normal_form: self.prod_of_num_of_additions,
             is_in_the_normal_form: false,
             target_phantom: PhantomData,
         };
 
-        let cs = self.limbs.cs();
+        let cs = self.cs();
 
         let r_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_witness(
             ns!(cs, "r"),
@@ -199,6 +204,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let mut kp_plus_r_gadget = Self {
+            cs: cs,
             limbs: prod_limbs,
             prod_of_num_of_additions: (p_gadget.num_of_additions_over_normal_form
                 + BaseField::one())
@@ -235,6 +241,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         Ok(Self {
+            cs: self.cs(),
             limbs: new_limbs,
             prod_of_num_of_additions: self.prod_of_num_of_additions
                 + other.prod_of_num_of_additions,
@@ -265,6 +272,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         new_limbs.reverse();
 
         Ok(Self {
+            cs: self.cs(),
             limbs: new_limbs,
             prod_of_num_of_additions: self.prod_of_num_of_additions + BaseField::one(),
             target_phantom: PhantomData,

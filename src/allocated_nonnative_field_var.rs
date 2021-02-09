@@ -18,6 +18,8 @@ use ark_std::{borrow::Borrow, vec, vec::Vec};
 #[derive(Debug)]
 #[must_use]
 pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
+    /// Constraint system reference
+    pub cs: ConstraintSystemRef<BaseField>,
     /// The limbs, each of which is a BaseField gadget.
     pub limbs: Vec<FpVar<BaseField>>,
     /// Number of additions done over this gadget, using which the gadget decides when to reduce.
@@ -33,7 +35,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 {
     /// Return cs
     pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
-        self.limbs.cs()
+        self.cs.clone()
     }
 
     /// Obtain the value of limbs
@@ -106,6 +108,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         Ok(Self {
+            cs,
             limbs,
             num_of_additions_over_normal_form: BaseField::zero(),
             is_in_the_normal_form: true,
@@ -134,6 +137,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let mut res = Self {
+            cs: self.cs(),
             limbs,
             num_of_additions_over_normal_form: self
                 .num_of_additions_over_normal_form
@@ -158,6 +162,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let mut res = Self {
+            cs: self.cs(),
             limbs,
             num_of_additions_over_normal_form: self
                 .num_of_additions_over_normal_form
@@ -237,6 +242,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let result = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs: self.cs(),
             limbs,
             num_of_additions_over_normal_form: self.num_of_additions_over_normal_form
                 + (other.num_of_additions_over_normal_form + BaseField::one())
@@ -416,6 +422,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         Ok(AllocatedNonNativeFieldMulResultVar {
+            cs: self.cs(),
             limbs: prod_limbs,
             prod_of_num_of_additions: (self_reduced.num_of_additions_over_normal_form
                 + BaseField::one())
@@ -454,6 +461,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             p_gadget_limbs.push(FpVar::<BaseField>::Constant(*limb));
         }
         let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseField::one(),
             is_in_the_normal_form: false,
@@ -606,6 +614,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
         }
 
         Ok(Self {
+            cs: true_value.cs().or(false_value.cs()),
             limbs: limbs_sel,
             num_of_additions_over_normal_form: max(
                 true_value.num_of_additions_over_normal_form,
@@ -667,6 +676,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
         }
 
         Ok(AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs,
             limbs,
             num_of_additions_over_normal_form: BaseField::zero(),
             is_in_the_normal_form: true,
@@ -730,6 +740,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
         }
 
         Ok(AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+            cs,
             limbs,
             num_of_additions_over_normal_form: BaseField::zero(),
             is_in_the_normal_form: true,
@@ -795,6 +806,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
         }
 
         Ok(Self {
+            cs,
             limbs,
             num_of_additions_over_normal_form,
             is_in_the_normal_form: mode != AllocationMode::Witness,
@@ -848,6 +860,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Clone
 {
     fn clone(&self) -> Self {
         AllocatedNonNativeFieldVar {
+            cs: self.cs(),
             limbs: self.limbs.clone(),
             num_of_additions_over_normal_form: self.num_of_additions_over_normal_form,
             is_in_the_normal_form: self.is_in_the_normal_form,
