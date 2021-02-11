@@ -6,13 +6,14 @@ use ark_relations::r1cs::SynthesisError;
 /// Struct describing vanishing polynomial for a multiplicative coset H where |H| is a power of 2.
 /// As H is a coset, every element can be described as h*g^i and therefore
 /// has vanishing polynomial Z_H(x) = x^|H| - h^|H|
+#[derive(Clone)]
 pub struct VanishingPolynomial<F: Field> {
     /// h^|H|
-    constant_term: F,
+    pub constant_term: F,
     /// log_2(|H|)
-    dim_h: u64,
-    // |H|
-    order_h: u64,
+    pub dim_h: u64,
+    /// |H|
+    pub order_h: u64,
 }
 
 impl<F: PrimeField> VanishingPolynomial<F> {

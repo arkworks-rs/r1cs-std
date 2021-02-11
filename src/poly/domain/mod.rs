@@ -1,5 +1,9 @@
+use crate::boolean::Boolean;
+use crate::fields::fp::FpVar;
 use ark_ff::PrimeField;
+use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
+
 pub mod vanishing_poly;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
@@ -21,7 +25,7 @@ impl<F: PrimeField> EvaluationDomain<F> {
     }
 
     /// Returns g, g^2, ..., g^{dim}
-    pub fn powers_of_gen(&self, dim: usize) -> Vec<F> {
+    fn powers_of_gen(&self, dim: usize) -> Vec<F> {
         let mut result = Vec::new();
         let mut cur = self.gen;
         for _ in 0..dim {
@@ -29,5 +33,16 @@ impl<F: PrimeField> EvaluationDomain<F> {
             cur = cur * cur;
         }
         result
+    }
+
+    /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
+    /// returns `h*g^{position}<g^{n-query_pos.len()}>`
+    pub fn query_position_to_coset(
+        &self,
+        _query_pos: &[Boolean<F>],
+        _coset_dim: u64,
+    ) -> Result<Vec<FpVar<F>>, SynthesisError> {
+        self.powers_of_gen(1);
+        todo!()
     }
 }
