@@ -8,7 +8,7 @@ use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpo
 use crate::R1CSVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
-
+use ark_std::vec::Vec;
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.
 pub struct EvaluationsVar<F: PrimeField> {
@@ -109,6 +109,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::alloc::AllocVar;
     use crate::fields::fp::FpVar;

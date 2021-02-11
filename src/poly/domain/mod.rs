@@ -1,9 +1,9 @@
 use crate::boolean::Boolean;
 use crate::fields::fp::FpVar;
+use crate::fields::FieldVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
-use crate::fields::FieldVar;
 
 pub mod vanishing_poly;
 
@@ -44,25 +44,27 @@ impl<F: PrimeField> EvaluationDomain<F> {
         coset_dim: u64,
     ) -> Result<Vec<FpVar<F>>, SynthesisError> {
         let mut coset_index = query_pos;
-        assert!(query_pos.len() == self.dim as usize || query_pos.len() == (self.dim - coset_dim) as usize);
+        assert!(
+            query_pos.len() == self.dim as usize
+                || query_pos.len() == (self.dim - coset_dim) as usize
+        );
         if query_pos.len() == self.dim as usize {
             coset_index = &coset_index[0..(coset_index.len() - coset_dim as usize)];
         }
         let mut coset = Vec::new();
         let powers_of_g = &self.powers_of_gen(self.dim as usize)[(coset_dim as usize)..];
 
-        let mut first_point_in_coset = FpVar::zero();
+        let mut first_point_in_coset: FpVar<F> = FpVar::zero();
         for i in 0..coset_index.len() {
-            let term = coset_index[i].select(&FpVar::constant(powers_of_g[i]),
-                                             &FpVar::zero())?;
+            let term = coset_index[i].select(&FpVar::constant(powers_of_g[i]), &FpVar::zero())?;
             first_point_in_coset += &term;
         }
 
-        first_point_in_coset *= &FpVar::Constant(&self.offset);
+        first_point_in_coset *= &FpVar::Constant(self.offset);
 
         coset.push(first_point_in_coset);
         for i in 1..(1 << (coset_dim as usize)) {
-            let new_elem = coset[i - 1] * &FpVar::Constant(self.gen);
+            let new_elem = &coset[i - 1] * &FpVar::Constant(self.gen);
             coset.push(new_elem);
         }
 

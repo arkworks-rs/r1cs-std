@@ -1,6 +1,6 @@
 use crate::poly::domain::vanishing_poly::VanishingPolynomial;
 use ark_ff::{batch_inversion, PrimeField};
-
+use ark_std::vec::Vec;
 /// Struct describing Lagrange interpolation for a multiplicative coset I,
 /// with |I| a power of 2.
 /// TODO: Pull in lagrange poly explanation from libiop
