@@ -9,6 +9,7 @@ use crate::R1CSVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
+
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.
 pub struct EvaluationsVar<F: PrimeField> {
@@ -49,7 +50,10 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let poly_evaluations_val: Vec<_> = self.evals.iter().map(|v| v.value().unwrap()).collect();
         let domain = &self.domain;
         let lagrange_interpolator =
-            LagrangeInterpolator::new(domain.offset, domain.gen, domain.dim, poly_evaluations_val);
+            LagrangeInterpolator::new(domain.offset,
+                                      domain.gen,
+                                      domain.dim,
+                                      poly_evaluations_val);
         self.lagrange_interpolator = Some(lagrange_interpolator)
     }
 
@@ -116,7 +120,7 @@ mod tests {
     use crate::poly::domain::EvaluationDomain;
     use crate::poly::evaluations::univariate::EvaluationsVar;
     use crate::R1CSVar;
-    use ark_ff::{FftField, One, UniformRand};
+    use ark_ff::{FftField, One, UniformRand, Field};
     use ark_poly::polynomial::univariate::DensePolynomial;
     use ark_poly::{Polynomial, UVPolynomial};
     use ark_relations::r1cs::ConstraintSystem;
@@ -128,6 +132,7 @@ mod tests {
         let mut rng = test_rng();
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
+        assert_eq!(gen.pow(&[1 << 4]), Fr::one());
         let domain = EvaluationDomain {
             gen,
             offset: Fr::multiplicative_generator(),
