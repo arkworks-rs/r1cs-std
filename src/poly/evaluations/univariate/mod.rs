@@ -50,10 +50,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let poly_evaluations_val: Vec<_> = self.evals.iter().map(|v| v.value().unwrap()).collect();
         let domain = &self.domain;
         let lagrange_interpolator =
-            LagrangeInterpolator::new(domain.offset,
-                                      domain.gen,
-                                      domain.dim,
-                                      poly_evaluations_val);
+            LagrangeInterpolator::new(domain.offset, domain.gen, domain.dim, poly_evaluations_val);
         self.lagrange_interpolator = Some(lagrange_interpolator)
     }
 
@@ -120,7 +117,7 @@ mod tests {
     use crate::poly::domain::EvaluationDomain;
     use crate::poly::evaluations::univariate::EvaluationsVar;
     use crate::R1CSVar;
-    use ark_ff::{FftField, One, UniformRand, Field};
+    use ark_ff::{FftField, Field, One, UniformRand};
     use ark_poly::polynomial::univariate::DensePolynomial;
     use ark_poly::{Polynomial, UVPolynomial};
     use ark_relations::r1cs::ConstraintSystem;
