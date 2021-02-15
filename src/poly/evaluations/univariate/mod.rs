@@ -86,6 +86,9 @@ impl<F: PrimeField> EvaluationsVar<F> {
             lagrange_coeffs_field_gadgat.push(lag_coeff);
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
             a_element.mul_equals(&lagrange_coeffs_field_gadgat[i], &inv_vp_t)?;
+
+            let satisfied = cs.is_satisfied().unwrap(); // debug only (remove after debug)
+            assert!(satisfied); // debug only (remove after debug)
         }
         Ok(lagrange_coeffs_field_gadgat)
     }
@@ -135,14 +138,14 @@ mod tests {
             offset: Fr::multiplicative_generator(),
             dim: 4, // 2^4 = 16
         };
-        let mut coset_point = Fr::one();
-        let mut evaluations = Vec::new();
+        let mut coset_point = domain.offset;
+        let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
-            evaluations.push(coset_point);
+            oracle_evals.push(poly.evaluate(&coset_point));
             coset_point *= gen;
         }
         let cs = ConstraintSystem::new_ref();
-        let evaluations_fp: Vec<_> = evaluations
+        let evaluations_fp: Vec<_> = oracle_evals
             .iter()
             .map(|x| FpVar::new_input(ns!(cs, "evaluations"), || Ok(x)).unwrap())
             .collect();

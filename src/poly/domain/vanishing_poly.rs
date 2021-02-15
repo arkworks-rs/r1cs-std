@@ -38,7 +38,8 @@ impl<F: PrimeField> VanishingPolynomial<F> {
     /// todo: doc
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         if self.dim_h == 1 {
-            return Ok(x - x);
+            let result = x - x;
+            return Ok(result);
         }
 
         let mut cur = x.square()?;
