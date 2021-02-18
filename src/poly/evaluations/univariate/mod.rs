@@ -9,6 +9,7 @@ use crate::R1CSVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
+use ark_std::ops::{Add, AddAssign, SubAssign, Sub};
 
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.
@@ -46,7 +47,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         ev
     }
 
-    fn generate_lagrange_interpolator(&mut self) {
+    /// Generate lagrange interpolator and mark it ready to interpolate
+    pub fn generate_lagrange_interpolator(&mut self) {
         let poly_evaluations_val: Vec<_> = self.evals.iter().map(|v| v.value().unwrap()).collect();
         let domain = &self.domain;
         let lagrange_interpolator =
@@ -63,7 +65,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let lagrange_interpolator = self
             .lagrange_interpolator
             .as_ref()
-            .expect("lagrange interpolator has not been initialized. ");
+            .expect("lagrange interpolator has not been initialized. \
+            Call `self.generate_lagrange_interpolator` first or set `interpolate` to true in constructor. ");
         let lagrange_coeffs =
             lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
         let mut lagrange_coeffs_field_gadgat = Vec::new();
@@ -110,6 +113,44 @@ impl<F: PrimeField> EvaluationsVar<F> {
         }
 
         Ok(interpolation)
+    }
+}
+
+impl<'a, 'b, F: PrimeField> Add<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F> {
+    type Output = EvaluationsVar<F>;
+
+    fn add(self, rhs: &'a EvaluationsVar<F>) -> Self::Output {
+        let mut result = self.clone();
+        result += rhs;
+        result
+    }
+}
+
+impl<'a, F: PrimeField> AddAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    fn add_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        assert_eq!(self.domain, other.domain, "domains are unequal");
+        ark_std::cfg_iter_mut!(self.evals)
+            .zip(&other.evals)
+            .for_each(|(a, b)| *a = a + b)
+    }
+}
+
+impl<'a, 'b, F: PrimeField> Sub<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F> {
+    type Output = EvaluationsVar<F>;
+
+    fn sub(self, rhs: &'a EvaluationsVar<F>) -> Self::Output {
+        let mut result = self.clone();
+        result -= rhs;
+        result
+    }
+}
+
+impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    fn sub_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        assert_eq!(self.domain, other.domain, "domains are unequal");
+        ark_std::cfg_iter_mut!(self.evals)
+            .zip(&other.evals)
+            .for_each(|(a, b)| *a = a - b)
     }
 }
 

@@ -2,6 +2,7 @@ use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
+use ark_std::ops::Sub;
 
 /// Struct describing vanishing polynomial for a multiplicative coset H where |H| is a power of 2.
 /// As H is a coset, every element can be described as h*g^i and therefore
@@ -38,7 +39,7 @@ impl<F: PrimeField> VanishingPolynomial<F> {
     /// todo: doc
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         if self.dim_h == 1 {
-            let result = x - x;
+            let result = x.sub(x);
             return Ok(result);
         }
 
