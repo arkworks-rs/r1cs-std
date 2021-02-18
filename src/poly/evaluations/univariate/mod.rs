@@ -6,10 +6,10 @@ use crate::fields::FieldVar;
 use crate::poly::domain::EvaluationDomain;
 use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
 use crate::R1CSVar;
-use ark_ff::PrimeField;
+use ark_ff::{batch_inversion, PrimeField};
 use ark_relations::r1cs::SynthesisError;
+use ark_std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use ark_std::vec::Vec;
-use ark_std::ops::{Add, AddAssign, SubAssign, Sub};
 
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.
@@ -129,7 +129,10 @@ impl<'a, 'b, F: PrimeField> Add<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 impl<'a, F: PrimeField> AddAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn add_assign(&mut self, other: &'a EvaluationsVar<F>) {
         assert_eq!(self.domain, other.domain, "domains are unequal");
-        ark_std::cfg_iter_mut!(self.evals)
+
+        self.lagrange_interpolator = None;
+        self.evals
+            .iter_mut()
             .zip(&other.evals)
             .for_each(|(a, b)| *a = a + b)
     }
@@ -148,9 +151,68 @@ impl<'a, 'b, F: PrimeField> Sub<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn sub_assign(&mut self, other: &'a EvaluationsVar<F>) {
         assert_eq!(self.domain, other.domain, "domains are unequal");
+
+        self.lagrange_interpolator = None;
         ark_std::cfg_iter_mut!(self.evals)
             .zip(&other.evals)
             .for_each(|(a, b)| *a = a - b)
+    }
+}
+
+impl<'a, 'b, F: PrimeField> Mul<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F> {
+    type Output = EvaluationsVar<F>;
+
+    fn mul(self, rhs: &'a EvaluationsVar<F>) -> Self::Output {
+        let mut result = self.clone();
+        result *= rhs;
+        result
+    }
+}
+
+impl<'a, F: PrimeField> MulAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    fn mul_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        assert_eq!(self.domain, other.domain, "domains are unequal");
+
+        self.lagrange_interpolator = None;
+        ark_std::cfg_iter_mut!(self.evals)
+            .zip(&other.evals)
+            .for_each(|(a, b)| *a = a * b)
+    }
+}
+
+impl<'a, 'b, F: PrimeField> Div<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F> {
+    type Output = EvaluationsVar<F>;
+
+    fn div(self, rhs: &'a EvaluationsVar<F>) -> Self::Output {
+        let mut result = self.clone();
+        result /= rhs;
+        result
+    }
+}
+
+impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    // TODO: require review
+    fn div_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        assert_eq!(self.domain, other.domain, "domains are unequal");
+        let cs = self.evals[0].cs();
+        // the prover can generate result = (1 / other) * self offline
+        let mut result_val: Vec<_> = other.evals.iter().map(|x| x.value().unwrap()).collect();
+        batch_inversion(&mut result_val);
+        result_val
+            .iter_mut()
+            .zip(&self.evals)
+            .for_each(|(a, self_var)| *a *= self_var.value().unwrap());
+        let result_var: Vec<_> = result_val
+            .iter()
+            .map(|x| FpVar::new_witness(ns!(cs, "div result"), || Ok(*x)).unwrap())
+            .collect();
+        // enforce constraint
+        for i in 0..result_var.len() {
+            result_var[i].mul_equals(&other.evals[i], &self.evals[i]);
+        }
+
+        self.lagrange_interpolator = None;
+        self.evals = result_var
     }
 }
 
