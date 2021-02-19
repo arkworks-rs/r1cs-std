@@ -134,7 +134,7 @@ impl<'a, F: PrimeField> AddAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         self.evals
             .iter_mut()
             .zip(&other.evals)
-            .for_each(|(a, b)| *a = a + b)
+            .for_each(|(a, b)| *a = &*a + b)
     }
 }
 
@@ -155,7 +155,7 @@ impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         self.lagrange_interpolator = None;
         ark_std::cfg_iter_mut!(self.evals)
             .zip(&other.evals)
-            .for_each(|(a, b)| *a = a - b)
+            .for_each(|(a, b)| *a = &*a - b)
     }
 }
 
@@ -176,7 +176,7 @@ impl<'a, F: PrimeField> MulAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         self.lagrange_interpolator = None;
         ark_std::cfg_iter_mut!(self.evals)
             .zip(&other.evals)
-            .for_each(|(a, b)| *a = a * b)
+            .for_each(|(a, b)| *a = &*a * b)
     }
 }
 
@@ -208,7 +208,9 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
             .collect();
         // enforce constraint
         for i in 0..result_var.len() {
-            result_var[i].mul_equals(&other.evals[i], &self.evals[i]);
+            result_var[i]
+                .mul_equals(&other.evals[i], &self.evals[i])
+                .unwrap();
         }
 
         self.lagrange_interpolator = None;
@@ -268,5 +270,45 @@ mod tests {
 
         assert!(cs.is_satisfied().unwrap());
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_division() {
+        let mut rng = test_rng();
+        let gen = Fr::get_root_of_unity(1 << 4).unwrap();
+        assert_eq!(gen.pow(&[1 << 4]), Fr::one());
+        let domain = EvaluationDomain {
+            gen,
+            offset: Fr::multiplicative_generator(),
+            dim: 4, // 2^4 = 16
+        };
+
+        let cs = ConstraintSystem::new_ref();
+
+        let ev_a = EvaluationsVar::from_vec_and_domain(
+            (0..16)
+                .map(|_| FpVar::new_input(ns!(cs, "poly_a"), || Ok(Fr::rand(&mut rng))).unwrap())
+                .collect(),
+            domain.clone(),
+            false,
+        );
+        let ev_b = EvaluationsVar::from_vec_and_domain(
+            (0..16)
+                .map(|_| FpVar::new_input(ns!(cs, "poly_a"), || Ok(Fr::rand(&mut rng))).unwrap())
+                .collect(),
+            domain.clone(),
+            false,
+        );
+
+        let a_div_b = (&ev_a) / (&ev_b);
+        assert!(cs.is_satisfied().unwrap());
+        let b_div_a = (&ev_b) / (&ev_a);
+
+        let one = &a_div_b * &b_div_a;
+        for ev in one.evals.iter() {
+            assert!(Fr::is_one(&ev.value().unwrap()))
+        }
+
+        assert!(cs.is_satisfied().unwrap());
     }
 }
