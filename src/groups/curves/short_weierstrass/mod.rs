@@ -10,22 +10,22 @@ use non_zero_affine::NonZeroAffineVar;
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 /// This module provides a generic implementation of G1 and G2 for
-/// the [\[BLS12]\](https://eprint.iacr.org/2002/088.pdf) family of bilinear groups.
+/// the [\[BLS12]\](<https://eprint.iacr.org/2002/088.pdf>) family of bilinear groups.
 pub mod bls12;
 
 /// This module provides a generic implementation of G1 and G2 for
-/// the [\[MNT4]\](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf)
+/// the [\[MNT4]\](<https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf>)
 ///  family of bilinear groups.
 pub mod mnt4;
 /// This module provides a generic implementation of G1 and G2 for
-/// the [\[MNT6]\](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf)
+/// the [\[MNT6]\](<https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf>)
 ///  family of bilinear groups.
 pub mod mnt6;
 
 mod non_zero_affine;
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
-/// [[Renes, Costello, Batina 2015]](https://eprint.iacr.org/2015/1060).
+/// [[Renes, Costello, Batina 2015]](<https://eprint.iacr.org/2015/1060>).
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
 #[must_use]
