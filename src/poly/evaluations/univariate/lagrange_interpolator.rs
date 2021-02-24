@@ -99,3 +99,45 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         interpolation
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::poly::domain::EvaluationDomain;
+    use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
+    use ark_ff::{FftField, Field, One};
+    use ark_poly::univariate::DensePolynomial;
+    use ark_poly::{Polynomial, UVPolynomial};
+    use ark_std::{test_rng, UniformRand};
+    use ark_test_curves::bls12_381::Fr;
+
+    #[test]
+    pub fn test_native_interpolate() {
+        let mut rng = test_rng();
+        let poly = DensePolynomial::rand(15, &mut rng);
+        let gen = Fr::get_root_of_unity(1 << 4).unwrap();
+        assert_eq!(gen.pow(&[1 << 4]), Fr::one());
+        let domain = EvaluationDomain {
+            gen,
+            offset: Fr::multiplicative_generator(),
+            dim: 4, // 2^4 = 16
+        };
+        // generate evaluations of `poly` on this domain
+        let mut coset_point = domain.offset;
+        let mut oracle_evals = Vec::new();
+        for _ in 0..(1 << 4) {
+            oracle_evals.push(poly.evaluate(&coset_point));
+            coset_point *= gen;
+        }
+
+        let interpolator =
+            LagrangeInterpolator::new(domain.offset, domain.gen, domain.dim, oracle_evals);
+
+        // the point to evaluate at
+        let interpolate_point = Fr::rand(&mut rng);
+
+        let expected = poly.evaluate(&interpolate_point);
+        let actual = interpolator.interpolate(interpolate_point);
+
+        assert_eq!(actual, expected)
+    }
+}
