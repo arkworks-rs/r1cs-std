@@ -29,14 +29,15 @@ impl<F: PrimeField> VanishingPolynomial<F> {
         vp
     }
 
-    /// todo: doc
+    /// Evaluates the vanishing polynomial without generating the constraints.
     pub fn evaluate(&self, x: &F) -> F {
         let mut result = x.pow([self.order_h]);
         result -= &self.constant_term;
         result
     }
 
-    /// todo: doc
+    /// Evaluates the constraints and just gives you the gadget for the result.
+    /// Caution for use in holographic lincheck: The output has 2 entries in one matrix
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         if self.dim_h == 1 {
             let result = x.sub(x);

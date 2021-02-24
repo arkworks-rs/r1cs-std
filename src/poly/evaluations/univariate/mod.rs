@@ -60,6 +60,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
         &self,
         interpolation_point: &FpVar<F>,
     ) -> Result<Vec<FpVar<F>>, SynthesisError> {
+        // ref: https://github.com/alexchmit/perfect-constraints/blob/79692f2652a95a57f2c7187f5b5276345e680230/fractal/src/algebra/lagrange_interpolation.rs#L159
         let cs = interpolation_point.cs();
         let t = interpolation_point;
         let lagrange_interpolator = self
@@ -69,7 +70,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
             Call `self.generate_lagrange_interpolator` first or set `interpolate` to true in constructor. ");
         let lagrange_coeffs =
             lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
-        let mut lagrange_coeffs_field_gadgat = Vec::new();
+        let mut lagrange_coeffs_fg = Vec::new();
         // Now we convert these lagrange coefficients to gadgets, and then constrain them.
         // The i-th lagrange coefficients constraint is:
         // (v_inv[i] * t - v_inv[i] * domain_elem[i]) * (coeff) = 1/Z_I(t)
@@ -86,14 +87,14 @@ impl<F: PrimeField> EvaluationsVar<F> {
                 FpVar::new_witness(ns!(cs, "generate lagrange coefficient"), || {
                     Ok(lagrange_coeffs[i])
                 })?;
-            lagrange_coeffs_field_gadgat.push(lag_coeff);
+            lagrange_coeffs_fg.push(lag_coeff);
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
-            a_element.mul_equals(&lagrange_coeffs_field_gadgat[i], &inv_vp_t)?;
+            a_element.mul_equals(&lagrange_coeffs_fg[i], &inv_vp_t)?;
 
             let satisfied = cs.is_satisfied().unwrap(); // debug only (remove after debug)
             assert!(satisfied); // debug only (remove after debug)
         }
-        Ok(lagrange_coeffs_field_gadgat)
+        Ok(lagrange_coeffs_fg)
     }
 
     /// Returns constraints for Interpolating and evaluating at `interpolation_point`
