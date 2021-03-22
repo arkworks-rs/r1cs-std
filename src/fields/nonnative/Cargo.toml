@@ -47,7 +47,7 @@ ark-relations = { git = "https://github.com/arkworks-rs/snark", default-features
 ark-r1cs-std = { git = "https://github.com/arkworks-rs/r1cs-std", default-features = false  }
 
 num-traits = { version = "0.2", default-features = false }
-num-bigint = { version = "0.3.0", default-features = false }
+num-bigint = { version = "0.4.0", default-features = false }
 num-integer = { version = "0.1.44", default-features = false }
 
 [dev-dependencies]
