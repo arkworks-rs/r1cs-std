@@ -27,7 +27,8 @@
 - #29 Fix `to_non_unique_bytes` for `BLS12::G1Prepared`
 - #34 Fix `mul_by_inverse` for constants
 - #42 Fix regression in `mul_by_inverse` constraint count
-- #47 Compile with `panic='abort'` in release mode, for safety of the library across FFI boundaries.
+- #47 Compile with `panic='abort'` in release mode, for safety of the library across FFI boundaries
+- #57 Clean up `UInt` docs
 
 ## v0.1.0
 
