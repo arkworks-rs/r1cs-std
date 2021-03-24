@@ -89,8 +89,8 @@ macro_rules! make_uint {
                 /// # Panics
                 ///
                 /// This method panics if `bits.len() != u
-                #[doc($native_doc_name)]
-                #[doc("`.")]
+                #[doc = $native_doc_name]
+                #[doc = "`."]
                 pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
                     assert_eq!(bits.len(), $size);
 
