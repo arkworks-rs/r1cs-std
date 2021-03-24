@@ -59,10 +59,10 @@ macro_rules! make_uint {
             }
 
             impl<F: Field> $name<F> {
-                #[doc = "Construct a constant "] 
-                #[doc = $r1cs_doc_name] 
-                #[doc = " from the native "] 
-                #[doc = $native_doc_name] 
+                #[doc = "Construct a constant "]
+                #[doc = $r1cs_doc_name]
+                #[doc = " from the native "]
+                #[doc = $native_doc_name]
                 #[doc = " type."]
                 pub fn constant(value: $native) -> Self {
                     let mut bits = [Boolean::FALSE; $size];
