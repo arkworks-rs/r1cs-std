@@ -1,10 +1,10 @@
 macro_rules! make_uint {
-    ($name:ident, $size:expr, $native:ident, $mod_name:ident, $native_doc_name:expr) => {
-        #[doc = "This module contains a `UInt"]
+    ($name:ident, $size:expr, $native:ident, $mod_name:ident, $r1cs_doc_name:expr, $native_doc_name:expr, $num_bits_doc:expr) => {
+        #[doc = "This module contains the "]
+        #[doc = $r1cs_doc_name]
+        #[doc = "type, which is the R1CS equivalent of the "]
         #[doc = $native_doc_name]
-        #[doc = "`, a R1CS equivalent of the `u"]
-        #[doc = $native_doc_name]
-        #[doc = "`type."]
+        #[doc = " type."]
         pub mod $mod_name {
             use ark_ff::{Field, FpParameters, One, PrimeField, Zero};
             use core::borrow::Borrow;
@@ -23,13 +23,13 @@ macro_rules! make_uint {
             };
 
             #[doc = "This struct represent an unsigned"]
+            #[doc = $num_bits_doc]
+            #[doc = " bit integer as a sequence of "]
+            #[doc = $num_bits_doc]
+            #[doc = " `Boolean`s. \n"]
+            #[doc = "This is the R1CS equivalent of the native "]
             #[doc = $native_doc_name]
-            #[doc = "-bit integer as a sequence of "]
-            #[doc = $native_doc_name]
-            #[doc = " `Boolean`s\n"]
-            #[doc = "This is the R1CS equivalent of the native `u"]
-            #[doc = $native_doc_name]
-            #[doc = "` unsigned integer type."]
+            #[doc = " unsigned integer type."]
             #[derive(Clone, Debug)]
             pub struct $name<F: Field> {
                 // Least significant bit first
@@ -59,11 +59,11 @@ macro_rules! make_uint {
             }
 
             impl<F: Field> $name<F> {
-                #[doc = "Construct a constant `UInt"]
+                #[doc = "Construct a constant "]
+                #[doc = $r1cs_doc_name]
+                #[doc = " from the native "]
                 #[doc = $native_doc_name]
-                #[doc = "` from the native `u"]
-                #[doc = $native_doc_name]
-                #[doc = "` type."]
+                #[doc = " type."]
                 pub fn constant(value: $native) -> Self {
                     let mut bits = [Boolean::FALSE; $size];
 
@@ -88,9 +88,9 @@ macro_rules! make_uint {
                 ///
                 /// # Panics
                 ///
-                /// This method panics if `bits.len() != u
-                #[doc($native_doc_name)]
-                #[doc("`.")]
+                #[doc = "This method panics if `bits.len() != "]
+                #[doc = $num_bits_doc]
+                #[doc = "`."]
                 pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
                     assert_eq!(bits.len(), $size);
 
@@ -337,9 +337,9 @@ macro_rules! make_uint {
                     false_value: &Self,
                 ) -> Result<Self, SynthesisError> {
                     let selected_bits = true_value
-                    	.bits
-                    	.iter()
-                    	.zip(&false_value.bits)
+                        .bits
+                        .iter()
+                        .zip(&false_value.bits)
                         .map(|(t, f)| cond.select(t, f));
                     let mut bits = [Boolean::FALSE; $size];
                     for (result, new) in bits.iter_mut().zip(selected_bits) {
@@ -347,11 +347,11 @@ macro_rules! make_uint {
                     }
 
                     let value = cond.value().ok().and_then(|cond| {
-                    	if cond {
-                    		true_value.value().ok()
-                    	} else {
-                    		false_value.value().ok()
-                    	}
+                        if cond {
+                            true_value.value().ok()
+                        } else {
+                            false_value.value().ok()
+                        }
                     });
                     Ok(Self { bits, value })
                 }

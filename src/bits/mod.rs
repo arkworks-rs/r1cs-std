@@ -14,10 +14,10 @@ pub mod uint8;
 #[macro_use]
 pub mod uint;
 
-make_uint!(UInt16, 16, u16, uint16, "16");
-make_uint!(UInt32, 32, u32, uint32, "32");
-make_uint!(UInt64, 64, u64, uint64, "64");
-make_uint!(UInt128, 128, u128, uint128, "128");
+make_uint!(UInt16, 16, u16, uint16, "`U16`", "`u16`", "16");
+make_uint!(UInt32, 32, u32, uint32, "`U32`", "`u32`", "32");
+make_uint!(UInt64, 64, u64, uint64, "`U64`", "`u64`", "64");
+make_uint!(UInt128, 128, u128, uint128, "`U128`", "`u128`", "128");
 
 /// Specifies constraints for conversion to a little-endian bit representation
 /// of `self`.
