@@ -52,3 +52,28 @@ impl<F: PrimeField> VanishingPolynomial<F> {
         Ok(cur)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::alloc::AllocVar;
+    use crate::fields::fp::FpVar;
+    use crate::poly::domain::vanishing_poly::VanishingPolynomial;
+    use crate::R1CSVar;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{test_rng, UniformRand};
+    use ark_test_curves::bls12_381::Fr;
+
+    #[test]
+    fn constraints_test() {
+        let mut rng = test_rng();
+        let offset = Fr::rand(&mut rng);
+        let cs = ConstraintSystem::new_ref();
+        let x = Fr::rand(&mut rng);
+        let x_var = FpVar::new_witness(ns!(cs, "x_var"), || Ok(x)).unwrap();
+        let vp = VanishingPolynomial::new(offset, 12);
+        let native = vp.evaluate(&x);
+        let result_var = vp.evaluate_constraints(&x_var).unwrap();
+        assert!(cs.is_satisfied().unwrap());
+        assert_eq!(result_var.value().unwrap(), native);
+    }
+}
