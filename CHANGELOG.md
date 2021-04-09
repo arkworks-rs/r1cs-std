@@ -1,3 +1,17 @@
+## Pending 
+
+### Breaking changes
+
+- #60 Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
+You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
+
+### Features
+
+### Improvements
+
+### Bug Fixes
+
+
 ## v0.2.0
 
 ### Breaking changes
