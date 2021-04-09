@@ -17,7 +17,7 @@ macro_rules! make_uint {
             };
 
             use crate::{
-                boolean::{AllocatedBit, Boolean},
+                boolean::{AllocatedBool, Boolean},
                 prelude::*,
                 Assignment, Vec,
             };
@@ -265,7 +265,7 @@ macro_rules! make_uint {
                     let mut i = 0;
                     while max_value != BigUint::zero() {
                         // Allocate the bit_gadget
-                        let b = AllocatedBit::new_witness(cs.clone(), || result_value.clone().map(|v| (v >> i) & BigUint::one() == BigUint::one()).get())?;
+                        let b = AllocatedBool::new_witness(cs.clone(), || result_value.clone().map(|v| (v >> i) & BigUint::one() == BigUint::one()).get())?;
 
                         // Subtract this bit_gadget from the linear combination to ensure the sums
                         // balance out

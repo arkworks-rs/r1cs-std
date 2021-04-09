@@ -9,12 +9,12 @@ use core::borrow::Borrow;
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
 ///
-/// In general, one should prefer using `Boolean` instead of `AllocatedBit`,
+/// In general, one should prefer using `Boolean` instead of `AllocatedBool`,
 /// as `Boolean` offers better support for constant values, and implements
 /// more traits.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[must_use]
-pub struct AllocatedBit<F: Field> {
+pub struct AllocatedBool<F: Field> {
     variable: Variable,
     cs: ConstraintSystemRef<F>,
 }
@@ -27,7 +27,7 @@ pub(crate) fn bool_to_field<F: Field>(val: impl Borrow<bool>) -> F {
     }
 }
 
-impl<F: Field> AllocatedBit<F> {
+impl<F: Field> AllocatedBool<F> {
     /// Get the assigned value for `self`.
     pub fn value(&self) -> Result<bool, SynthesisError> {
         let value = self.cs.assigned_value(self.variable).get()?;
@@ -55,7 +55,7 @@ impl<F: Field> AllocatedBit<F> {
     }
 
     /// Performs an XOR operation over the two operands, returning
-    /// an `AllocatedBit`.
+    /// an `AllocatedBool`.
     #[tracing::instrument(target = "r1cs")]
     pub fn xor(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
@@ -87,7 +87,7 @@ impl<F: Field> AllocatedBit<F> {
     }
 
     /// Performs an AND operation over the two operands, returning
-    /// an `AllocatedBit`.
+    /// an `AllocatedBool`.
     #[tracing::instrument(target = "r1cs")]
     pub fn and(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
@@ -106,7 +106,7 @@ impl<F: Field> AllocatedBit<F> {
     }
 
     /// Performs an OR operation over the two operands, returning
-    /// an `AllocatedBit`.
+    /// an `AllocatedBool`.
     #[tracing::instrument(target = "r1cs")]
     pub fn or(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
@@ -161,7 +161,7 @@ impl<F: Field> AllocatedBit<F> {
     }
 }
 
-impl<F: Field> AllocVar<bool, F> for AllocatedBit<F> {
+impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
     /// Produces a new variable of the appropriate kind
     /// (instance or witness), with a booleanity check.
     ///
@@ -199,7 +199,7 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBit<F> {
     }
 }
 
-impl<F: Field> CondSelectGadget<F> for AllocatedBit<F> {
+impl<F: Field> CondSelectGadget<F> for AllocatedBool<F> {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
         cond: &Boolean<F>,
@@ -224,9 +224,9 @@ impl<F: Field> CondSelectGadget<F> for AllocatedBit<F> {
 #[must_use]
 pub enum Boolean<F: Field> {
     /// Existential view of the boolean variable.
-    Is(AllocatedBit<F>),
+    Is(AllocatedBool<F>),
     /// Negated view of the boolean variable.
-    Not(AllocatedBit<F>),
+    Not(AllocatedBool<F>),
     /// Constant (not an allocated variable).
     Constant(bool),
 }
@@ -772,8 +772,8 @@ impl<F: Field> Boolean<F> {
     }
 }
 
-impl<F: Field> From<AllocatedBit<F>> for Boolean<F> {
-    fn from(b: AllocatedBit<F>) -> Self {
+impl<F: Field> From<AllocatedBool<F>> for Boolean<F> {
+    fn from(b: AllocatedBool<F>) -> Self {
         Boolean::Is(b)
     }
 }
@@ -787,7 +787,7 @@ impl<F: Field> AllocVar<bool, F> for Boolean<F> {
         if mode == AllocationMode::Constant {
             Ok(Boolean::Constant(*f()?.borrow()))
         } else {
-            AllocatedBit::new_variable(cs, f, mode).map(Boolean::from)
+            AllocatedBool::new_variable(cs, f, mode).map(Boolean::from)
         }
     }
 }
@@ -916,7 +916,7 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
                 (a, b) => {
                     let cs = cond.cs();
                     let result: Boolean<F> =
-                        AllocatedBit::new_witness_without_booleanity_check(cs.clone(), || {
+                        AllocatedBool::new_witness_without_booleanity_check(cs.clone(), || {
                             let cond = cond.value()?;
                             Ok(if cond { a.value()? } else { b.value()? })
                         })?
@@ -954,7 +954,7 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
 
 #[cfg(test)]
 mod test {
-    use super::{AllocatedBit, Boolean};
+    use super::{AllocatedBool, Boolean};
     use crate::prelude::*;
     use ark_ff::{BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero};
     use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
@@ -982,9 +982,9 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBit::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBit::new_witness(cs.clone(), || Ok(b_val))?;
-                let c = AllocatedBit::xor(&a, &b)?;
+                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
+                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let c = AllocatedBool::xor(&a, &b)?;
                 assert_eq!(c.value()?, a_val ^ b_val);
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1001,9 +1001,9 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBit::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBit::new_witness(cs.clone(), || Ok(b_val))?;
-                let c = AllocatedBit::or(&a, &b)?;
+                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
+                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let c = AllocatedBool::or(&a, &b)?;
                 assert_eq!(c.value()?, a_val | b_val);
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1020,9 +1020,9 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBit::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBit::new_witness(cs.clone(), || Ok(b_val))?;
-                let c = AllocatedBit::and(&a, &b)?;
+                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
+                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let c = AllocatedBool::and(&a, &b)?;
                 assert_eq!(c.value()?, a_val & b_val);
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1039,9 +1039,9 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBit::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBit::new_witness(cs.clone(), || Ok(b_val))?;
-                let c = AllocatedBit::and_not(&a, &b)?;
+                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
+                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let c = AllocatedBool::and_not(&a, &b)?;
                 assert_eq!(c.value()?, a_val & !b_val);
 
                 assert!(cs.is_satisfied().unwrap());
@@ -1058,9 +1058,9 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBit::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBit::new_witness(cs.clone(), || Ok(b_val))?;
-                let c = AllocatedBit::nor(&a, &b)?;
+                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
+                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let c = AllocatedBool::nor(&a, &b)?;
                 assert_eq!(c.value()?, !a_val & !b_val);
 
                 assert!(cs.is_satisfied().unwrap());
