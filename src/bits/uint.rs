@@ -17,7 +17,7 @@ macro_rules! make_uint {
             };
 
             use crate::{
-                boolean::{AllocatedBit, Boolean},
+                boolean::{AllocatedBool, Boolean},
                 prelude::*,
                 Assignment, Vec,
             };
@@ -128,18 +128,15 @@ macro_rules! make_uint {
                     let mut result = self.clone();
                     let by = by % $size;
 
-                    let new_bits = self
-                        .bits
-                        .iter()
-                        .skip(by)
-                        .chain(&self.bits)
-                        .take($size);
+                    let new_bits = self.bits.iter().skip(by).chain(&self.bits).take($size);
 
                     for (res, new) in result.bits.iter_mut().zip(new_bits) {
                         *res = new.clone();
                     }
 
-                    result.value = self.value.map(|v| v.rotate_right(u32::try_from(by).unwrap()));
+                    result.value = self
+                        .value
+                        .map(|v| v.rotate_right(u32::try_from(by).unwrap()));
                     result
                 }
 
@@ -188,7 +185,8 @@ macro_rules! make_uint {
 
                     // Compute the maximum value of the sum so we allocate enough bits for
                     // the result
-                    let mut max_value = BigUint::from($native::max_value()) * BigUint::from(operands.len());
+                    let mut max_value =
+                        BigUint::from($native::max_value()) * BigUint::from(operands.len());
 
                     // Keep track of the resulting value
                     let mut result_value = Some(BigUint::zero());
@@ -242,12 +240,10 @@ macro_rules! make_uint {
                     }
 
                     // The value of the actual result is modulo 2^$size
-                    let modular_value = result_value.clone().map(|v|
-                        {
-                            let modulus = BigUint::from(1u64) << ($size as u32);
-                            (v % modulus).to_u128().unwrap() as $native
-                        }
-                    );
+                    let modular_value = result_value.clone().map(|v| {
+                        let modulus = BigUint::from(1u64) << ($size as u32);
+                        (v % modulus).to_u128().unwrap() as $native
+                    });
 
                     if all_constants && modular_value.is_some() {
                         // We can just return a constant, rather than
@@ -265,7 +261,12 @@ macro_rules! make_uint {
                     let mut i = 0;
                     while max_value != BigUint::zero() {
                         // Allocate the bit_gadget
-                        let b = AllocatedBit::new_witness(cs.clone(), || result_value.clone().map(|v| (v >> i) & BigUint::one() == BigUint::one()).get())?;
+                        let b = AllocatedBool::new_witness(cs.clone(), || {
+                            result_value
+                                .clone()
+                                .map(|v| (v >> i) & BigUint::one() == BigUint::one())
+                                .get()
+                        })?;
 
                         // Subtract this bit_gadget from the linear combination to ensure the sums
                         // balance out
@@ -369,11 +370,14 @@ macro_rules! make_uint {
 
                     let mut values = [None; $size];
                     if let Some(val) = value {
-                        values.iter_mut().enumerate().for_each(|(i, v)| *v = Some((val >> i) & 1 == 1));
+                        values
+                            .iter_mut()
+                            .enumerate()
+                            .for_each(|(i, v)| *v = Some((val >> i) & 1 == 1));
                     }
 
                     let mut bits = [Boolean::FALSE; $size];
-                    for (b, v) in  bits.iter_mut().zip(&values) {
+                    for (b, v) in bits.iter_mut().zip(&values) {
                         *b = Boolean::new_variable(cs.clone(), || v.get(), mode)?;
                     }
                     Ok(Self { bits, value })
@@ -384,9 +388,9 @@ macro_rules! make_uint {
             mod test {
                 use super::$name;
                 use crate::{bits::boolean::Boolean, prelude::*, Vec};
-                use ark_test_curves::mnt4_753::Fr;
                 use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
                 use ark_std::rand::Rng;
+                use ark_test_curves::mnt4_753::Fr;
 
                 #[test]
                 fn test_from_bits() -> Result<(), SynthesisError> {
