@@ -75,7 +75,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // The i-th lagrange coefficients constraint is:
         // (v_inv[i] * t - v_inv[i] * domain_elem[i]) * (coeff) = 1/Z_I(t)
         let vp_t = lagrange_interpolator.domain_vp.evaluate_constraints(t)?;
-        let inv_vp_t = vp_t.inverse()?;
+        // let inv_vp_t = vp_t.inverse()?;
         for i in 0..lagrange_interpolator.domain_order {
             let constant: F =
                 (-lagrange_interpolator.all_domain_elems[i]) * lagrange_interpolator.v_inv_elems[i];
@@ -87,12 +87,16 @@ impl<F: PrimeField> EvaluationsVar<F> {
                 FpVar::new_witness(ns!(cs, "generate lagrange coefficient"), || {
                     Ok(lagrange_coeffs[i])
                 })?;
-            lagrange_coeffs_fg.push(lag_coeff);
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
-            a_element.mul_equals(&lagrange_coeffs_fg[i], &inv_vp_t)?;
+            assert_eq!((lagrange_interpolator.v_inv_elems[i] * t.value().unwrap()
+                           - lagrange_interpolator.v_inv_elems[i] * lagrange_interpolator.all_domain_elems[i]) * lagrange_coeffs[i]
+                       , vp_t.value().unwrap());
+            a_element.mul_equals(&lag_coeff, &vp_t)?;
+            lagrange_coeffs_fg.push(lag_coeff);
 
-            let satisfied = cs.is_satisfied().unwrap(); // debug only (remove after debug)
-            assert!(satisfied); // debug only (remove after debug)
+            // let satisfied = cs.is_satisfied().unwrap(); // debug only (remove after debug)
+            // println!("{}", cs.which_is_unsatisfied().unwrap().unwrap());
+            // assert!(satisfied); // debug only (remove after debug)
         }
         Ok(lagrange_coeffs_fg)
     }
@@ -269,8 +273,8 @@ mod tests {
             .value()
             .unwrap();
 
-        assert!(cs.is_satisfied().unwrap());
         assert_eq!(actual, expected);
+        assert!(cs.is_satisfied().unwrap());
     }
 
     #[test]
