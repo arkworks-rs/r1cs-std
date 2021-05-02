@@ -158,7 +158,8 @@ impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         assert_eq!(self.domain, other.domain, "domains are unequal");
 
         self.lagrange_interpolator = None;
-        ark_std::cfg_iter_mut!(self.evals)
+        self.evals
+            .iter_mut()
             .zip(&other.evals)
             .for_each(|(a, b)| *a = &*a - b)
     }
@@ -179,7 +180,8 @@ impl<'a, F: PrimeField> MulAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         assert_eq!(self.domain, other.domain, "domains are unequal");
 
         self.lagrange_interpolator = None;
-        ark_std::cfg_iter_mut!(self.evals)
+        self.evals
+            .iter_mut()
             .zip(&other.evals)
             .for_each(|(a, b)| *a = &*a * b)
     }
