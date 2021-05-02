@@ -4,8 +4,6 @@ use ark_std::vec::Vec;
 /// Struct describing Lagrange interpolation for a multiplicative coset I,
 /// with |I| a power of 2.
 /// TODO: Pull in lagrange poly explanation from libiop
-///
-/// The code is from https://github.com/alexchmit/perfect-constraints/blob/master/fractal/src/algebra/lagrange_interpolation.rs
 #[derive(Clone)]
 pub struct LagrangeInterpolator<F: PrimeField> {
     pub(crate) domain_order: usize,
@@ -49,7 +47,7 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
             v_inv_i *= g_inv;
         }
 
-        // TODO: Ideally we'd cache the intermediate terms with Z_H(x) evaluations, since most of the exponents are precomputed.
+        // TODO: Cache the intermediate terms with Z_H(x) evaluations.
         let vp = VanishingPolynomial::new(domain_offset, domain_dim);
 
         let lagrange_interpolation: LagrangeInterpolator<F> = LagrangeInterpolator {
@@ -71,9 +69,9 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         - v_{i} = 1 / \prod_{j \neq i} h(g^i-g^j).
         Below we use the fact that v_{0} = 1/(m * h^(m-1)) and v_{i+1} = g * v_{i}.
         We compute the inverse of each coefficient, and then batch invert the entire result.
-        TODO: explain deriviation more step by step
+        TODO: explain deriviation more step by step (will do in THIS PR)
         */
-        // TODO: Implement batch_inverse & mul like libiop for better efficiency
+        // TODO: Implement batch_inverse & mul like libiop for better efficiency (will do in next PR)
         let vp_t_inv = self
             .domain_vp
             .evaluate(&interpolation_point)

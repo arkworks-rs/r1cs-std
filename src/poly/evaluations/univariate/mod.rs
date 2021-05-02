@@ -88,15 +88,15 @@ impl<F: PrimeField> EvaluationsVar<F> {
                     Ok(lagrange_coeffs[i])
                 })?;
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
-            assert_eq!((lagrange_interpolator.v_inv_elems[i] * t.value().unwrap()
-                           - lagrange_interpolator.v_inv_elems[i] * lagrange_interpolator.all_domain_elems[i]) * lagrange_coeffs[i]
-                       , vp_t.value().unwrap());
+            assert_eq!(
+                (lagrange_interpolator.v_inv_elems[i] * t.value().unwrap()
+                    - lagrange_interpolator.v_inv_elems[i]
+                        * lagrange_interpolator.all_domain_elems[i])
+                    * lagrange_coeffs[i],
+                vp_t.value().unwrap()
+            );
             a_element.mul_equals(&lag_coeff, &vp_t)?;
             lagrange_coeffs_fg.push(lag_coeff);
-
-            // let satisfied = cs.is_satisfied().unwrap(); // debug only (remove after debug)
-            // println!("{}", cs.which_is_unsatisfied().unwrap().unwrap());
-            // assert!(satisfied); // debug only (remove after debug)
         }
         Ok(lagrange_coeffs_fg)
     }
@@ -196,7 +196,6 @@ impl<'a, 'b, F: PrimeField> Div<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 }
 
 impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
-    // TODO: require review
     fn div_assign(&mut self, other: &'a EvaluationsVar<F>) {
         assert_eq!(self.domain, other.domain, "domains are unequal");
         let cs = self.evals[0].cs();
