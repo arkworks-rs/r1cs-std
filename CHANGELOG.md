@@ -9,6 +9,8 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 
 ### Improvements
 
+- #53 Add univariate evaluation domain and lagrange interpolation. 
+
 ### Bug Fixes
 
 
