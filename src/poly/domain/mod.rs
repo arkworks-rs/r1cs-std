@@ -9,7 +9,7 @@ pub mod vanishing_poly;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 /// Defines an evaluation domain over a prime field.
-/// This domain is `h<g>` where g is `gen` and h is `offset`. The size of coset is `dim`.
+/// This domain is `h<g>` where g is `gen` and h is `offset`. The size of coset is `1<<dim`.
 pub struct EvaluationDomain<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
