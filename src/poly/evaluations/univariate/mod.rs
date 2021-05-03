@@ -1,4 +1,4 @@
-mod lagrange_interpolator;
+pub mod lagrange_interpolator;
 
 use crate::alloc::AllocVar;
 use crate::fields::fp::FpVar;
