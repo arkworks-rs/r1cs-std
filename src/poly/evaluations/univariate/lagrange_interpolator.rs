@@ -14,6 +14,7 @@ pub struct LagrangeInterpolator<F: PrimeField> {
 }
 
 impl<F: PrimeField> LagrangeInterpolator<F> {
+    /// Returns a lagrange interpolator, given the domain specification.
     pub fn new(
         domain_offset: F,
         domain_generator: F,
