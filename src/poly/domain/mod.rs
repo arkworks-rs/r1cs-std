@@ -10,7 +10,7 @@ pub mod vanishing_poly;
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 /// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
 /// This domain is `h<g>` where g is `gen` and h is `offset`.
-pub struct EvaluationDomainVar<F: PrimeField> {
+pub struct EvaluationDomain<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
@@ -19,7 +19,7 @@ pub struct EvaluationDomainVar<F: PrimeField> {
     pub dim: u64,
 }
 
-impl<F: PrimeField> EvaluationDomainVar<F> {
+impl<F: PrimeField> EvaluationDomain<F> {
     /// order of the domain
     pub fn order(&self) -> usize {
         1 << self.dim

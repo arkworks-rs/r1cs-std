@@ -3,7 +3,7 @@ mod lagrange_interpolator;
 use crate::alloc::AllocVar;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
-use crate::poly::domain::EvaluationDomainVar;
+use crate::poly::domain::EvaluationDomain;
 use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
 use crate::R1CSVar;
 use ark_ff::{batch_inversion, PrimeField};
@@ -18,7 +18,7 @@ pub struct EvaluationsVar<F: PrimeField> {
     pub evals: Vec<FpVar<F>>,
     /// Optional Lagrange Interpolator. Useful for lagrange interpolation.
     pub lagrange_interpolator: Option<LagrangeInterpolator<F>>,
-    domain: EvaluationDomainVar<F>,
+    domain: EvaluationDomain<F>,
 }
 
 impl<F: PrimeField> EvaluationsVar<F> {
@@ -27,7 +27,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
     /// using lagrange interpolation.
     pub fn from_vec_and_domain(
         evaluations: Vec<FpVar<F>>,
-        domain: EvaluationDomainVar<F>,
+        domain: EvaluationDomain<F>,
         interpolate: bool,
     ) -> Self {
         assert_eq!(
@@ -228,7 +228,7 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
 mod tests {
     use crate::alloc::AllocVar;
     use crate::fields::fp::FpVar;
-    use crate::poly::domain::EvaluationDomainVar;
+    use crate::poly::domain::EvaluationDomain;
     use crate::poly::evaluations::univariate::EvaluationsVar;
     use crate::R1CSVar;
     use ark_ff::{FftField, Field, One, UniformRand};
@@ -244,7 +244,7 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = EvaluationDomainVar {
+        let domain = EvaluationDomain {
             gen,
             offset: Fr::multiplicative_generator(),
             dim: 4, // 2^4 = 16
@@ -283,7 +283,7 @@ mod tests {
         let mut rng = test_rng();
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = EvaluationDomainVar {
+        let domain = EvaluationDomain {
             gen,
             offset: Fr::multiplicative_generator(),
             dim: 4, // 2^4 = 16
