@@ -8,9 +8,9 @@ use ark_std::vec::Vec;
 pub mod vanishing_poly;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
-/// Defines an evaluation domain over a prime field.
-/// This domain is `h<g>` where g is `gen` and h is `offset`. The size of coset is `1<<dim`.
-pub struct EvaluationDomain<F: PrimeField> {
+/// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
+/// This domain is `h<g>` where g is `gen` and h is `offset`.
+pub struct EvaluationDomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group
@@ -19,7 +19,7 @@ pub struct EvaluationDomain<F: PrimeField> {
     pub dim: u64,
 }
 
-impl<F: PrimeField> EvaluationDomain<F> {
+impl<F: PrimeField> EvaluationDomainVar<F> {
     /// order of the domain
     pub fn order(&self) -> usize {
         1 << self.dim
