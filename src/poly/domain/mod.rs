@@ -13,7 +13,7 @@ pub mod vanishing_poly;
 pub struct EvaluationDomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
-    /// index of the quotient group
+    /// index of the quotient group (i.e. the `offset`)
     pub offset: F,
     /// dimension of evaluation domain
     pub dim: u64,
