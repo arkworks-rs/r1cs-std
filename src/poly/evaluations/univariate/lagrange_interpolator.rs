@@ -70,9 +70,7 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         - v_{i} = 1 / \prod_{j \neq i} h(g^i-g^j).
         Below we use the fact that v_{0} = 1/(m * h^(m-1)) and v_{i+1} = g * v_{i}.
         We compute the inverse of each coefficient, and then batch invert the entire result.
-        TODO: explain deriviation more step by step (will do in THIS PR)
         */
-        // TODO: Implement batch_inverse & mul like libiop for better efficiency (will do in next PR)
         let vp_t_inv = self
             .domain_vp
             .evaluate(&interpolation_point)
