@@ -31,14 +31,16 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
             cur_elem *= domain_generator;
             all_domain_elems.push(cur_elem);
         }
-        // By computing the following elements as constants,
-        // we can further reduce the interpolation costs.
-        //
-        // m = order of the interpolation domain
-        // v_inv[i] = prod_{j != i} h(g^i - g^j)
-        // We use the following facts to compute this:
-        //   v_inv[0] = m*h^{m-1}
-        //   v_inv[i] = g^{-1} * v_inv[i-1]
+        /*
+        By computing the following elements as constants,
+        we can further reduce the interpolation costs.
+
+        m = order of the interpolation domain
+        v_inv[i] = prod_{j != i} h(g^i - g^j)
+        We use the following facts to compute this:
+        v_inv[0] = m*h^{m-1}
+        v_inv[i] = g^{-1} * v_inv[i-1]
+        */
         // TODO: Include proof of the above two points
         let g_inv = domain_generator.inverse().unwrap();
         let m = F::from((1 << domain_dim) as u128);
