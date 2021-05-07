@@ -101,7 +101,7 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::poly::domain::EvaluationDomain;
+    use crate::poly::domain::Radix2Domain;
     use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
     use ark_ff::{FftField, Field, One};
     use ark_poly::univariate::DensePolynomial;
@@ -115,7 +115,7 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = EvaluationDomain {
+        let domain = Radix2Domain {
             gen,
             offset: Fr::multiplicative_generator(),
             dim: 4, // 2^4 = 16

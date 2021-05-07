@@ -9,8 +9,12 @@ pub mod vanishing_poly;
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 /// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
-/// This domain is `h<g>` where g is `gen` and h is `offset`.
-pub struct EvaluationDomain<F: PrimeField> {
+///
+/// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
+/// subgroup for now.
+///
+/// TODO: support cosets in `ark-poly`.
+pub struct Radix2Domain<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
@@ -19,7 +23,7 @@ pub struct EvaluationDomain<F: PrimeField> {
     pub dim: u64,
 }
 
-impl<F: PrimeField> EvaluationDomain<F> {
+impl<F: PrimeField> Radix2Domain<F> {
     /// order of the domain
     pub fn order(&self) -> usize {
         1 << self.dim
