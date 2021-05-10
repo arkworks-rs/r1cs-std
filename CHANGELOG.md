@@ -7,6 +7,8 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 
 ### Features
 
+- [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and lagrange interpolation. 
+
 ### Improvements
 
 ### Bug Fixes
