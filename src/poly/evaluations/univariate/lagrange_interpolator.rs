@@ -1,5 +1,5 @@
 use crate::poly::domain::vanishing_poly::VanishingPolynomial;
-use ark_ff::{batch_inversion, PrimeField};
+use ark_ff::{batch_inversion_and_mul, PrimeField};
 use ark_std::vec::Vec;
 /// Struct describing Lagrange interpolation for a multiplicative coset I,
 /// with |I| a power of 2.
@@ -71,21 +71,18 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         - Z_{H}(t) = \prod_{j} (t-h*g^j) = (t^m-h^m), and
         - v_{i} = 1 / \prod_{j \neq i} h(g^i-g^j).
         Below we use the fact that v_{0} = 1/(m * h^(m-1)) and v_{i+1} = g * v_{i}.
-        We compute the inverse of each coefficient, and then batch invert the entire result.
+        We first compute the inverse of each coefficient, except for the Z_H(t) term.
+        We then batch invert the entire result, and multiply by Z_H(t).
         */
-        let vp_t_inv = self
-            .domain_vp
-            .evaluate(&interpolation_point)
-            .inverse()
-            .unwrap();
         let mut inverted_lagrange_coeffs: Vec<F> = Vec::with_capacity(self.all_domain_elems.len());
         for i in 0..self.domain_order {
-            let l = vp_t_inv * self.v_inv_elems[i];
+            let l = self.v_inv_elems[i];
             let r = self.all_domain_elems[i];
             inverted_lagrange_coeffs.push(l * (interpolation_point - r));
         }
+        let vp_t = self.domain_vp.evaluate(&interpolation_point);
         let lagrange_coeffs = inverted_lagrange_coeffs.as_mut_slice();
-        batch_inversion::<F>(lagrange_coeffs);
+        batch_inversion_and_mul::<F>(lagrange_coeffs, &vp_t);
         lagrange_coeffs.iter().cloned().collect()
     }
 
