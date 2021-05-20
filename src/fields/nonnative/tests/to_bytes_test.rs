@@ -1,5 +1,5 @@
 use ark_ec::PairingEngine;
-use ark_ff::Zero;
+use ark_ff::{to_bytes, Zero};
 use ark_mnt4_298::MNT4_298;
 use ark_mnt6_298::MNT6_298;
 use ark_nonnative_field::NonNativeFieldVar;
@@ -33,6 +33,8 @@ fn to_bytes_test() {
     for byte in target_to_bytes.iter().skip(3) {
         assert_eq!(*byte, 0);
     }
+
+    assert_eq!(to_bytes!(target_test_elem).unwrap(), target_to_bytes);
 }
 
 #[test]

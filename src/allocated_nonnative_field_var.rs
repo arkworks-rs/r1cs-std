@@ -577,18 +577,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
-        let bits = self.to_bits_le()?;
+        let mut bits = self.to_bits_le()?;
 
-        let mut bytes = Vec::<UInt8<BaseField>>::new();
-        bits.chunks(8).for_each(|bits_per_byte| {
-            let mut bits_per_byte: Vec<Boolean<BaseField>> = bits_per_byte.to_vec();
-            if bits_per_byte.len() < 8 {
-                bits_per_byte.resize_with(8, || Boolean::<BaseField>::constant(false));
-            }
+        let num_bits = TargetField::BigInt::NUM_LIMBS * 64;
+        assert!(bits.len() <= num_bits);
+        bits.resize_with(num_bits, || Boolean::constant(false));
 
-            bytes.push(UInt8::<BaseField>::from_bits_le(&bits_per_byte));
-        });
-
+        let bytes = bits.chunks(8).map(UInt8::from_bits_le).collect();
         Ok(bytes)
     }
 }
