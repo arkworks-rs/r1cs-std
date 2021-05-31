@@ -1,29 +1,40 @@
 use crate::boolean::Boolean;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
+use crate::R1CSVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
 
 pub mod vanishing_poly;
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 /// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
 ///
 /// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
 /// subgroup for now.
 ///
 /// TODO: support cosets in `ark-poly`.
-pub struct Radix2Domain<F: PrimeField> {
+pub struct Radix2DomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
-    pub offset: F,
+    pub offset: FpVar<F>,
     /// dimension of evaluation domain
     pub dim: u64,
 }
 
-impl<F: PrimeField> Radix2Domain<F> {
+impl<F: PrimeField> Radix2DomainVar<F> {
+    /// returns whether two domains are same without comparing if `offset`
+    /// represents same variable in circuit.
+    pub fn is_same_value(&self, other: &Self) -> bool {
+        (self.gen == other.gen)
+            && (self.offset.value().unwrap() == other.offset.value().unwrap())
+            && (self.dim == other.dim)
+    }
+}
+
+impl<F: PrimeField> Radix2DomainVar<F> {
     /// order of the domain
     pub fn order(&self) -> usize {
         1 << self.dim
@@ -64,7 +75,7 @@ impl<F: PrimeField> Radix2Domain<F> {
             first_point_in_coset += &term;
         }
 
-        first_point_in_coset *= &FpVar::Constant(self.offset);
+        first_point_in_coset *= &self.offset;
 
         coset.push(first_point_in_coset);
         for i in 1..(1 << (coset_dim as usize)) {

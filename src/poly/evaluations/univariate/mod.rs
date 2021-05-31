@@ -3,7 +3,7 @@ pub mod lagrange_interpolator;
 use crate::alloc::AllocVar;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
-use crate::poly::domain::Radix2Domain;
+use crate::poly::domain::Radix2DomainVar;
 use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
 use crate::R1CSVar;
 use ark_ff::{batch_inversion, PrimeField};
@@ -18,7 +18,7 @@ pub struct EvaluationsVar<F: PrimeField> {
     pub evals: Vec<FpVar<F>>,
     /// Optional Lagrange Interpolator. Useful for lagrange interpolation.
     pub lagrange_interpolator: Option<LagrangeInterpolator<F>>,
-    domain: Radix2Domain<F>,
+    domain: Radix2DomainVar<F>,
 }
 
 impl<F: PrimeField> EvaluationsVar<F> {
@@ -27,7 +27,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
     /// using lagrange interpolation.
     pub fn from_vec_and_domain(
         evaluations: Vec<FpVar<F>>,
-        domain: Radix2Domain<F>,
+        domain: Radix2DomainVar<F>,
         interpolate: bool,
     ) -> Self {
         assert_eq!(
@@ -47,15 +47,21 @@ impl<F: PrimeField> EvaluationsVar<F> {
         ev
     }
 
-    /// Generate lagrange interpolator and mark it ready to interpolate
+    /// Generate lagrange interpolator in native code and mark it ready to interpolate.
+    /// This method is valid only if `self.domain.offset` is a constant.
     pub fn generate_lagrange_interpolator(&mut self) {
         let poly_evaluations_val: Vec<_> = self.evals.iter().map(|v| v.value().unwrap()).collect();
         let domain = &self.domain;
-        let lagrange_interpolator =
-            LagrangeInterpolator::new(domain.offset, domain.gen, domain.dim, poly_evaluations_val);
+        let lagrange_interpolator = if let FpVar::Constant(x) = domain.offset {
+            LagrangeInterpolator::new(x, domain.gen, domain.dim, poly_evaluations_val)
+        } else {
+            panic!("Domain offset needs to be constant.")
+        };
         self.lagrange_interpolator = Some(lagrange_interpolator)
     }
 
+    /// Compute lagrange coefficients for each evaluation, given `interpolation_point`.
+    /// Only valid if the domain offset is constant.
     fn compute_lagrange_coefficients(
         &self,
         interpolation_point: &FpVar<F>,
@@ -106,18 +112,24 @@ impl<F: PrimeField> EvaluationsVar<F> {
         &self,
         interpolation_point: &FpVar<F>,
     ) -> Result<FpVar<F>, SynthesisError> {
-        let lagrange_interpolator = self
-            .lagrange_interpolator
-            .as_ref()
-            .expect("lagrange interpolator has not been initialized. ");
-        let lagrange_coeffs = self.compute_lagrange_coefficients(interpolation_point)?;
-        let mut interpolation: FpVar<F> = FpVar::zero();
-        for i in 0..lagrange_interpolator.domain_order {
-            let intermediate = &lagrange_coeffs[i] * &self.evals[i];
-            interpolation += &intermediate
-        }
+        // specialize: if domain offset is constant, we can optimize to have fewer constraints
+        if self.domain.offset.is_constant() {
+            let lagrange_interpolator = self
+                .lagrange_interpolator
+                .as_ref()
+                .expect("lagrange interpolator has not been initialized. ");
+            let lagrange_coeffs = self.compute_lagrange_coefficients(interpolation_point)?;
+            let mut interpolation: FpVar<F> = FpVar::zero();
+            for i in 0..lagrange_interpolator.domain_order {
+                let intermediate = &lagrange_coeffs[i] * &self.evals[i];
+                interpolation += &intermediate
+            }
 
-        Ok(interpolation)
+            Ok(interpolation)
+        } else {
+            // if domain offset is not constant, then we use standard lagrange interpolation code
+            todo!()
+        }
     }
 }
 
@@ -133,7 +145,10 @@ impl<'a, 'b, F: PrimeField> Add<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 
 impl<'a, F: PrimeField> AddAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn add_assign(&mut self, other: &'a EvaluationsVar<F>) {
-        assert_eq!(self.domain, other.domain, "domains are unequal");
+        assert!(
+            self.domain.is_same_value(&other.domain),
+            "domains are unequal"
+        );
 
         self.lagrange_interpolator = None;
         self.evals
@@ -155,7 +170,10 @@ impl<'a, 'b, F: PrimeField> Sub<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 
 impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn sub_assign(&mut self, other: &'a EvaluationsVar<F>) {
-        assert_eq!(self.domain, other.domain, "domains are unequal");
+        assert!(
+            self.domain.is_same_value(&other.domain),
+            "domains are unequal"
+        );
 
         self.lagrange_interpolator = None;
         self.evals
@@ -177,7 +195,10 @@ impl<'a, 'b, F: PrimeField> Mul<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 
 impl<'a, F: PrimeField> MulAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn mul_assign(&mut self, other: &'a EvaluationsVar<F>) {
-        assert_eq!(self.domain, other.domain, "domains are unequal");
+        assert!(
+            self.domain.is_same_value(&other.domain),
+            "domains are unequal"
+        );
 
         self.lagrange_interpolator = None;
         self.evals
@@ -199,7 +220,10 @@ impl<'a, 'b, F: PrimeField> Div<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 
 impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
     fn div_assign(&mut self, other: &'a EvaluationsVar<F>) {
-        assert_eq!(self.domain, other.domain, "domains are unequal");
+        assert!(
+            self.domain.is_same_value(&other.domain),
+            "domains are unequal"
+        );
         let cs = self.evals[0].cs();
         // the prover can generate result = (1 / other) * self offline
         let mut result_val: Vec<_> = other.evals.iter().map(|x| x.value().unwrap()).collect();
@@ -228,7 +252,8 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
 mod tests {
     use crate::alloc::AllocVar;
     use crate::fields::fp::FpVar;
-    use crate::poly::domain::Radix2Domain;
+    use crate::fields::FieldVar;
+    use crate::poly::domain::Radix2DomainVar;
     use crate::poly::evaluations::univariate::EvaluationsVar;
     use crate::R1CSVar;
     use ark_ff::{FftField, Field, One, UniformRand};
@@ -239,17 +264,17 @@ mod tests {
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
-    fn test_interpolate() {
+    fn test_interpolate_constant_offset() {
         let mut rng = test_rng();
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2Domain {
+        let domain = Radix2DomainVar {
             gen,
-            offset: Fr::multiplicative_generator(),
+            offset: FpVar::constant(Fr::multiplicative_generator()),
             dim: 4, // 2^4 = 16
         };
-        let mut coset_point = domain.offset;
+        let mut coset_point = domain.offset.value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
             oracle_evals.push(poly.evaluate(&coset_point));
@@ -283,9 +308,9 @@ mod tests {
         let mut rng = test_rng();
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2Domain {
+        let domain = Radix2DomainVar {
             gen,
-            offset: Fr::multiplicative_generator(),
+            offset: FpVar::constant(Fr::multiplicative_generator()),
             dim: 4, // 2^4 = 16
         };
 
