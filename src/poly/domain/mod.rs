@@ -51,6 +51,11 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         result
     }
 
+    /// Size of coset
+    pub fn size(&self) -> u64 {
+        1 << self.dim
+    }
+
     /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
     /// returns `h*g^{position}<g^{n-query_pos.len()}>`
     pub fn query_position_to_coset(
