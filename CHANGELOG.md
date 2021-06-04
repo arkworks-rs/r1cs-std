@@ -10,7 +10,7 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 - [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and lagrange interpolation. 
 
 ### Improvements
-
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Add support for non-constant coset offset in `Radix2DomainVar`
 ### Bug Fixes
 
 
@@ -19,7 +19,7 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 ### Breaking changes
 - [\#12](https://github.com/arkworks-rs/r1cs-std/pull/12) Make the output of the `ToBitsGadget` impl for `FpVar` fixed-size
 - [\#48](https://github.com/arkworks-rs/r1cs-std/pull/48) Add `Clone` trait bound to `CondSelectGadget`.
-
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Rename `Radix2Domain` to `Radix2DomainVar`
 ### Features
 - [\#21](https://github.com/arkworks-rs/r1cs-std/pull/21) Add `UInt128`
 - [\#50](https://github.com/arkworks-rs/r1cs-std/pull/50) Add `DensePolynomialVar`
