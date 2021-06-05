@@ -51,7 +51,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         result
     }
 
-    /// Size of coset
+    /// Size of the domain
     pub fn size(&self) -> u64 {
         1 << self.dim
     }

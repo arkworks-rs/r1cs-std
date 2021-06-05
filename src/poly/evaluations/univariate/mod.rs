@@ -21,7 +21,7 @@ pub struct EvaluationsVar<F: PrimeField> {
     domain: Radix2DomainVar<F>,
     /// Contains all domain elements of `domain.base_domain`.
     ///
-    /// This is Cache for lagrange interpolation when offset is non-constant. Will be `None` if offset is constant
+    /// This is a cache for lagrange interpolation when offset is non-constant. Will be `None` if offset is constant
     /// or `interpolate` is set to `false`.
     subgroup_points: Option<Vec<F>>,
 }
