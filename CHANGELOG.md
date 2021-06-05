@@ -2,15 +2,18 @@
 
 ### Breaking changes
 
-- #60 Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
-You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
+- [\#60](https://github.com/arkworks-rs/r1cs-std/pull/60) Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
+  You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Rename `Radix2Domain` in `r1cs-std` to `Radix2DomainVar`.
 
 ### Features
 
 - [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and lagrange interpolation. 
 
 ### Improvements
-- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Add support for non-constant coset offset in `Radix2DomainVar`
+
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Add support for non-constant coset offset in `Radix2DomainVar`.
+
 ### Bug Fixes
 
 
