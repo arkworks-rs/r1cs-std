@@ -211,9 +211,11 @@ impl<'a, 'b, F: PrimeField> Add<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 }
 
 impl<'a, F: PrimeField> AddAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    /// Performs the `+=` operations, assuming `domain.offset` is equal.
     fn add_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        // offset might be unknown at compile time, so we assume offset is equal
         assert!(
-            self.domain.is_same_value(&other.domain),
+            self.domain.gen == other.domain.gen && self.domain.dim == other.domain.dim,
             "domains are unequal"
         );
 
@@ -236,9 +238,11 @@ impl<'a, 'b, F: PrimeField> Sub<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 }
 
 impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    /// Performs the `-=` operations, assuming `domain.offset` is equal.
     fn sub_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        // offset might be unknown at compile time, so we assume offset is equal
         assert!(
-            self.domain.is_same_value(&other.domain),
+            self.domain.gen == other.domain.gen && self.domain.dim == other.domain.dim,
             "domains are unequal"
         );
 
@@ -253,6 +257,7 @@ impl<'a, F: PrimeField> SubAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
 impl<'a, 'b, F: PrimeField> Mul<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F> {
     type Output = EvaluationsVar<F>;
 
+    /// Performs the `*` operations, assuming `domain.offset` is equal.
     fn mul(self, rhs: &'a EvaluationsVar<F>) -> Self::Output {
         let mut result = self.clone();
         result *= rhs;
@@ -261,9 +266,11 @@ impl<'a, 'b, F: PrimeField> Mul<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 }
 
 impl<'a, F: PrimeField> MulAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    /// Performs the `*=` operations, assuming `domain.offset` is equal.
     fn mul_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        // offset might be unknown at compile time, so we assume offset is equal
         assert!(
-            self.domain.is_same_value(&other.domain),
+            self.domain.gen == other.domain.gen && self.domain.dim == other.domain.dim,
             "domains are unequal"
         );
 
@@ -286,9 +293,11 @@ impl<'a, 'b, F: PrimeField> Div<&'a EvaluationsVar<F>> for &'b EvaluationsVar<F>
 }
 
 impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
+    /// Performs the `/=` operations, assuming `domain.offset` is equal.
     fn div_assign(&mut self, other: &'a EvaluationsVar<F>) {
+        // offset might be unknown at compile time, so we assume offset is equal
         assert!(
-            self.domain.is_same_value(&other.domain),
+            self.domain.gen == other.domain.gen && self.domain.dim == other.domain.dim,
             "domains are unequal"
         );
         let cs = self.evals[0].cs();

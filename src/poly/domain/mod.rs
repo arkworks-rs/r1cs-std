@@ -1,7 +1,7 @@
 use crate::boolean::Boolean;
+use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
-use crate::R1CSVar;
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
@@ -24,13 +24,13 @@ pub struct Radix2DomainVar<F: PrimeField> {
     pub dim: u64,
 }
 
-impl<F: PrimeField> Radix2DomainVar<F> {
-    /// returns whether two domains are same without comparing if `offset`
-    /// represents same variable in circuit.
-    pub fn is_same_value(&self, other: &Self) -> bool {
-        (self.gen == other.gen)
-            && (self.offset.value().unwrap() == other.offset.value().unwrap())
-            && (self.dim == other.dim)
+impl<F: PrimeField> EqGadget<F> for Radix2DomainVar<F> {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        if self.gen != other.gen || self.dim != other.dim {
+            Ok(Boolean::constant(false))
+        } else {
+            self.offset.is_eq(&other.offset)
+        }
     }
 }
 
