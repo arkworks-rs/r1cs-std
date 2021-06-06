@@ -89,7 +89,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
             .lagrange_interpolator
             .as_ref()
             .expect("lagrange interpolator has not been initialized. \
-            Call `self.generate_interpolate_cache` first or set `interpolate` to true in constructor. ");
+            Call `self.generate_interpolation_cache` first or set `interpolate` to true in constructor. ");
         let lagrange_coeffs =
             lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
         let mut lagrange_coeffs_fg = Vec::new();
@@ -163,7 +163,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // first, make sure `subgroup_points` is made
         let subgroup_points = self.subgroup_points.as_ref()
             .expect("lagrange interpolator has not been initialized. \
-            Call `self.generate_interpolate_cache` first or set `interpolate` to true in constructor. ");
+            Call `self.generate_interpolation_cache` first or set `interpolate` to true in constructor. ");
         // Let denote interpolation_point as alpha.
         // Lagrange polynomial for coset element `a` is
         // \frac{1}{size * offset ^ size} * \frac{alpha^size - offset^size}{alpha * a^{-1} - 1}
