@@ -1,4 +1,16 @@
-## Pending 
+# CHANGELOG
+
+## Pending
+
+### Breaking changes
+
+### Features
+
+### Improvements
+
+### Bug Fixes
+
+## v0.3.0
 
 ### Breaking changes
 
@@ -15,7 +27,6 @@
 - [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Add support for non-constant coset offset in `Radix2DomainVar`.
 
 ### Bug Fixes
-
 
 ## v0.2.0
 
