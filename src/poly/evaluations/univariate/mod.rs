@@ -48,13 +48,13 @@ impl<F: PrimeField> EvaluationsVar<F> {
             subgroup_points: None,
         };
         if interpolate {
-            ev.generate_interpolate_cache();
+            ev.generate_interpolation_cache();
         }
         ev
     }
 
     /// Precompute necessary calculation for lagrange interpolation and mark it ready to interpolate
-    pub fn generate_interpolate_cache(&mut self) {
+    pub fn generate_interpolation_cache(&mut self) {
         if self.domain.offset.is_constant() {
             let poly_evaluations_val: Vec<_> =
                 self.evals.iter().map(|v| v.value().unwrap()).collect();
