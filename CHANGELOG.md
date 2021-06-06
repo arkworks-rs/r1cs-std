@@ -2,14 +2,17 @@
 
 ### Breaking changes
 
-- #60 Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
-You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
+- [\#60](https://github.com/arkworks-rs/r1cs-std/pull/60) Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
+  You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Rename `Radix2Domain` in `r1cs-std` to `Radix2DomainVar`.
 
 ### Features
 
-- [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and lagrange interpolation. 
+- [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and Lagrange interpolation. 
 
 ### Improvements
+
+- [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Add support for non-constant coset offset in `Radix2DomainVar`.
 
 ### Bug Fixes
 
@@ -17,14 +20,17 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 ## v0.2.0
 
 ### Breaking changes
+
 - [\#12](https://github.com/arkworks-rs/r1cs-std/pull/12) Make the output of the `ToBitsGadget` impl for `FpVar` fixed-size
 - [\#48](https://github.com/arkworks-rs/r1cs-std/pull/48) Add `Clone` trait bound to `CondSelectGadget`.
 
 ### Features
+
 - [\#21](https://github.com/arkworks-rs/r1cs-std/pull/21) Add `UInt128`
 - [\#50](https://github.com/arkworks-rs/r1cs-std/pull/50) Add `DensePolynomialVar`
 
 ### Improvements
+
 - [\#5](https://github.com/arkworks-rs/r1cs-std/pull/5) Speedup BLS-12 pairing
 - [\#13](https://github.com/arkworks-rs/r1cs-std/pull/13) Add `ToConstraintFieldGadget` to `ProjectiveVar`
 - [\#15](https://github.com/arkworks-rs/r1cs-std/pull/15), #16 Allow `cs` to be `None` when converting a Montgomery point into a Twisted Edwards point
@@ -38,6 +44,7 @@ You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG
 - [\#46](https://github.com/arkworks-rs/r1cs-std/pull/46) Add mux gadget as an auto-impl in `CondSelectGadget` to support random access of an array
 
 ### Bug fixes
+
 - [\#8](https://github.com/arkworks-rs/r1cs-std/pull/8) Fix bug in `three_bit_cond_neg_lookup` when using a constant lookup bit
 - [\#9](https://github.com/arkworks-rs/r1cs-std/pull/9) Fix bug in `short_weierstrass::ProjectiveVar::to_affine`
 - [\#29](https://github.com/arkworks-rs/r1cs-std/pull/29) Fix `to_non_unique_bytes` for `BLS12::G1Prepared`
