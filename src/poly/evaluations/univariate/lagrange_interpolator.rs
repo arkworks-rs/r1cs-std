@@ -98,8 +98,11 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::poly::domain::Radix2Domain;
+    use crate::fields::fp::FpVar;
+    use crate::fields::FieldVar;
+    use crate::poly::domain::Radix2DomainVar;
     use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
+    use crate::R1CSVar;
     use ark_ff::{FftField, Field, One};
     use ark_poly::univariate::DensePolynomial;
     use ark_poly::{Polynomial, UVPolynomial};
@@ -112,21 +115,25 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2Domain {
+        let domain = Radix2DomainVar {
             gen,
-            offset: Fr::multiplicative_generator(),
+            offset: FpVar::constant(Fr::multiplicative_generator()),
             dim: 4, // 2^4 = 16
         };
         // generate evaluations of `poly` on this domain
-        let mut coset_point = domain.offset;
+        let mut coset_point = domain.offset.value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
             oracle_evals.push(poly.evaluate(&coset_point));
             coset_point *= gen;
         }
 
-        let interpolator =
-            LagrangeInterpolator::new(domain.offset, domain.gen, domain.dim, oracle_evals);
+        let interpolator = LagrangeInterpolator::new(
+            domain.offset.value().unwrap(),
+            domain.gen,
+            domain.dim,
+            oracle_evals,
+        );
 
         // the point to evaluate at
         let interpolate_point = Fr::rand(&mut rng);

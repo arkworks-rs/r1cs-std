@@ -1,4 +1,5 @@
 use crate::boolean::Boolean;
+use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use ark_ff::PrimeField;
@@ -7,23 +8,33 @@ use ark_std::vec::Vec;
 
 pub mod vanishing_poly;
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 /// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
 ///
 /// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
 /// subgroup for now.
 ///
 /// TODO: support cosets in `ark-poly`.
-pub struct Radix2Domain<F: PrimeField> {
+pub struct Radix2DomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
-    pub offset: F,
+    pub offset: FpVar<F>,
     /// dimension of evaluation domain
     pub dim: u64,
 }
 
-impl<F: PrimeField> Radix2Domain<F> {
+impl<F: PrimeField> EqGadget<F> for Radix2DomainVar<F> {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        if self.gen != other.gen || self.dim != other.dim {
+            Ok(Boolean::constant(false))
+        } else {
+            self.offset.is_eq(&other.offset)
+        }
+    }
+}
+
+impl<F: PrimeField> Radix2DomainVar<F> {
     /// order of the domain
     pub fn order(&self) -> usize {
         1 << self.dim
@@ -38,6 +49,11 @@ impl<F: PrimeField> Radix2Domain<F> {
             cur = cur * cur;
         }
         result
+    }
+
+    /// Size of the domain
+    pub fn size(&self) -> u64 {
+        1 << self.dim
     }
 
     /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
@@ -64,7 +80,7 @@ impl<F: PrimeField> Radix2Domain<F> {
             first_point_in_coset += &term;
         }
 
-        first_point_in_coset *= &FpVar::Constant(self.offset);
+        first_point_in_coset *= &self.offset;
 
         coset.push(first_point_in_coset);
         for i in 1..(1 << (coset_dim as usize)) {
