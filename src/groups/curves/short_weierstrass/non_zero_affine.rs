@@ -193,6 +193,9 @@ mod test {
             .unwrap(),
         );
 
+        // The following code uses `double` and `add` (`add_unchecked`) to compute
+        // (1 + 2 + ... + 2^9) G
+
         let sum_a = {
             let mut a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
                 x.clone(),
