@@ -127,7 +127,7 @@ impl<F: PrimeField> AllocatedFp<F> {
 
     /// Add many allocated Fp elements together.
     ///
-    /// This does not create any constraints and only create one linear combination.
+    /// This does not create any constraints and only creates one linear combination.
     pub fn addmany<'a, I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
