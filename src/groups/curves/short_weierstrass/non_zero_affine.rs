@@ -1,4 +1,5 @@
 use super::*;
+
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
@@ -159,5 +160,86 @@ where
         let y = cond.select(&true_value.y, &false_value.y)?;
 
         Ok(Self::new(x, y))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::alloc::AllocVar;
+    use crate::fields::fp::{AllocatedFp, FpVar};
+    use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
+    use crate::groups::curves::short_weierstrass::ProjectiveVar;
+    use crate::groups::CurveVar;
+    use crate::R1CSVar;
+    use ark_ec::SWModelParameters;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{vec::Vec, One};
+    use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
+
+    #[test]
+    fn test_non_zero_affine_cost() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+            })
+            .unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+            })
+            .unwrap(),
+        );
+
+        // The following code uses `double` and `add` (`add_unchecked`) to compute
+        // (1 + 2 + ... + 2^9) G
+
+        let sum_a = {
+            let mut a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+                x.clone(),
+                y.clone(),
+                FpVar::Constant(Fq::one()),
+            );
+
+            let mut double_sequence = Vec::new();
+            double_sequence.push(a.clone());
+
+            for _ in 1..10 {
+                a = a.double().unwrap();
+                double_sequence.push(a.clone());
+            }
+
+            let mut sum = double_sequence[0].clone();
+            for elem in double_sequence.iter().skip(1) {
+                sum = sum + elem;
+            }
+
+            let sum = sum.value().unwrap();
+            (sum.x, sum.y)
+        };
+
+        let sum_b = {
+            let mut a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+            let mut double_sequence = Vec::new();
+            double_sequence.push(a.clone());
+
+            for _ in 1..10 {
+                a = a.double().unwrap();
+                double_sequence.push(a.clone());
+            }
+
+            let mut sum = double_sequence[0].clone();
+            for elem in double_sequence.iter().skip(1) {
+                sum = sum.add_unchecked(&elem).unwrap();
+            }
+
+            (sum.x.value().unwrap(), sum.y.value().unwrap())
+        };
+
+        assert_eq!(sum_a.0, sum_b.0);
+        assert_eq!(sum_a.1, sum_b.1);
     }
 }
