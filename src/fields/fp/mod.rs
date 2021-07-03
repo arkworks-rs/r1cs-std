@@ -1,5 +1,7 @@
 use ark_ff::{BigInteger, FpParameters, PrimeField};
-use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable};
+use ark_relations::r1cs::{
+    ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
+};
 
 use core::borrow::Borrow;
 
@@ -126,11 +128,11 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// Add many allocated Fp elements together.
     ///
     /// This does not create any constraints and only create one linear combination.
-    pub fn addmany<'a, I: Iterator<Item=&'a Self>>(iter: I) -> Self {
+    pub fn addmany<'a, I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
         let mut value = F::zero();
-        let mut new_lc= lc!();
+        let mut new_lc = lc!();
 
         for variable in iter {
             if !variable.cs.is_none() {
@@ -144,9 +146,7 @@ impl<F: PrimeField> AllocatedFp<F> {
             new_lc = new_lc + variable.variable;
         }
 
-        let variable = cs
-            .new_lc(new_lc)
-            .unwrap();
+        let variable = cs.new_lc(new_lc).unwrap();
 
         if has_value {
             AllocatedFp::new(Some(value), variable, cs.clone())
@@ -1035,18 +1035,15 @@ impl<F: PrimeField> AllocVar<F, F> for FpVar<F> {
 }
 
 impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
-    fn sum<I: Iterator<Item=&'a FpVar<F>>>(iter: I) -> FpVar<F> {
+    fn sum<I: Iterator<Item = &'a FpVar<F>>>(iter: I) -> FpVar<F> {
         let mut sum_constants = F::zero();
-        let sum_variables = FpVar::Var(AllocatedFp::<F>::addmany(iter.filter_map(|x|
-            {
-                match x {
-                    FpVar::Constant(c) => {
-                        sum_constants += c;
-                        None
-                    }
-                    FpVar::Var(v) => Some(v)
-                }
-            })));
+        let sum_variables = FpVar::Var(AllocatedFp::<F>::addmany(iter.filter_map(|x| match x {
+            FpVar::Constant(c) => {
+                sum_constants += c;
+                None
+            }
+            FpVar::Var(v) => Some(v),
+        })));
 
         let sum = sum_variables + sum_constants;
         sum
@@ -1055,13 +1052,13 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use ark_test_curves::bls12_381::Fr;
-    use ark_relations::r1cs::ConstraintSystem;
-    use crate::fields::fp::FpVar;
     use crate::alloc::{AllocVar, AllocationMode};
-    use ark_std::{Zero, UniformRand};
-    use crate::R1CSVar;
     use crate::eq::EqGadget;
+    use crate::fields::fp::FpVar;
+    use crate::R1CSVar;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{UniformRand, Zero};
+    use ark_test_curves::bls12_381::Fr;
 
     #[test]
     fn test_sum_fpvar() {
@@ -1074,12 +1071,16 @@ mod test {
         for _ in 0..10 {
             let a = Fr::rand(&mut rng);
             sum_expected += &a;
-            v.push(FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Constant).unwrap());
+            v.push(
+                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Constant).unwrap(),
+            );
         }
         for _ in 0..10 {
             let a = Fr::rand(&mut rng);
             sum_expected += &a;
-            v.push(FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Witness).unwrap());
+            v.push(
+                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Witness).unwrap(),
+            );
         }
 
         let sum: FpVar<Fr> = v.iter().sum();
