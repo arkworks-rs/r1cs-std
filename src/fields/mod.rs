@@ -155,16 +155,20 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// Computes `result` such that `self * result == Self::one()`.
     fn inverse(&self) -> Result<Self, SynthesisError>;
 
-    /// Returns `(self / d)`. but requires fewer constraints than `self * d.inverse()`.
+    /// Returns `(self / d)`.
     /// It is up to the caller to ensure that `d` is non-zero,
-    /// since in that case the result is unconstrained.
+    /// since in that case the constraint is unsatisfied.
     fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
-        let d_inv = if self.is_constant() || d.is_constant() {
-            d.inverse()?
+        if self.is_constant() || d.is_constant() {
+            let d_inv = d.inverse()?;
+            Ok(d_inv * self)
         } else {
-            Self::new_witness(self.cs(), || Ok(d.value()?.inverse().unwrap_or(F::zero())))?
-        };
-        Ok(d_inv * self)
+            let res = Self::new_witness(self.cs(), || {
+                Ok(self.value()? * d.value()?.inverse().unwrap_or(F::zero()))
+            })?;
+            res.mul_equals(d, self)?;
+            Ok(res)
+        }
     }
 
     /// Computes the frobenius map over `self`.
