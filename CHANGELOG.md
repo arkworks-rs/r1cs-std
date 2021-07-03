@@ -10,6 +10,8 @@
 
 ### Bug Fixes
 
+- [\#70](https://github.com/arkworks-rs/r1cs-std/pull/70) Fix a soundness issue of `mul_by_inverse`.
+
 ## v0.3.0
 
 ### Breaking changes
