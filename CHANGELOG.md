@@ -8,6 +8,8 @@
 
 ### Improvements
 
+- [\#72](https://github.com/arkworks-rs/r1cs-std/pull/72) Implement `pow_by_constant` with NAF for `FpVar`.
+
 ### Bug Fixes
 
 ## v0.3.0
