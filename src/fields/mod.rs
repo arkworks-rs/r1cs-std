@@ -156,19 +156,10 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     fn inverse(&self) -> Result<Self, SynthesisError>;
 
     /// Returns `(self / d)`.
-    /// It is up to the caller to ensure that `d` is non-zero,
-    /// since in that case the constraint is unsatisfied.
+    /// The constraint system will be unsatisfiable when `d = 0`.
     fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
-        if self.is_constant() || d.is_constant() {
-            let d_inv = d.inverse()?;
-            Ok(d_inv * self)
-        } else {
-            let res = Self::new_witness(self.cs(), || {
-                Ok(self.value()? * d.value()?.inverse().unwrap_or(F::zero()))
-            })?;
-            res.mul_equals(d, self)?;
-            Ok(res)
-        }
+        let d_inv = d.inverse()?;
+        Ok(d_inv * self)
     }
 
     /// Computes the frobenius map over `self`.

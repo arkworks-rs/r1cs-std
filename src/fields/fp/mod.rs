@@ -733,28 +733,6 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
         *self = self.frobenius_map(power)?;
         Ok(self)
     }
-
-    #[tracing::instrument(target = "r1cs")]
-    fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
-        match (self, d) {
-            (FpVar::Constant(_), _) | (_, FpVar::Constant(_)) => {
-                let d_inv = d.inverse()?;
-                Ok(d_inv * self)
-            }
-            (FpVar::Var(self_var), FpVar::Var(d_var)) => {
-                let cs = self.cs().or(d.cs());
-                let res_var = AllocatedFp::<F>::new_witness(self.cs(), || {
-                    Ok(self_var.value()? * d_var.value()?.inverse().unwrap_or(F::zero()))
-                })?;
-                cs.enforce_constraint(
-                    lc!() + res_var.variable,
-                    lc!() + d_var.variable,
-                    lc!() + self_var.variable,
-                )?;
-                Ok(FpVar::Var(res_var))
-            }
-        }
-    }
 }
 
 impl_ops!(
