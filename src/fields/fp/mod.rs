@@ -10,6 +10,7 @@ use crate::{
     prelude::*,
     Assignment, ToConstraintFieldGadget, Vec,
 };
+use ark_std::iter::Sum;
 
 mod cmp;
 
@@ -122,6 +123,36 @@ impl<F: PrimeField> AllocatedFp<F> {
             .new_lc(lc!() + self.variable + other.variable)
             .unwrap();
         AllocatedFp::new(value, variable, self.cs.clone())
+    }
+
+    /// Add many allocated Fp elements together.
+    ///
+    /// This does not create any constraints and only creates one linear combination.
+    pub fn addmany<'a, I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        let mut cs = ConstraintSystemRef::None;
+        let mut has_value = true;
+        let mut value = F::zero();
+        let mut new_lc = lc!();
+
+        for variable in iter {
+            if !variable.cs.is_none() {
+                cs = cs.or(variable.cs.clone());
+            }
+            if variable.value.is_none() {
+                has_value = false;
+            } else {
+                value += variable.value.unwrap();
+            }
+            new_lc = new_lc + variable.variable;
+        }
+
+        let variable = cs.new_lc(new_lc).unwrap();
+
+        if has_value {
+            AllocatedFp::new(Some(value), variable, cs.clone())
+        } else {
+            AllocatedFp::new(None, variable, cs.clone())
+        }
     }
 
     /// Outputs `self - other`.
@@ -1022,5 +1053,63 @@ impl<F: PrimeField> AllocVar<F, F> for FpVar<F> {
         } else {
             AllocatedFp::new_variable(cs, f, mode).map(Self::Var)
         }
+    }
+}
+
+impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
+    fn sum<I: Iterator<Item = &'a FpVar<F>>>(iter: I) -> FpVar<F> {
+        let mut sum_constants = F::zero();
+        let sum_variables = FpVar::Var(AllocatedFp::<F>::addmany(iter.filter_map(|x| match x {
+            FpVar::Constant(c) => {
+                sum_constants += c;
+                None
+            }
+            FpVar::Var(v) => Some(v),
+        })));
+
+        let sum = sum_variables + sum_constants;
+        sum
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::alloc::{AllocVar, AllocationMode};
+    use crate::eq::EqGadget;
+    use crate::fields::fp::FpVar;
+    use crate::R1CSVar;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{UniformRand, Zero};
+    use ark_test_curves::bls12_381::Fr;
+
+    #[test]
+    fn test_sum_fpvar() {
+        let mut rng = ark_std::test_rng();
+        let cs = ConstraintSystem::new_ref();
+
+        let mut sum_expected = Fr::zero();
+
+        let mut v = Vec::new();
+        for _ in 0..10 {
+            let a = Fr::rand(&mut rng);
+            sum_expected += &a;
+            v.push(
+                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Constant).unwrap(),
+            );
+        }
+        for _ in 0..10 {
+            let a = Fr::rand(&mut rng);
+            sum_expected += &a;
+            v.push(
+                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Witness).unwrap(),
+            );
+        }
+
+        let sum: FpVar<Fr> = v.iter().sum();
+
+        sum.enforce_equal(&FpVar::Constant(sum_expected)).unwrap();
+
+        assert!(cs.is_satisfied().unwrap());
+        assert_eq!(sum.value().unwrap(), sum_expected);
     }
 }
