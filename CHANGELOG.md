@@ -12,7 +12,7 @@
 
 ### Bug Fixes
 
-- [\#70](https://github.com/arkworks-rs/r1cs-std/pull/70) Fix a soundness issue of `mul_by_inverse`.
+- [\#70](https://github.com/arkworks-rs/r1cs-std/pull/70) Fix soundness issues of `mul_by_inverse` for field gadgets.
 
 ## v0.3.0
 
