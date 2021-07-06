@@ -6,11 +6,15 @@
 
 ### Features
 
+- [\#71](https://github.com/arkworks-rs/r1cs-std/pull/71) Implement the `Sum` trait for `FpVar`.
+
 ### Improvements
 
 - [\#72](https://github.com/arkworks-rs/r1cs-std/pull/72) Implement `pow_by_constant` with NAF for `FpVar`.
 
 ### Bug Fixes
+
+- [\#70](https://github.com/arkworks-rs/r1cs-std/pull/70) Fix soundness issues of `mul_by_inverse` for field gadgets.
 
 ## v0.3.0
 

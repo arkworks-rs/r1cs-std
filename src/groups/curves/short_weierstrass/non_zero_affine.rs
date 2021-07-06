@@ -164,20 +164,20 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod test_non_zero_affine {
     use crate::alloc::AllocVar;
     use crate::fields::fp::{AllocatedFp, FpVar};
     use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
     use crate::groups::curves::short_weierstrass::ProjectiveVar;
     use crate::groups::CurveVar;
     use crate::R1CSVar;
-    use ark_ec::SWModelParameters;
+    use ark_ec::{ProjectiveCurve, SWModelParameters};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
     use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
 
     #[test]
-    fn test_non_zero_affine_cost() {
+    fn correctness_test_1() {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
@@ -216,7 +216,7 @@ mod test {
                 sum = sum + elem;
             }
 
-            let sum = sum.value().unwrap();
+            let sum = sum.value().unwrap().into_affine();
             (sum.x, sum.y)
         };
 
@@ -241,5 +241,80 @@ mod test {
 
         assert_eq!(sum_a.0, sum_b.0);
         assert_eq!(sum_a.1, sum_b.1);
+    }
+
+    #[test]
+    fn correctness_test_2() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+            })
+            .unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+            })
+            .unwrap(),
+        );
+
+        // The following code tests `double_and_add`.
+        let sum_a = {
+            let a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+                x.clone(),
+                y.clone(),
+                FpVar::Constant(Fq::one()),
+            );
+
+            let mut cur = a.clone();
+            cur.double_in_place().unwrap();
+            for _ in 1..10 {
+                cur.double_in_place().unwrap();
+                cur = cur + &a;
+            }
+
+            let sum = cur.value().unwrap().into_affine();
+            (sum.x, sum.y)
+        };
+
+        let sum_b = {
+            let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+            let mut cur = a.double().unwrap();
+            for _ in 1..10 {
+                cur = cur.double_and_add(&a).unwrap();
+            }
+
+            (cur.x.value().unwrap(), cur.y.value().unwrap())
+        };
+
+        assert!(cs.is_satisfied().unwrap());
+        assert_eq!(sum_a.0, sum_b.0);
+        assert_eq!(sum_a.1, sum_b.1);
+    }
+
+    #[test]
+    fn soundness_test() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+            })
+            .unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+            })
+            .unwrap(),
+        );
+
+        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+        let _ = a.double_and_add(&a).unwrap();
+        assert!(!cs.is_satisfied().unwrap());
     }
 }
