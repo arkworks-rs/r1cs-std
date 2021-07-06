@@ -155,15 +155,10 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// Computes `result` such that `self * result == Self::one()`.
     fn inverse(&self) -> Result<Self, SynthesisError>;
 
-    /// Returns `(self / d)`. but requires fewer constraints than `self * d.inverse()`.
-    /// It is up to the caller to ensure that `d` is non-zero,
-    /// since in that case the result is unconstrained.
+    /// Returns `(self / d)`.
+    /// The constraint system will be unsatisfiable when `d = 0`.
     fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
-        let d_inv = if self.is_constant() || d.is_constant() {
-            d.inverse()?
-        } else {
-            Self::new_witness(self.cs(), || Ok(d.value()?.inverse().unwrap_or(F::zero())))?
-        };
+        let d_inv = d.inverse()?;
         Ok(d_inv * self)
     }
 
