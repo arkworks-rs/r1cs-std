@@ -740,7 +740,7 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
     fn pow_by_constant<S: AsRef<[u64]>>(&self, exp: S) -> Result<Self, SynthesisError> {
         use ark_ff::biginteger::arithmetic::find_wnaf;
 
-        // first check if exp = 0, in which case things will be complicated
+        // first check if exp = 0
         let mut is_nonzero = false;
         for limb in exp.as_ref() {
             if *limb != 0u64 {
@@ -750,16 +750,6 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
 
         // handle the case when exp = 0
         if !is_nonzero {
-            // trigger an unsatisfiable constraint when `self` = 0
-            match self {
-                FpVar::Constant(c) => {
-                    assert_ne!(*c, F::zero());
-                }
-                FpVar::Var(v) => {
-                    let _ = v.inverse()?;
-                }
-            }
-
             return Ok(FpVar::Constant(F::one()));
         }
 
