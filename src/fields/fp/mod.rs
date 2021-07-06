@@ -1231,32 +1231,4 @@ mod test_pow_by_constant {
 
         assert!(cs.is_satisfied().unwrap());
     }
-
-    #[test]
-    #[should_panic]
-    fn test_zero_base_zero_exp_witness() {
-        let cs = ConstraintSystem::new_ref();
-
-        let base = Fr::zero();
-        let base_g = FpVar::<Fr>::new_witness(cs.clone(), || Ok(base)).unwrap();
-
-        let exp = [0u64, 0u64, 0u64, 0u64];
-
-        let _ = base_g.pow_by_constant(exp).unwrap();
-        assert!(cs.is_satisfied().unwrap());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_pow_by_constant_zero_base_zero_exp_constant() {
-        let cs = ConstraintSystem::new_ref();
-
-        let base = Fr::zero();
-        let base_g = FpVar::<Fr>::new_witness(cs.clone(), || Ok(base)).unwrap();
-
-        let exp = [0u64, 0u64, 0u64, 0u64];
-
-        let _ = base_g.pow_by_constant(exp).unwrap();
-        assert!(cs.is_satisfied().unwrap());
-    }
 }
