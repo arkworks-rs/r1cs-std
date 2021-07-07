@@ -164,8 +164,9 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     }
 
     /// Returns `(self / d)`.
-    /// The constraint system will be unsatisfiable when `d = 0`.
-    /// This method *does not* check if `d == 0`.
+    /// The precondition for this method is that `d != 0`. If `d == 0`, the
+    /// current implementation of this method allows the resulting constraint
+    /// system to be trivially satisfiable.
     fn mul_by_inverse_unchecked(&self, d: &Self) -> Result<Self, SynthesisError> {
         let cs = self.cs().or(d.cs());
         match cs {
