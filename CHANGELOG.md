@@ -6,9 +6,15 @@
 
 ### Features
 
-- [\#71](https://github.com/arkworks-rs/r1cs-std/pull/71) Implement the `Sum` trait for `FpVar`.
-
 ### Improvements
+
+### Bug Fixes
+
+## v0.3.1
+
+### Features
+
+- [\#71](https://github.com/arkworks-rs/r1cs-std/pull/71) Implement the `Sum` trait for `FpVar`.
 
 ### Bug Fixes
 
