@@ -96,7 +96,7 @@ where
     ///
     /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_and_add(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub(crate) fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
@@ -290,7 +290,7 @@ mod test_non_zero_affine {
 
             let mut cur = a.double().unwrap();
             for _ in 1..10 {
-                cur = cur.double_and_add(&a).unwrap();
+                cur = cur.double_and_add_unchecked(&a).unwrap();
             }
 
             (cur.x.value().unwrap(), cur.y.value().unwrap())
@@ -320,7 +320,7 @@ mod test_non_zero_affine {
 
         let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
 
-        let _ = a.double_and_add(&a).unwrap();
+        let _ = a.double_and_add_unchecked(&a).unwrap();
         assert!(!cs.is_satisfied().unwrap());
     }
 }
