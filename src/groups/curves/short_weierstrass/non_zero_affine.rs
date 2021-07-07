@@ -300,27 +300,4 @@ mod test_non_zero_affine {
         assert_eq!(sum_a.0, sum_b.0);
         assert_eq!(sum_a.1, sum_b.1);
     }
-
-    #[test]
-    fn soundness_test() {
-        let cs = ConstraintSystem::<Fq>::new_ref();
-
-        let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
-        );
-        let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
-        );
-
-        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
-
-        let _ = a.double_and_add_unchecked(&a).unwrap();
-        assert!(!cs.is_satisfied().unwrap());
-    }
 }
