@@ -175,10 +175,10 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let lhs_numerator = &alpha_to_s - &coset_offset_to_size;
         let lhs_denominator = &coset_offset_to_size * FpVar::constant(F::from(self.domain.size()));
 
-        let lhs = lhs_numerator.mul_by_inverse(&lhs_denominator)?;
+        let lhs = lhs_numerator.mul_by_inverse_unchecked(&lhs_denominator)?;
 
         // `rhs` for coset element `a` is \frac{1}{alpha * a^{-1} - 1} = \frac{1}{alpha * offset^{-1} * a'^{-1} - 1}
-        let alpha_coset_offset_inv = interpolation_point.mul_by_inverse(&self.domain.offset)?;
+        let alpha_coset_offset_inv = interpolation_point.mul_by_inverse_unchecked(&self.domain.offset)?;
 
         // `res` stores the sum of all lagrange polynomials evaluated at alpha
         let mut res = FpVar::<F>::zero();
@@ -190,7 +190,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
             debug_assert_eq!(subgroup_points[i] * subgroup_point_inv, F::one());
             // alpha * offset^{-1} * a'^{-1} - 1
             let lag_donom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
-            let lag_coeff = lhs.mul_by_inverse(&lag_donom)?;
+            let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_donom)?;
 
             let lag_interpoland = &self.evals[i] * lag_coeff;
             res += lag_interpoland

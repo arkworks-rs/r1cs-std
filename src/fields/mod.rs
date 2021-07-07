@@ -1,5 +1,5 @@
 use ark_ff::{prelude::*, BitIteratorBE};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use core::{
     fmt::Debug,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
@@ -160,6 +160,24 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
         let d_inv = d.inverse()?;
         Ok(d_inv * self)
+    }
+
+    /// Returns `(self / d)`.
+    /// The constraint system will be unsatisfiable when `d = 0`.
+    /// This method *does not* check if `d == 0`.
+    fn mul_by_inverse_unchecked(&self, d: &Self) -> Result<Self, SynthesisError> {
+        let cs = self.cs().or(d.cs());
+        match cs {
+            ConstraintSystemRef::None => Self::new_constant(cs, self.value()? * d.value()?.inverse().expect("division by zero")),
+            _ => {
+                let result = Self::new_witness(
+                    ark_relations::ns!(cs, "self  * d_inv"), 
+                    || Ok(self.value()? * &d.value()?.inverse().ok_or(SynthesisError::DivisionByZero)?)
+                )?;
+                result.mul_equals(d, self)?;
+                Ok(result)
+            }
+        }
     }
 
     /// Computes the frobenius map over `self`.

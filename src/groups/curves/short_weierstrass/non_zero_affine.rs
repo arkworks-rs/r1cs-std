@@ -55,7 +55,9 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = y2 - y1;
             let denominator = x2 - x1;
-            let lambda = numerator.mul_by_inverse(&denominator)?;
+            // It's okay to use `unchecked` here, because the precondition of `add_unchecked` is that
+            // self != ±other, which means that `numerator` and `denominator` are both non-zero.
+            let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1 - x2;
             let y3 = lambda * &(x1 - &x3) - y1;
             Ok(Self::new(x3, y3))
@@ -80,7 +82,9 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
             let denominator = y1.double()?;
-            let lambda = numerator.mul_by_inverse(&denominator)?;
+            // It's okay to use `unchecked` here, because the precondition of `double` is that
+            // self != zero.
+            let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1.double()?;
             let y3 = lambda * &(x1 - &x3) - y1;
             Ok(Self::new(x3, y3))
@@ -96,6 +100,7 @@ where
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
+            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e. same logic as in `add_unchecked`)
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
 
@@ -105,12 +110,12 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = y2 - y1;
             let denominator = x2 - x1;
-            let lambda_1 = numerator.mul_by_inverse(&denominator)?;
+            let lambda_1 = numerator.mul_by_inverse_unchecked(&denominator)?;
 
             let x3 = lambda_1.square()? - x1 - x2;
 
             // Calculate final addition slope:
-            let lambda_2 = (lambda_1 + y1.double()?.mul_by_inverse(&(&x3 - x1))?).negate()?;
+            let lambda_2 = (lambda_1 + y1.double()?.mul_by_inverse_unchecked(&(&x3 - x1))?).negate()?;
 
             let x4 = lambda_2.square()? - x1 - x3;
             let y4 = lambda_2 * &(x1 - &x4) - y1;
