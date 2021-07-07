@@ -179,7 +179,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
             // and check that `result * d = self`.
             _ => {
                 let result = Self::new_witness(ark_relations::ns!(cs, "self  * d_inv"), || {
-                    Ok(self.value()? * &d.value()?.inverse().unwrap_or(F::zero())?)
+                    Ok(self.value()? * &d.value()?.inverse().unwrap_or(F::zero()))
                 })?;
                 result.mul_equals(d, self)?;
                 Ok(result)
