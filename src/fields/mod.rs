@@ -158,8 +158,9 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// Returns `(self / d)`.
     /// The constraint system will be unsatisfiable when `d = 0`.
     fn mul_by_inverse(&self, d: &Self) -> Result<Self, SynthesisError> {
-        let d_inv = d.inverse()?;
-        Ok(d_inv * self)
+        // Enforce that `d` is not zero.
+        d.enforce_not_equal(&Self::zero())?;
+        self.mul_by_inverse_unchecked(d)
     }
 
     /// Returns `(self / d)`.
@@ -168,10 +169,14 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     fn mul_by_inverse_unchecked(&self, d: &Self) -> Result<Self, SynthesisError> {
         let cs = self.cs().or(d.cs());
         match cs {
+            // If we're in the constant case, we just allocate a new constant having value equalling
+            // `self * d.inverse()`.
             ConstraintSystemRef::None => Self::new_constant(
                 cs,
                 self.value()? * d.value()?.inverse().expect("division by zero"),
             ),
+            // If not, we allocate `result` as a new witness having value `self * d.inverse()`,
+            // and check that `result * d = self`.
             _ => {
                 let result = Self::new_witness(ark_relations::ns!(cs, "self  * d_inv"), || {
                     Ok(self.value()?
