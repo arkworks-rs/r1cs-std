@@ -178,7 +178,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let lhs = lhs_numerator.mul_by_inverse_unchecked(&lhs_denominator)?;
 
         // `rhs` for coset element `a` is \frac{1}{alpha * a^{-1} - 1} = \frac{1}{alpha * offset^{-1} * a'^{-1} - 1}
-        let alpha_coset_offset_inv = interpolation_point.mul_by_inverse_unchecked(&self.domain.offset)?;
+        let alpha_coset_offset_inv =
+            interpolation_point.mul_by_inverse_unchecked(&self.domain.offset)?;
 
         // `res` stores the sum of all lagrange polynomials evaluated at alpha
         let mut res = FpVar::<F>::zero();

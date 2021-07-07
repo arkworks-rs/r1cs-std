@@ -168,12 +168,15 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     fn mul_by_inverse_unchecked(&self, d: &Self) -> Result<Self, SynthesisError> {
         let cs = self.cs().or(d.cs());
         match cs {
-            ConstraintSystemRef::None => Self::new_constant(cs, self.value()? * d.value()?.inverse().expect("division by zero")),
+            ConstraintSystemRef::None => Self::new_constant(
+                cs,
+                self.value()? * d.value()?.inverse().expect("division by zero"),
+            ),
             _ => {
-                let result = Self::new_witness(
-                    ark_relations::ns!(cs, "self  * d_inv"), 
-                    || Ok(self.value()? * &d.value()?.inverse().ok_or(SynthesisError::DivisionByZero)?)
-                )?;
+                let result = Self::new_witness(ark_relations::ns!(cs, "self  * d_inv"), || {
+                    Ok(self.value()?
+                        * &d.value()?.inverse().ok_or(SynthesisError::DivisionByZero)?)
+                })?;
                 result.mul_equals(d, self)?;
                 Ok(result)
             }

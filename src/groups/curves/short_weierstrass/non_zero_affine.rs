@@ -115,7 +115,8 @@ where
             let x3 = lambda_1.square()? - x1 - x2;
 
             // Calculate final addition slope:
-            let lambda_2 = (lambda_1 + y1.double()?.mul_by_inverse_unchecked(&(&x3 - x1))?).negate()?;
+            let lambda_2 =
+                (lambda_1 + y1.double()?.mul_by_inverse_unchecked(&(&x3 - x1))?).negate()?;
 
             let x4 = lambda_2.square()? - x1 - x3;
             let y4 = lambda_2 * &(x1 - &x4) - y1;
