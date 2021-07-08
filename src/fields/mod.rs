@@ -164,6 +164,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     }
 
     /// Returns `(self / d)`.
+    ///
     /// The precondition for this method is that `d != 0`. If `d == 0`, this
     /// method offers no guarantees about the soundness of the resulting
     /// constraint system. For example, if `self == d == 0`, the current
