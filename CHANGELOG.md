@@ -6,6 +6,8 @@
 
 ### Features
 
+- [\#76](https://github.com/arkworks-rs/r1cs-std/pull/76) Implement `ToBytesGadget` for `Vec<UInt8>`.
+
 ### Improvements
 
 ### Bug Fixes
