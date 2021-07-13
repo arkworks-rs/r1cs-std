@@ -170,7 +170,10 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // Notice that a = (offset * a') where a' is the corresponding element of base coset
 
         // let `lhs` become \frac{alpha^size - offset^size}{size * offset ^ size}. This part is shared by all lagrange polynomials
-        let coset_offset_to_size = self.domain.offset().pow_by_constant(&[self.domain.size()])?; // offset^size
+        let coset_offset_to_size = self
+            .domain
+            .offset()
+            .pow_by_constant(&[self.domain.size()])?; // offset^size
         let alpha_to_s = interpolation_point.pow_by_constant(&[self.domain.size()])?;
         let lhs_numerator = &alpha_to_s - &coset_offset_to_size;
 
@@ -351,11 +354,12 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2DomainVar::new (
+        let domain = Radix2DomainVar::new(
             gen,
             4, // 2^4 = 16
             FpVar::constant(Fr::rand(&mut rng)),
-        ).unwrap();
+        )
+        .unwrap();
         let mut coset_point = domain.offset().value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
@@ -397,7 +401,8 @@ mod tests {
             gen,
             4, // 2^4 = 16
             FpVar::new_witness(ns!(cs, "offset"), || Ok(Fr::rand(&mut rng))).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
         let mut coset_point = domain.offset().value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
@@ -437,7 +442,8 @@ mod tests {
             gen,
             4, // 2^4 = 16
             FpVar::constant(Fr::multiplicative_generator()),
-        ).unwrap();
+        )
+        .unwrap();
         let cs = ConstraintSystem::new_ref();
 
         let ev_a = EvaluationsVar::from_vec_and_domain(

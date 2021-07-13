@@ -30,7 +30,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         Ok(Self {
             gen,
             offset,
-            dim: dimension
+            dim: dimension,
         })
     }
 

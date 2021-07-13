@@ -115,11 +115,12 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2DomainVar::new (
+        let domain = Radix2DomainVar::new(
             gen,
             4, // 2^4 = 16
             FpVar::constant(Fr::multiplicative_generator()),
-        ).unwrap();
+        )
+        .unwrap();
         // generate evaluations of `poly` on this domain
         let mut coset_point = domain.offset().value().unwrap();
         let mut oracle_evals = Vec::new();
