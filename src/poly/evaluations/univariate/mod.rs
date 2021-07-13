@@ -55,11 +55,11 @@ impl<F: PrimeField> EvaluationsVar<F> {
 
     /// Precompute necessary calculation for lagrange interpolation and mark it ready to interpolate
     pub fn generate_interpolation_cache(&mut self) {
-        if self.domain.offset.is_constant() {
+        if self.domain.offset().is_constant() {
             let poly_evaluations_val: Vec<_> =
                 self.evals.iter().map(|v| v.value().unwrap()).collect();
             let domain = &self.domain;
-            let lagrange_interpolator = if let FpVar::Constant(x) = domain.offset {
+            let lagrange_interpolator = if let &FpVar::Constant(x) = domain.offset() {
                 LagrangeInterpolator::new(x, domain.gen, domain.dim, poly_evaluations_val)
             } else {
                 panic!("Domain offset needs to be constant.")
@@ -129,7 +129,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
         interpolation_point: &FpVar<F>,
     ) -> Result<FpVar<F>, SynthesisError> {
         // specialize: if domain offset is constant, we can optimize to have fewer constraints
-        if self.domain.offset.is_constant() {
+        if self.domain.offset().is_constant() {
             self.lagrange_interpolate_with_constant_offset(interpolation_point)
         } else {
             // if domain offset is not constant, then we use standard lagrange interpolation code
@@ -170,16 +170,20 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // Notice that a = (offset * a') where a' is the corresponding element of base coset
 
         // let `lhs` become \frac{alpha^size - offset^size}{size * offset ^ size}. This part is shared by all lagrange polynomials
-        let coset_offset_to_size = self.domain.offset.pow_by_constant(&[self.domain.size()])?; // offset^size
+        let coset_offset_to_size = self.domain.offset().pow_by_constant(&[self.domain.size()])?; // offset^size
         let alpha_to_s = interpolation_point.pow_by_constant(&[self.domain.size()])?;
         let lhs_numerator = &alpha_to_s - &coset_offset_to_size;
+
+        // `domain.offset()` is non-zero by construction, so `coset_offset_to_size` is also non-zero, which means `lhs_denominator` is non-zero
         let lhs_denominator = &coset_offset_to_size * FpVar::constant(F::from(self.domain.size()));
 
+        // unchecked is okay because the denominator is non-zero.
         let lhs = lhs_numerator.mul_by_inverse_unchecked(&lhs_denominator)?;
 
         // `rhs` for coset element `a` is \frac{1}{alpha * a^{-1} - 1} = \frac{1}{alpha * offset^{-1} * a'^{-1} - 1}
+        // domain.offset() is non-zero by construction.
         let alpha_coset_offset_inv =
-            interpolation_point.mul_by_inverse_unchecked(&self.domain.offset)?;
+            interpolation_point.mul_by_inverse_unchecked(&self.domain.offset())?;
 
         // `res` stores the sum of all lagrange polynomials evaluated at alpha
         let mut res = FpVar::<F>::zero();
@@ -191,7 +195,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
             debug_assert_eq!(subgroup_points[i] * subgroup_point_inv, F::one());
             // alpha * offset^{-1} * a'^{-1} - 1
             let lag_donom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
-            let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_donom)?;
+            // lag_donom might be zero, so should use `mul_by_inverse`.
+            let lag_coeff = lhs.mul_by_inverse(&lag_donom)?;
 
             let lag_interpoland = &self.evals[i] * lag_coeff;
             res += lag_interpoland
@@ -346,12 +351,12 @@ mod tests {
         let poly = DensePolynomial::rand(15, &mut rng);
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2DomainVar {
+        let domain = Radix2DomainVar::new (
             gen,
-            offset: FpVar::constant(Fr::rand(&mut rng)),
-            dim: 4, // 2^4 = 16
-        };
-        let mut coset_point = domain.offset.value().unwrap();
+            4, // 2^4 = 16
+            FpVar::constant(Fr::rand(&mut rng)),
+        ).unwrap();
+        let mut coset_point = domain.offset().value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
             oracle_evals.push(poly.evaluate(&coset_point));
@@ -388,12 +393,12 @@ mod tests {
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
         let cs = ConstraintSystem::new_ref();
-        let domain = Radix2DomainVar {
+        let domain = Radix2DomainVar::new(
             gen,
-            offset: FpVar::new_witness(ns!(cs, "offset"), || Ok(Fr::rand(&mut rng))).unwrap(),
-            dim: 4, // 2^4 = 16
-        };
-        let mut coset_point = domain.offset.value().unwrap();
+            4, // 2^4 = 16
+            FpVar::new_witness(ns!(cs, "offset"), || Ok(Fr::rand(&mut rng))).unwrap(),
+        ).unwrap();
+        let mut coset_point = domain.offset().value().unwrap();
         let mut oracle_evals = Vec::new();
         for _ in 0..(1 << 4) {
             oracle_evals.push(poly.evaluate(&coset_point));
@@ -428,12 +433,11 @@ mod tests {
         let mut rng = test_rng();
         let gen = Fr::get_root_of_unity(1 << 4).unwrap();
         assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2DomainVar {
+        let domain = Radix2DomainVar::new(
             gen,
-            offset: FpVar::constant(Fr::multiplicative_generator()),
-            dim: 4, // 2^4 = 16
-        };
-
+            4, // 2^4 = 16
+            FpVar::constant(Fr::multiplicative_generator()),
+        ).unwrap();
         let cs = ConstraintSystem::new_ref();
 
         let ev_a = EvaluationsVar::from_vec_and_domain(
