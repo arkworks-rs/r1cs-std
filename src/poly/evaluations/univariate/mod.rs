@@ -1,12 +1,12 @@
 pub mod lagrange_interpolator;
 
 use crate::alloc::AllocVar;
+use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use crate::poly::domain::Radix2DomainVar;
 use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
 use crate::R1CSVar;
-use crate::eq::EqGadget;
 use ark_ff::{batch_inversion, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 use ark_std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
