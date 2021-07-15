@@ -158,7 +158,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
     /// Generate interpolation constraints. We assume at compile time we know the base coset (i.e. `gen`) but not know `offset`.
     fn lagrange_interpolate_with_non_constant_offset(
         &self,
-        interpolation_point: &FpVar<F>,
+        interpolation_point: &FpVar<F>, // = alpha in the following code
     ) -> Result<FpVar<F>, SynthesisError> {
         // first, make sure `subgroup_points` is made
         let subgroup_points = self.subgroup_points.as_ref()
@@ -169,13 +169,16 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // \frac{1}{size * offset ^ size} * \frac{alpha^size - offset^size}{alpha * a^{-1} - 1}
         // Notice that a = (offset * a') where a' is the corresponding element of base coset
 
-        // let `lhs` become \frac{alpha^size - offset^size}{size * offset ^ size}. This part is shared by all lagrange polynomials
+        // let `lhs` be \frac{alpha^size - offset^size}{size * offset ^ size}. This part is shared by all lagrange polynomials
         let coset_offset_to_size = self
             .domain
             .offset()
             .pow_by_constant(&[self.domain.size()])?; // offset^size
-        let alpha_to_s = interpolation_point.pow_by_constant(&[self.domain.size()])?;
-        let lhs_numerator = &alpha_to_s - &coset_offset_to_size;
+        let alpha_to_size = interpolation_point.pow_by_constant(&[self.domain.size()])?;
+        let lhs_numerator = &alpha_to_size - &coset_offset_to_size;
+        // This enforces that `alpha` is not in the coset.
+        // This also means that the denominator is
+        lhs_numerator.enforce_not_equal(&FpVar::zero())?;
 
         // `domain.offset()` is non-zero by construction, so `coset_offset_to_size` is also non-zero, which means `lhs_denominator` is non-zero
         let lhs_denominator = &coset_offset_to_size * FpVar::constant(F::from(self.domain.size()));
@@ -197,9 +200,16 @@ impl<F: PrimeField> EvaluationsVar<F> {
             let subgroup_point_inv = subgroup_points[(domain_size - i) % domain_size];
             debug_assert_eq!(subgroup_points[i] * subgroup_point_inv, F::one());
             // alpha * offset^{-1} * a'^{-1} - 1
-            let lag_donom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
-            // lag_donom might be zero, so should use `mul_by_inverse`.
-            let lag_coeff = lhs.mul_by_inverse(&lag_donom)?;
+            let lag_denom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
+            // lag_denom cannot be zero, so we use `unchecked`.
+            //
+            // Proof: lag_denom is zero if and only if alpha * (coset_offset * subgroup_point)^{-1} == 1.
+            // This can happen only if `alpha` is itself in the coset.
+            //
+            // Earlier we asserted that `lhs_numerator` is not zero.
+            // Since `lhs_numerator` is just the vanishing polynomial for the coset evaluated at `alpha`,
+            // and since this is non-zero, `alpha` is not in the coset.
+            let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_denom)?;
 
             let lag_interpoland = &self.evals[i] * lag_coeff;
             res += lag_interpoland
