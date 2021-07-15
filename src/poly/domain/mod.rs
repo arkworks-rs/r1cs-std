@@ -14,14 +14,30 @@ pub mod vanishing_poly;
 /// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
 /// subgroup for now.
 ///
-/// TODO: support cosets in `ark-poly`.
+// TODO: support cosets in `ark-poly`.
 pub struct Radix2DomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
-    pub offset: FpVar<F>,
+    offset: FpVar<F>,
     /// dimension of evaluation domain
     pub dim: u64,
+}
+impl<F: PrimeField> Radix2DomainVar<F> {
+    /// Construct an evaluation domain with the given offset.
+    pub fn new(gen: F, dimension: u64, offset: FpVar<F>) -> Result<Self, SynthesisError> {
+        offset.enforce_not_equal(&FpVar::zero())?;
+        Ok(Self {
+            gen,
+            offset,
+            dim: dimension,
+        })
+    }
+
+    /// What is the offset of `self`?
+    pub fn offset(&self) -> &FpVar<F> {
+        &self.offset
+    }
 }
 
 impl<F: PrimeField> EqGadget<F> for Radix2DomainVar<F> {

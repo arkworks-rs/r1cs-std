@@ -17,6 +17,7 @@
 ### Features
 
 - [\#71](https://github.com/arkworks-rs/r1cs-std/pull/71) Implement the `Sum` trait for `FpVar`.
+- [\#75](https://github.com/arkworks-rs/r1cs-std/pull/71) Introduce `mul_by_inverse_unchecked` for `FieldVar`. This accompanies the bug fix in [\#70](https://github.com/arkworks-rs/r1cs-std/pull/70).
 
 ### Bug Fixes
 
