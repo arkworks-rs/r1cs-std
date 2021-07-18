@@ -3,29 +3,32 @@ use super::*;
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derivative(
+    Debug(bound = "P: SWModelParameters"),
+    Clone(bound = "P: SWModelParameters"),
+)]
 #[must_use]
-pub struct NonZeroAffineVar<
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+pub struct NonZeroAffineVar<P: SWModelParameters>
+ where
+    BF<P>: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// The x-coordinate.
-    pub x: F,
+    pub x: BFVar<P>,
     /// The y-coordinate.
-    pub y: F,
+    pub y: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
-impl<P, F> NonZeroAffineVar<P, F>
+impl<P> NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    BF<P>: FieldExt,
+    BFVar<P>: FieldVar<P::BaseField, CF<P>>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    pub(crate) fn new(x: F, y: F) -> Self {
+    pub(crate) fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
         Self {
             x,
             y,
@@ -35,8 +38,8 @@ where
 
     /// Converts self into a non-zero projective point.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn into_projective(&self) -> ProjectiveVar<P, F> {
-        ProjectiveVar::new(self.x.clone(), self.y.clone(), F::one())
+    pub(crate) fn into_projective(&self) -> ProjectiveVar<P> {
+        ProjectiveVar::new(self.x.clone(), self.y.clone(), BFVar::<P>::one())
     }
 
     /// Performs an addition without checking that other != ±self.
@@ -45,7 +48,7 @@ where
         if [self, other].is_constant() {
             let result =
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
-            Ok(Self::new(F::constant(result.x), F::constant(result.y)))
+            Ok(Self::new(BFVar::<P>::constant(result.x), BFVar::<P>::constant(result.y)))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
@@ -72,7 +75,7 @@ where
             let result = self.value()?.into_projective().double().into_affine();
             // Panic if the result is zero.
             assert!(!result.is_zero());
-            Ok(Self::new(F::constant(result.x), F::constant(result.y)))
+            Ok(Self::new(BFVar::<P>::constant(result.x), BFVar::<P>::constant(result.y)))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let x1_sqr = x1.square()?;
@@ -132,15 +135,15 @@ where
     }
 }
 
-impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+impl<P> R1CSVar<CF<P>> for NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    BF<P>: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     type Value = SWAffine<P>;
 
-    fn cs(&self) -> ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField> {
+    fn cs(&self) -> ConstraintSystemRef<CF<P>> {
         self.x.cs().or(self.y.cs())
     }
 
@@ -149,16 +152,16 @@ where
     }
 }
 
-impl<P, F> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+impl<P> CondSelectGadget<CF<P>> for NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    BF<P>: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
-        cond: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        cond: &Boolean<CF<P>>,
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
@@ -203,7 +206,7 @@ mod test_non_zero_affine {
         // (1 + 2 + ... + 2^9) G
 
         let sum_a = {
-            let mut a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+            let mut a = ProjectiveVar::<G1Parameters>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -227,7 +230,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let mut a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let mut a = NonZeroAffineVar::<G1Parameters>::new(x, y);
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -268,7 +271,7 @@ mod test_non_zero_affine {
 
         // The following code tests `double_and_add`.
         let sum_a = {
-            let a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+            let a = ProjectiveVar::<G1Parameters>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -286,7 +289,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let a = NonZeroAffineVar::<G1Parameters>::new(x, y);
 
             let mut cur = a.double().unwrap();
             for _ in 1..10 {

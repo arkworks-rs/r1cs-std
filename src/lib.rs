@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //! This crate implements common "gadgets" that make
 //! programming rank-1 constraint systems easier.
-#![deny(
+#![warn(
     warnings,
     unused,
     future_incompatible,
@@ -42,7 +42,7 @@ pub mod groups;
 
 /// This module implements gadgets related to computing pairings in bilinear
 /// groups.
-pub mod pairing;
+// pub mod pairing;
 
 /// This module describes a trait for allocating new variables in a constraint
 /// system.

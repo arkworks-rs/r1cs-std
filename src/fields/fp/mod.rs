@@ -6,7 +6,7 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{
-    fields::{FieldOpsBounds, FieldVar},
+    fields::{FieldOpsBounds, FieldVar, FieldExt},
     prelude::*,
     Assignment, ToConstraintFieldGadget, Vec,
 };
@@ -48,6 +48,21 @@ pub enum FpVar<F: PrimeField> {
     /// Represents an allocated variable constant in the constraint system.
     Var(AllocatedFp<F>),
 }
+
+macro_rules! impl_field_ext {
+    ($Fp:ident, $FpParams:ident) => {
+        impl<P: ark_ff::models::$FpParams> FieldExt for ark_ff::models::$Fp<P> {
+            type Var = FpVar<Self>;
+        }
+    };
+}
+
+impl_field_ext!(Fp256, Fp256Parameters);
+impl_field_ext!(Fp320, Fp320Parameters);
+impl_field_ext!(Fp384, Fp384Parameters);
+impl_field_ext!(Fp768, Fp768Parameters);
+impl_field_ext!(Fp832, Fp832Parameters);
+
 
 impl<F: PrimeField> R1CSVar<F> for FpVar<F> {
     type Value = F;

@@ -11,42 +11,56 @@ use crate::{
     ToConstraintFieldGadget, Vec,
 };
 
+use super::FieldExt;
+
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
 /// in `ark-ff`, i.e. `ark_ff::QuadExtField`.
 #[derive(Derivative)]
-#[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
+#[derivative(
+    Debug(bound = "P::BaseField: FieldExt"),
+    Clone(bound = "P::BaseField: FieldExt")
+)]
 #[must_use]
-pub struct QuadExtVar<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarParams<BF>>
+pub struct QuadExtVar<P: QuadExtVarParams>
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
+    P::BaseField: FieldExt,
 {
     /// The zero-th coefficient of this field element.
-    pub c0: BF,
+    pub c0: BFVar<P>,
     /// The first coefficient of this field element.
-    pub c1: BF,
+    pub c1: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
+type BFVar<P> = <<P as QuadExtParameters>::BaseField as FieldExt>::Var;
+
+impl<P: QuadExtVarParams> FieldExt for QuadExtField<P> 
+where
+    P::BaseField: FieldExt,
+{
+    type Var = QuadExtVar<P>;
+}
+
 /// This trait describes parameters that are used to implement arithmetic for
 /// `QuadExtVar`.
-pub trait QuadExtVarParams<BF: FieldVar<Self::BaseField, Self::BasePrimeField>>:
-    QuadExtParameters
+pub trait QuadExtVarParams: QuadExtParameters
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, Self::BaseField, BF>,
+    Self::BaseField: FieldExt
 {
     /// Multiply the base field of the `QuadExtVar` by the appropriate Frobenius
     /// coefficient. This is equivalent to
     /// `Self::mul_base_field_by_frob_coeff(power)`.
-    fn mul_base_field_var_by_frob_coeff(fe: &mut BF, power: usize);
+    fn mul_base_field_var_by_frob_coeff(fe: &mut BFVar<Self>, power: usize);
 }
 
-impl<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarParams<BF>> QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> QuadExtVar<P>
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
+    P::BaseField: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Constructs a `QuadExtVar` from the underlying coefficients.
-    pub fn new(c0: BF, c1: BF) -> Self {
+    pub fn new(c0: BFVar<P>, c1: BFVar<P>) -> Self {
         Self {
             c0,
             c1,
@@ -57,7 +71,7 @@ where
     /// Multiplies a variable of the base field by the quadratic nonresidue
     /// `P::NONRESIDUE` that is used to construct the extension field.
     #[inline]
-    pub fn mul_base_field_by_nonresidue(fe: &BF) -> Result<BF, SynthesisError> {
+    pub fn mul_base_field_by_nonresidue(fe: &BFVar<P>) -> Result<BFVar<P>, SynthesisError> {
         Ok(fe * P::NONRESIDUE)
     }
 
@@ -116,11 +130,10 @@ where
     }
 }
 
-impl<BF, P> R1CSVar<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> R1CSVar<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     type Value = QuadExtField<P>;
 
@@ -137,55 +150,52 @@ where
     }
 }
 
-impl<BF, P> From<Boolean<P::BasePrimeField>> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> From<Boolean<P::BasePrimeField>> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn from(other: Boolean<P::BasePrimeField>) -> Self {
-        let c0 = BF::from(other);
-        let c1 = BF::zero();
+        let c0 = BFVar::from(other);
+        let c1 = BFVar::zero();
         Self::new(c0, c1)
     }
 }
 
-impl<'a, BF, P> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<BF, P>> for QuadExtVar<BF, P>
+impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
-{
-}
-impl<'a, BF, P> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<BF, P>> for &'a QuadExtVar<BF, P>
-where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
-impl<BF, P> FieldVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<BF, P>
+impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for &'a QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+{
+}
+
+impl<P: QuadExtVarParams> FieldVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<P>
+where
+    P::BaseField: FieldExt,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(other: QuadExtField<P>) -> Self {
-        let c0 = BF::constant(other.c0);
-        let c1 = BF::constant(other.c1);
+        let c0 = BFVar::constant(other.c0);
+        let c1 = BFVar::constant(other.c1);
         Self::new(c0, c1)
     }
 
     fn zero() -> Self {
-        let c0 = BF::zero();
-        let c1 = BF::zero();
+        let c0 = BFVar::zero();
+        let c1 = BFVar::zero();
         Self::new(c0, c1)
     }
 
     fn one() -> Self {
-        let c0 = BF::one();
-        let c1 = BF::zero();
+        let c0 = BFVar::one();
+        let c1 = BFVar::zero();
         Self::new(c0, c1)
     }
 
@@ -294,49 +304,51 @@ where
 }
 
 impl_bounded_ops!(
-    QuadExtVar<BF, P>,
+    QuadExtVar<P>,
     QuadExtField<P>,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a QuadExtVar<BF, P>, other: &'a QuadExtVar<BF, P>| {
+    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
         let c0 = &this.c0 + &other.c0;
         let c1 = &this.c1 + &other.c1;
         QuadExtVar::new(c0, c1)
     },
-    |this: &'a QuadExtVar<BF, P>, other: QuadExtField<P>| {
+    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
         this + QuadExtVar::constant(other)
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarParams<BF>),
-    for <'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>
+    (P: QuadExtVarParams),
+    P::BaseField: FieldExt,
+    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
 );
 impl_bounded_ops!(
-    QuadExtVar<BF, P>,
+    QuadExtVar<P>,
     QuadExtField<P>,
     Sub,
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a QuadExtVar<BF, P>, other: &'a QuadExtVar<BF, P>| {
+    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
         let c0 = &this.c0 - &other.c0;
         let c1 = &this.c1 - &other.c1;
         QuadExtVar::new(c0, c1)
     },
-    |this: &'a QuadExtVar<BF, P>, other: QuadExtField<P>| {
+    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
         this - QuadExtVar::constant(other)
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarParams<BF>),
-    for <'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>
+    (P: QuadExtVarParams),
+    P::BaseField: FieldExt,
+    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
 );
 impl_bounded_ops!(
-    QuadExtVar<BF, P>,
+    QuadExtVar<P>,
     QuadExtField<P>,
     Mul,
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a QuadExtVar<BF, P>, other: &'a QuadExtVar<BF, P>| {
+    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
         // Karatsuba multiplication for Fp2:
         //     v0 = A.c0 * B.c0
         //     v1 = A.c1 * B.c1
@@ -357,21 +369,22 @@ impl_bounded_ops!(
         result.c1 *= &other.c0 + &other.c1;
         result.c1 -= &v0;
         result.c1 -= &v1;
-        result.c0 = v0 + &QuadExtVar::<BF, P>::mul_base_field_by_nonresidue(&v1).unwrap();
+        result.c0 = v0 + &QuadExtVar::<P>::mul_base_field_by_nonresidue(&v1).unwrap();
         result
     },
-    |this: &'a QuadExtVar<BF, P>, other: QuadExtField<P>| {
+    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
         this * QuadExtVar::constant(other)
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarParams<BF>),
-    for <'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>
+    (P: QuadExtVarParams),
+    P::BaseField: FieldExt,
+    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
 );
 
-impl<BF, P> EqGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P> EqGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P: QuadExtVarParams,
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<P::BasePrimeField>, SynthesisError> {
@@ -406,11 +419,10 @@ where
     }
 }
 
-impl<BF, P> ToBitsGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> ToBitsGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
@@ -429,11 +441,10 @@ where
     }
 }
 
-impl<BF, P> ToBytesGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> ToBytesGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
@@ -452,12 +463,11 @@ where
     }
 }
 
-impl<BF, P> ToConstraintFieldGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> ToConstraintFieldGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
-    BF: ToConstraintFieldGadget<P::BasePrimeField>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    BFVar<P>: ToConstraintFieldGadget<P::BasePrimeField>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<P::BasePrimeField>>, SynthesisError> {
@@ -470,11 +480,10 @@ where
     }
 }
 
-impl<BF, P> CondSelectGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> CondSelectGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     #[inline]
     fn conditionally_select(
@@ -482,18 +491,16 @@ where
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
-        let c0 = BF::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
-        let c1 = BF::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
+        let c0 = BFVar::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
+        let c1 = BFVar::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
         Ok(Self::new(c0, c1))
     }
 }
 
-impl<BF, P> TwoBitLookupGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> TwoBitLookupGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>
-        + TwoBitLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     type TableConstant = QuadExtField<P>;
 
@@ -504,18 +511,16 @@ where
     ) -> Result<Self, SynthesisError> {
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
-        let c0 = BF::two_bit_lookup(b, &c0s)?;
-        let c1 = BF::two_bit_lookup(b, &c1s)?;
+        let c0 = BFVar::two_bit_lookup(b, &c0s)?;
+        let c1 = BFVar::two_bit_lookup(b, &c1s)?;
         Ok(Self::new(c0, c1))
     }
 }
 
-impl<BF, P> ThreeBitCondNegLookupGadget<P::BasePrimeField> for QuadExtVar<BF, P>
+impl<P: QuadExtVarParams> ThreeBitCondNegLookupGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>
-        + ThreeBitCondNegLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     type TableConstant = QuadExtField<P>;
 
@@ -527,17 +532,17 @@ where
     ) -> Result<Self, SynthesisError> {
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
-        let c0 = BF::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
-        let c1 = BF::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
+        let c0 = BFVar::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
+        let c1 = BFVar::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
         Ok(Self::new(c0, c1))
     }
 }
 
-impl<BF, P> AllocVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<BF, P>
+
+impl<P: QuadExtVarParams> AllocVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: QuadExtVarParams<BF>,
+    P::BaseField: FieldExt,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
     fn new_variable<T: Borrow<QuadExtField<P>>>(
         cs: impl Into<Namespace<P::BasePrimeField>>,
@@ -554,8 +559,8 @@ where
             ),
         };
 
-        let c0 = BF::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
-        let c1 = BF::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
+        let c0 = BFVar::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
+        let c1 = BFVar::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
         Ok(Self::new(c0, c1))
     }
 }

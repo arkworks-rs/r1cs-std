@@ -49,6 +49,10 @@ pub mod fp6_2over3;
 /// `ark_ff::fp6_3over2::Fp6`
 pub mod fp6_3over2;
 
+pub trait FieldExt: Field {
+    type Var: FieldVar<Self, Self::BasePrimeField>;
+}
+
 /// This trait is a hack used to work around the lack of implied bounds.
 pub trait FieldOpsBounds<'a, F, T: 'a>:
     Sized
