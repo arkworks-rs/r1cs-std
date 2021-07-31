@@ -10,7 +10,6 @@ use crate::{
     groups::curves::short_weierstrass::*,
     Vec,
 };
-
 use core::fmt::Debug;
 
 /// Represents a projective point in G1.
@@ -124,16 +123,32 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
         let cs = ns.cs();
         let g2_prep = f().map(|b| {
             let projective_coeffs = &b.borrow().ell_coeffs;
-            let mut z_s = projective_coeffs
-                .iter()
-                .map(|(_, _, z)| *z)
-                .collect::<Vec<_>>();
-            ark_ff::fields::batch_inversion(&mut z_s);
-            projective_coeffs
-                .iter()
-                .zip(z_s)
-                .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
-                .collect::<Vec<_>>()
+            match P::TWIST_TYPE {
+                TwistType::M => {
+                    let mut z_s = projective_coeffs
+                        .iter()
+                        .map(|(_, _, z)| *z)
+                        .collect::<Vec<_>>();
+                    ark_ff::fields::batch_inversion(&mut z_s);
+                    projective_coeffs
+                        .iter()
+                        .zip(z_s)
+                        .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
+                        .collect::<Vec<_>>()
+                }
+                TwistType::D => {
+                    let mut z_s = projective_coeffs
+                        .iter()
+                        .map(|(z, _, _)| *z)
+                        .collect::<Vec<_>>();
+                    ark_ff::fields::batch_inversion(&mut z_s);
+                    projective_coeffs
+                        .iter()
+                        .zip(z_s)
+                        .map(|((_, x, y), z_inv)| (*x * &z_inv, *y * &z_inv))
+                        .collect::<Vec<_>>()
+                }
+            }
         });
 
         let l = Vec::new_variable(
@@ -243,5 +258,80 @@ impl<P: Bls12Parameters> G2PreparedVar<P> {
             TwistType::M => Ok((g, f)),
             TwistType::D => Ok((f, g)),
         }
+    }
+}
+
+mod test {
+    use crate::alloc::AllocVar;
+    use crate::eq::EqGadget;
+    use crate::groups::bls12::{G2PreparedVar, G2Var};
+    use ark_ec::bls12::G2Prepared;
+    use ark_ec::AffineCurve;
+    use ark_relations::r1cs::ConstraintSystem;
+
+    #[test]
+    fn g2_prepare_consistency_bls12_381() {
+        use ark_bls12_381::*;
+
+        let test_g2 = G2Affine::prime_subgroup_generator();
+
+        let test_g2_prepared_native = G2Prepared::<Parameters>::from(test_g2.clone());
+
+        let cs = ConstraintSystem::new_ref();
+
+        let test_g2_gadget =
+            G2Var::<Parameters>::new_witness(cs.clone(), || Ok(test_g2.clone())).unwrap();
+
+        let test_g2_prepared_gadget =
+            G2PreparedVar::<Parameters>::from_group_var(&test_g2_gadget).unwrap();
+        let test_g2_prepared_native_gadget =
+            G2PreparedVar::<Parameters>::new_witness(cs.clone(), || {
+                Ok(test_g2_prepared_native.clone())
+            })
+            .unwrap();
+
+        for (left, right) in test_g2_prepared_gadget
+            .ell_coeffs
+            .iter()
+            .zip(test_g2_prepared_native_gadget.ell_coeffs.iter())
+        {
+            left.0.enforce_equal(&right.0).unwrap();
+            left.1.enforce_equal(&right.1).unwrap();
+        }
+
+        assert!(cs.is_satisfied().unwrap());
+    }
+
+    #[test]
+    fn g2_prepare_consistency_bls12_377() {
+        use ark_bls12_377::*;
+
+        let test_g2 = G2Affine::prime_subgroup_generator();
+
+        let test_g2_prepared_native = G2Prepared::<Parameters>::from(test_g2.clone());
+
+        let cs = ConstraintSystem::new_ref();
+
+        let test_g2_gadget =
+            G2Var::<Parameters>::new_witness(cs.clone(), || Ok(test_g2.clone())).unwrap();
+
+        let test_g2_prepared_gadget =
+            G2PreparedVar::<Parameters>::from_group_var(&test_g2_gadget).unwrap();
+        let test_g2_prepared_native_gadget =
+            G2PreparedVar::<Parameters>::new_witness(cs.clone(), || {
+                Ok(test_g2_prepared_native.clone())
+            })
+            .unwrap();
+
+        for (left, right) in test_g2_prepared_gadget
+            .ell_coeffs
+            .iter()
+            .zip(test_g2_prepared_native_gadget.ell_coeffs.iter())
+        {
+            left.0.enforce_equal(&right.0).unwrap();
+            left.1.enforce_equal(&right.1).unwrap();
+        }
+
+        assert!(cs.is_satisfied().unwrap());
     }
 }
