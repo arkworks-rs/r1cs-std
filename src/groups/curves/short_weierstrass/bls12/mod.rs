@@ -261,6 +261,7 @@ impl<P: Bls12Parameters> G2PreparedVar<P> {
     }
 }
 
+#[cfg(test)]
 mod test {
     use crate::alloc::AllocVar;
     use crate::eq::EqGadget;
