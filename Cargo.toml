@@ -32,8 +32,8 @@ num-traits = {version = "0.2", default-features = false }
 [dev-dependencies]
 ark-test-curves = { version = "^0.3.0", default-features = false, features = ["bls12_381_scalar_field", "bls12_381_curve", "mnt4_753_scalar_field"] }
 ark-poly = { version = "^0.3.0", default-features = false }
-ark-bls12-377 = "0.3.0"
-ark-bls12-381 = "0.3.0"
+ark-bls12-377 = { version = "^0.3.0", default-features = false, features = ["curve"] }
+ark-bls12-381 = { version = "^0.3.0", default-features = false, features = ["curve"] }
 
 [features]
 default = ["std"]
