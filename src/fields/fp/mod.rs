@@ -6,7 +6,7 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{
-    fields::{FieldOpsBounds, FieldVar, FieldExt},
+    fields::{FieldOpsBounds, FieldVar, FieldWithVar},
     prelude::*,
     Assignment, ToConstraintFieldGadget, Vec,
 };
@@ -51,7 +51,7 @@ pub enum FpVar<F: PrimeField> {
 
 macro_rules! impl_field_ext {
     ($Fp:ident, $FpParams:ident) => {
-        impl<P: ark_ff::models::$FpParams> FieldExt for ark_ff::models::$Fp<P> {
+        impl<P: ark_ff::models::$FpParams> FieldWithVar for ark_ff::models::$Fp<P> {
             type Var = FpVar<Self>;
         }
     };
@@ -62,7 +62,6 @@ impl_field_ext!(Fp320, Fp320Parameters);
 impl_field_ext!(Fp384, Fp384Parameters);
 impl_field_ext!(Fp768, Fp768Parameters);
 impl_field_ext!(Fp832, Fp832Parameters);
-
 
 impl<F: PrimeField> R1CSVar<F> for FpVar<F> {
     type Value = F;
@@ -701,27 +700,30 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn double(&self) -> Result<Self, SynthesisError> {
-        match self {
-            Self::Constant(c) => Ok(Self::Constant(c.double())),
-            Self::Var(v) => Ok(Self::Var(v.double()?)),
-        }
+    fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(c.double()),
+            Self::Var(v) => Self::Var(v.double()?),
+        };
+        Ok(self)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn negate(&self) -> Result<Self, SynthesisError> {
-        match self {
-            Self::Constant(c) => Ok(Self::Constant(-*c)),
-            Self::Var(v) => Ok(Self::Var(v.negate())),
-        }
+    fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(-*c),
+            Self::Var(v) => Self::Var(v.negate()),
+        };
+        Ok(self)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn square(&self) -> Result<Self, SynthesisError> {
-        match self {
-            Self::Constant(c) => Ok(Self::Constant(c.square())),
-            Self::Var(v) => Ok(Self::Var(v.square()?)),
-        }
+    fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(c.square()),
+            Self::Var(v) => Self::Var(v.square()?),
+        };
+        Ok(self)
     }
 
     /// Enforce that `self * other == result`.
@@ -796,15 +798,15 @@ impl_ops!(
     add,
     AddAssign,
     add_assign,
-    |this: &'a FpVar<F>, other: &'a FpVar<F>| {
+    |this: &mut FpVar<F>, other: &'a FpVar<F>| {
         use FpVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 + *c2),
             (Constant(c), Var(v)) | (Var(v), Constant(c)) => Var(v.add_constant(*c)),
             (Var(v1), Var(v2)) => Var(v1.add(v2)),
-        }
+        };
     },
-    |this: &'a FpVar<F>, other: F| { this + &FpVar::Constant(other) },
+    |this: &mut FpVar<F>, other: F| { *this = &*this + &FpVar::Constant(other) },
     F: PrimeField,
 );
 
@@ -815,16 +817,16 @@ impl_ops!(
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a FpVar<F>, other: &'a FpVar<F>| {
+    |this: &mut FpVar<F>, other: &'a FpVar<F>| {
         use FpVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 - *c2),
             (Var(v), Constant(c)) => Var(v.sub_constant(*c)),
             (Constant(c), Var(v)) => Var(v.sub_constant(*c).negate()),
             (Var(v1), Var(v2)) => Var(v1.sub(v2)),
-        }
+        };
     },
-    |this: &'a FpVar<F>, other: F| { this - &FpVar::Constant(other) },
+    |this: &mut FpVar<F>, other: F| { *this = &*this - &FpVar::Constant(other) },
     F: PrimeField
 );
 
@@ -835,20 +837,20 @@ impl_ops!(
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a FpVar<F>, other: &'a FpVar<F>| {
+    |this: &mut FpVar<F>, other: &'a FpVar<F>| {
         use FpVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 * *c2),
             (Constant(c), Var(v)) | (Var(v), Constant(c)) => Var(v.mul_constant(*c)),
             (Var(v1), Var(v2)) => Var(v1.mul(v2)),
-        }
+        };
     },
-    |this: &'a FpVar<F>, other: F| {
-        if other.is_zero() {
+    |this: &mut FpVar<F>, other: F| {
+        *this = if other.is_zero() {
             FpVar::zero()
         } else {
-            this * &FpVar::Constant(other)
-        }
+            &*this * FpVar::Constant(other)
+        };
     },
     F: PrimeField
 );
@@ -1067,6 +1069,25 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
             }
             FpVar::Var(v) => Some(v),
         })));
+
+        let sum = sum_variables + sum_constants;
+        sum
+    }
+}
+
+impl<F: PrimeField> Sum<FpVar<F>> for FpVar<F> {
+    fn sum<I: Iterator<Item = FpVar<F>>>(iter: I) -> FpVar<F> {
+        let mut sum_constants = F::zero();
+        let vars = iter
+            .filter_map(|x| match x {
+                FpVar::Constant(c) => {
+                    sum_constants += c;
+                    None
+                }
+                FpVar::Var(v) => Some(v),
+            })
+            .collect::<Vec<_>>();
+        let sum_variables = FpVar::Var(AllocatedFp::<F>::addmany(vars.iter()));
 
         let sum = sum_variables + sum_constants;
         sum

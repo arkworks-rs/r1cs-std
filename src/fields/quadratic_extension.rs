@@ -10,20 +10,21 @@ use crate::{
     prelude::*,
     ToConstraintFieldGadget, Vec,
 };
+use ark_std::iter::Sum;
 
-use super::FieldExt;
+use super::FieldWithVar;
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
 /// in `ark-ff`, i.e. `ark_ff::QuadExtField`.
 #[derive(Derivative)]
 #[derivative(
-    Debug(bound = "P::BaseField: FieldExt"),
-    Clone(bound = "P::BaseField: FieldExt")
+    Debug(bound = "P::BaseField: FieldWithVar"),
+    Clone(bound = "P::BaseField: FieldWithVar")
 )]
 #[must_use]
 pub struct QuadExtVar<P: QuadExtVarParams>
 where
-    P::BaseField: FieldExt,
+    P::BaseField: FieldWithVar,
 {
     /// The zero-th coefficient of this field element.
     pub c0: BFVar<P>,
@@ -33,11 +34,11 @@ where
     _params: PhantomData<P>,
 }
 
-type BFVar<P> = <<P as QuadExtParameters>::BaseField as FieldExt>::Var;
+type BFVar<P> = <<P as QuadExtParameters>::BaseField as FieldWithVar>::Var;
 
-impl<P: QuadExtVarParams> FieldExt for QuadExtField<P> 
+impl<P: QuadExtVarParams> FieldWithVar for QuadExtField<P>
 where
-    P::BaseField: FieldExt,
+    P::BaseField: FieldWithVar,
 {
     type Var = QuadExtVar<P>;
 }
@@ -46,7 +47,7 @@ where
 /// `QuadExtVar`.
 pub trait QuadExtVarParams: QuadExtParameters
 where
-    Self::BaseField: FieldExt
+    Self::BaseField: FieldWithVar,
 {
     /// Multiply the base field of the `QuadExtVar` by the appropriate Frobenius
     /// coefficient. This is equivalent to
@@ -56,8 +57,7 @@ where
 
 impl<P: QuadExtVarParams> QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     /// Constructs a `QuadExtVar` from the underlying coefficients.
     pub fn new(c0: BFVar<P>, c1: BFVar<P>) -> Self {
@@ -72,7 +72,7 @@ where
     /// `P::NONRESIDUE` that is used to construct the extension field.
     #[inline]
     pub fn mul_base_field_by_nonresidue(fe: &BFVar<P>) -> Result<BFVar<P>, SynthesisError> {
-        Ok(fe * P::NONRESIDUE)
+        Ok(fe.clone() * P::NONRESIDUE)
     }
 
     /// Multiplies `self` by a constant from the base field.
@@ -132,8 +132,7 @@ where
 
 impl<P: QuadExtVarParams> R1CSVar<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     type Value = QuadExtField<P>;
 
@@ -152,93 +151,89 @@ where
 
 impl<P: QuadExtVarParams> From<Boolean<P::BasePrimeField>> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     fn from(other: Boolean<P::BasePrimeField>) -> Self {
-        let c0 = BFVar::from(other);
-        let c1 = BFVar::zero();
+        let c0 = BFVar::<P>::from(other);
+        let c1 = BFVar::<P>::zero();
         Self::new(c0, c1)
     }
 }
 
-impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for QuadExtVar<P>
-where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for QuadExtVar<P> where
+    P::BaseField: FieldWithVar
 {
 }
 
-impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for &'a QuadExtVar<P>
+impl<'a, P: QuadExtVarParams> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>>
+    for &'a QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
 }
 
 impl<P: QuadExtVarParams> FieldVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     fn constant(other: QuadExtField<P>) -> Self {
-        let c0 = BFVar::constant(other.c0);
-        let c1 = BFVar::constant(other.c1);
+        let c0 = BFVar::<P>::constant(other.c0);
+        let c1 = BFVar::<P>::constant(other.c1);
         Self::new(c0, c1)
     }
 
     fn zero() -> Self {
-        let c0 = BFVar::zero();
-        let c1 = BFVar::zero();
+        let c0 = BFVar::<P>::zero();
+        let c1 = BFVar::<P>::zero();
         Self::new(c0, c1)
     }
 
     fn one() -> Self {
-        let c0 = BFVar::one();
-        let c1 = BFVar::zero();
+        let c0 = BFVar::<P>::one();
+        let c1 = BFVar::<P>::zero();
         Self::new(c0, c1)
     }
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn double(&self) -> Result<Self, SynthesisError> {
-        let c0 = self.c0.double()?;
-        let c1 = self.c1.double()?;
-        Ok(Self::new(c0, c1))
+    fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        self.c0.double_in_place()?;
+        self.c1.double_in_place()?;
+        Ok(self)
     }
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn negate(&self) -> Result<Self, SynthesisError> {
-        let mut result = self.clone();
-        result.c0.negate_in_place()?;
-        result.c1.negate_in_place()?;
-        Ok(result)
+    fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        self.c0.negate_in_place()?;
+        self.c1.negate_in_place()?;
+        Ok(self)
     }
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn square(&self) -> Result<Self, SynthesisError> {
+    fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
         // From Libsnark/fp2_gadget.tcc
         // Complex multiplication for Fp2:
         //     "Multiplication and Squaring on Pairing-Friendly Fields"
         //     Devegili, OhEigeartaigh, Scott, Dahab
 
         // v0 = c0 - c1
-        let mut v0 = &self.c0 - &self.c1;
+        let self_c0 = self.c0.clone();
+        let mut v0 = self_c0.clone() - &self.c1;
         // v3 = c0 - beta * c1
-        let v3 = &self.c0 - &Self::mul_base_field_by_nonresidue(&self.c1)?;
+        let v3 = self_c0.clone() - &Self::mul_base_field_by_nonresidue(&self.c1)?;
         // v2 = c0 * c1
-        let v2 = &self.c0 * &self.c1;
+        let v2 = self_c0 * &self.c1;
 
         // v0 = (v0 * v3) + v2
         v0 *= &v3;
         v0 += &v2;
 
-        let c0 = &v0 + &Self::mul_base_field_by_nonresidue(&v2)?;
-        let c1 = v2.double()?;
+        self.c0 = v0 + &Self::mul_base_field_by_nonresidue(&v2)?;
+        self.c1 = v2.double()?;
 
-        Ok(Self::new(c0, c1))
+        Ok(self)
     }
 
     #[tracing::instrument(target = "r1cs")]
@@ -256,19 +251,19 @@ where
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
         // Compute v1
-        let v1 = &self.c1 * &other.c1;
+        let v1 = self.c1.clone() * &other.c1;
 
         // Perform second check
         let non_residue_times_v1 = Self::mul_base_field_by_nonresidue(&v1)?;
-        let rhs = &result.c0 - &non_residue_times_v1;
+        let rhs = result.c0.clone() - &non_residue_times_v1;
         self.c0.mul_equals(&other.c0, &rhs)?;
 
         // Last check
-        let a0_plus_a1 = &self.c0 + &self.c1;
-        let b0_plus_b1 = &other.c0 + &other.c1;
-        let one_minus_non_residue_v1 = &v1 - &non_residue_times_v1;
+        let a0_plus_a1 = self.c0.clone() + &self.c1;
+        let b0_plus_b1 = other.c0.clone() + &other.c1;
+        let one_minus_non_residue_v1 = v1 - non_residue_times_v1;
 
-        let tmp = &(&result.c1 + &result.c0) + &one_minus_non_residue_v1;
+        let tmp = one_minus_non_residue_v1 + &result.c1 + &result.c0;
         a0_plus_a1.mul_equals(&b0_plus_b1, &tmp)?;
 
         Ok(())
@@ -310,17 +305,15 @@ impl_bounded_ops!(
     add,
     AddAssign,
     add_assign,
-    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
-        let c0 = &this.c0 + &other.c0;
-        let c1 = &this.c1 + &other.c1;
-        QuadExtVar::new(c0, c1)
+    |this: &mut QuadExtVar<P>, other: &'a QuadExtVar<P>| {
+        this.c0 += &other.c0;
+        this.c1 += &other.c1;
     },
-    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
-        this + QuadExtVar::constant(other)
+    |this: &mut QuadExtVar<P>, other: QuadExtField<P>| {
+        *this = &*this + QuadExtVar::constant(other);
     },
     (P: QuadExtVarParams),
-    P::BaseField: FieldExt,
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
+    P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
     QuadExtVar<P>,
@@ -329,17 +322,15 @@ impl_bounded_ops!(
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
-        let c0 = &this.c0 - &other.c0;
-        let c1 = &this.c1 - &other.c1;
-        QuadExtVar::new(c0, c1)
+    |this: &mut QuadExtVar<P>, other: &'a QuadExtVar<P>| {
+        this.c0 -= &other.c0;
+        this.c1 -= &other.c1;
     },
-    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
-        this - QuadExtVar::constant(other)
+    |this: &mut QuadExtVar<P>, other: QuadExtField<P>| {
+        *this = &*this - QuadExtVar::constant(other);
     },
     (P: QuadExtVarParams),
-    P::BaseField: FieldExt,
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
+    P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
     QuadExtVar<P>,
@@ -348,7 +339,7 @@ impl_bounded_ops!(
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a QuadExtVar<P>, other: &'a QuadExtVar<P>| {
+    |this: &mut QuadExtVar<P>, other: &'a QuadExtVar<P>| {
         // Karatsuba multiplication for Fp2:
         //     v0 = A.c0 * B.c0
         //     v1 = A.c1 * B.c1
@@ -361,29 +352,26 @@ impl_bounded_ops!(
         // Reference:
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
-        let mut result = this.clone();
-        let v0 = &this.c0 * &other.c0;
-        let v1 = &this.c1 * &other.c1;
+        let this_copy = this.clone();
+        let v0 = this_copy.c0 * &other.c0;
+        let v1 = this_copy.c1 * &other.c1;
 
-        result.c1 += &this.c0;
-        result.c1 *= &other.c0 + &other.c1;
-        result.c1 -= &v0;
-        result.c1 -= &v1;
-        result.c0 = v0 + &QuadExtVar::<P>::mul_base_field_by_nonresidue(&v1).unwrap();
-        result
+        this.c1 += &this.c0;
+        this.c1 *= &(other.c0.clone() + &other.c1);
+        this.c1 -= &v0;
+        this.c1 -= &v1;
+        this.c0 = v0 + &QuadExtVar::<P>::mul_base_field_by_nonresidue(&v1).unwrap();
     },
-    |this: &'a QuadExtVar<P>, other: QuadExtField<P>| {
-        this * QuadExtVar::constant(other)
+    |this: &mut QuadExtVar<P>, other: QuadExtField<P>| {
+        *this = QuadExtVar::constant(other) * &*this;
     },
     (P: QuadExtVarParams),
-    P::BaseField: FieldExt,
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
+    P::BaseField: FieldWithVar,
 );
 
 impl<P> EqGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
     P: QuadExtVarParams,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -421,8 +409,7 @@ where
 
 impl<P: QuadExtVarParams> ToBitsGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
@@ -443,8 +430,7 @@ where
 
 impl<P: QuadExtVarParams> ToBytesGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
@@ -465,8 +451,7 @@ where
 
 impl<P: QuadExtVarParams> ToConstraintFieldGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<P::BasePrimeField>,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -482,8 +467,7 @@ where
 
 impl<P: QuadExtVarParams> CondSelectGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     #[inline]
     fn conditionally_select(
@@ -491,16 +475,16 @@ where
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
-        let c0 = BFVar::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
-        let c1 = BFVar::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
+        let c0 = BFVar::<P>::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
+        let c1 = BFVar::<P>::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
         Ok(Self::new(c0, c1))
     }
 }
 
 impl<P: QuadExtVarParams> TwoBitLookupGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>: TwoBitLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
 {
     type TableConstant = QuadExtField<P>;
 
@@ -511,16 +495,16 @@ where
     ) -> Result<Self, SynthesisError> {
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
-        let c0 = BFVar::two_bit_lookup(b, &c0s)?;
-        let c1 = BFVar::two_bit_lookup(b, &c1s)?;
+        let c0 = BFVar::<P>::two_bit_lookup(b, &c0s)?;
+        let c1 = BFVar::<P>::two_bit_lookup(b, &c1s)?;
         Ok(Self::new(c0, c1))
     }
 }
 
 impl<P: QuadExtVarParams> ThreeBitCondNegLookupGadget<P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>: ThreeBitCondNegLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
 {
     type TableConstant = QuadExtField<P>;
 
@@ -532,17 +516,15 @@ where
     ) -> Result<Self, SynthesisError> {
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
-        let c0 = BFVar::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
-        let c1 = BFVar::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
+        let c0 = BFVar::<P>::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
+        let c1 = BFVar::<P>::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
         Ok(Self::new(c0, c1))
     }
 }
 
-
 impl<P: QuadExtVarParams> AllocVar<QuadExtField<P>, P::BasePrimeField> for QuadExtVar<P>
 where
-    P::BaseField: FieldExt,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    P::BaseField: FieldWithVar,
 {
     fn new_variable<T: Borrow<QuadExtField<P>>>(
         cs: impl Into<Namespace<P::BasePrimeField>>,
@@ -559,8 +541,32 @@ where
             ),
         };
 
-        let c0 = BFVar::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
-        let c1 = BFVar::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
+        let c0 = BFVar::<P>::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
+        let c1 = BFVar::<P>::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
         Ok(Self::new(c0, c1))
+    }
+}
+
+impl<'a, P: QuadExtVarParams> Sum<&'a QuadExtVar<P>> for QuadExtVar<P>
+where
+    P::BaseField: FieldWithVar,
+{
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        let (c0_s, c1_s): (Vec<_>, Vec<_>) = iter.map(|v| (&v.c0, &v.c1)).unzip();
+        let c0 = c0_s.into_iter().sum::<BFVar<P>>();
+        let c1 = c1_s.into_iter().sum::<BFVar<P>>();
+        Self::new(c0, c1)
+    }
+}
+
+impl<'a, P: QuadExtVarParams> Sum<QuadExtVar<P>> for QuadExtVar<P>
+where
+    P::BaseField: FieldWithVar,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let (c0_s, c1_s): (Vec<_>, Vec<_>) = iter.map(|v| (v.c0, v.c1)).unzip();
+        let c0 = c0_s.iter().sum::<BFVar<P>>();
+        let c1 = c1_s.iter().sum::<BFVar<P>>();
+        Self::new(c0, c1)
     }
 }

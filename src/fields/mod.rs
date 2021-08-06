@@ -2,6 +2,7 @@ use ark_ff::{prelude::*, BitIteratorBE};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use core::{
     fmt::Debug,
+    iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
@@ -49,7 +50,7 @@ pub mod fp6_2over3;
 /// `ark_ff::fp6_3over2::Fp6`
 pub mod fp6_3over2;
 
-pub trait FieldExt: Field {
+pub trait FieldWithVar: Field {
     type Var: FieldVar<Self, Self::BasePrimeField>;
 }
 
@@ -90,6 +91,8 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     + SubAssign<F>
     + MulAssign<F>
     + Debug
+    + for<'a> Sum<&'a Self>
+    + Sum<Self>
 {
     /// Returns the constant `F::zero()`.
     fn zero() -> Self;
@@ -114,24 +117,23 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
 
     /// Computes `self + self`.
     fn double(&self) -> Result<Self, SynthesisError> {
-        Ok(self.clone() + self)
+        let mut result = self.clone();
+        result.double_in_place()?;
+        Ok(result)
     }
 
     /// Sets `self = self + self`.
-    fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
-        *self += self.double()?;
-        Ok(self)
-    }
+    fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
     /// Coputes `-self`.
-    fn negate(&self) -> Result<Self, SynthesisError>;
+    fn negate(&self) -> Result<Self, SynthesisError> {
+        let mut result = self.clone();
+        result.negate_in_place()?;
+        Ok(result)
+    }
 
     /// Sets `self = -self`.
-    #[inline]
-    fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
-        *self = self.negate()?;
-        Ok(self)
-    }
+    fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
     /// Computes `self * self`.
     ///
@@ -139,14 +141,13 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// multiplication routine. However, this method should be specialized
     /// for extension fields, where faster algorithms exist for squaring.
     fn square(&self) -> Result<Self, SynthesisError> {
-        Ok(self.clone() * self)
+        let mut result = self.clone();
+        result.square_in_place()?;
+        Ok(result)
     }
 
     /// Sets `self = self.square()`.
-    fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
-        *self = self.square()?;
-        Ok(self)
-    }
+    fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
     /// Enforces that `self * other == result`.
     fn mul_equals(&self, other: &Self, result: &Self) -> Result<(), SynthesisError> {

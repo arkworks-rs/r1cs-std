@@ -1,4 +1,6 @@
-use crate::fields::{FieldExt, fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
+use crate::fields::{
+    fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar, FieldWithVar,
+};
 use ark_ff::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Parameters, Field, QuadExtParameters};
 use ark_relations::r1cs::SynthesisError;
 
@@ -9,9 +11,9 @@ pub type Fp12Var<P> = QuadExtVar<Fp12ParamsWrapper<P>>;
 
 type Fp2Params<P> = <<P as Fp12Parameters>::Fp6Params as Fp6Parameters>::Fp2Params;
 
-impl<P: Fp12Parameters> QuadExtVarParams for Fp12ParamsWrapper<P> 
-where 
-    Self::BasePrimeField: FieldExt
+impl<P: Fp12Parameters> QuadExtVarParams for Fp12ParamsWrapper<P>
+where
+    Self::BasePrimeField: FieldWithVar,
 {
     fn mul_base_field_var_by_frob_coeff(fe: &mut Fp6Var<P::Fp6Params>, power: usize) {
         fe.c0 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
@@ -20,11 +22,9 @@ where
     }
 }
 
-type Fp<P> = <Fp12ParamsWrapper<P> as QuadExtParameters>::BasePrimeField;
-
-impl<P: Fp12Parameters> Fp12Var<P> 
-where 
-    Fp<P>: FieldExt
+impl<P: Fp12Parameters> Fp12Var<P>
+where
+    <Fp12<P> as Field>::BasePrimeField: FieldWithVar,
 {
     /// Multiplies by a sparse element of the form `(c0 = (c0, c1, 0), c1 = (0,
     /// d1, 0))`.

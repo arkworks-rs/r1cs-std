@@ -1,4 +1,4 @@
-use crate::fields::{FieldExt, fp2::Fp2Var, quadratic_extension::*};
+use crate::fields::{fp2::Fp2Var, quadratic_extension::*, FieldWithVar};
 use ark_ff::fields::{Fp4Parameters, Fp4ParamsWrapper, QuadExtParameters};
 
 /// A quartic extension field constructed as the tower of a
@@ -6,9 +6,9 @@ use ark_ff::fields::{Fp4Parameters, Fp4ParamsWrapper, QuadExtParameters};
 /// This is the R1CS equivalent of `ark_ff::Fp4<P>`.
 pub type Fp4Var<P> = QuadExtVar<Fp4ParamsWrapper<P>>;
 
-impl<P: Fp4Parameters> QuadExtVarParams for Fp4ParamsWrapper<P> 
+impl<P: Fp4Parameters> QuadExtVarParams for Fp4ParamsWrapper<P>
 where
-    Self::BasePrimeField: FieldExt
+    Self::BasePrimeField: FieldWithVar,
 {
     fn mul_base_field_var_by_frob_coeff(fe: &mut Fp2Var<P::Fp2Params>, power: usize) {
         fe.c0 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
