@@ -42,7 +42,7 @@ pub mod groups;
 
 /// This module implements gadgets related to computing pairings in bilinear
 /// groups.
-// pub mod pairing;
+pub mod pairing;
 
 /// This module describes a trait for allocating new variables in a constraint
 /// system.
@@ -63,7 +63,7 @@ pub mod prelude {
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
-        pairing::PairingVar,
+        pairing::PairingGadget,
         select::*,
         R1CSVar,
     };

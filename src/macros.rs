@@ -52,7 +52,9 @@ macro_rules! impl_bounded_ops {
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces, clippy::redundant_closure_call)]
             fn $fn(self, other: Self) -> Self::Output {
-                ($impl)(self, other)
+                let mut result = self.clone();
+                core::ops::$assign_trait::$assign_fn(&mut result, other);
+                result
             }
         }
 
@@ -77,8 +79,9 @@ macro_rules! impl_bounded_ops {
 
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
-            fn $fn(self, other: &'a $type) -> Self::Output {
-                core::ops::$trait::$fn(&self, other)
+            fn $fn(mut self, other: &'a $type) -> Self::Output {
+                core::ops::$assign_trait::$assign_fn(&mut self, other);
+                self
             }
         }
 
@@ -91,8 +94,9 @@ macro_rules! impl_bounded_ops {
 
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
-            fn $fn(self, other: $type) -> Self::Output {
-                core::ops::$trait::$fn(&self, &other)
+            fn $fn(mut self, other: $type) -> Self::Output {
+                core::ops::$assign_trait::$assign_fn(&mut self, &other);
+                self
             }
         }
 
@@ -104,8 +108,7 @@ macro_rules! impl_bounded_ops {
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
             fn $assign_fn(&mut self, other: $type) {
-                let result = core::ops::$trait::$fn(&*self, &other);
-                *self = result
+                core::ops::$assign_trait::$assign_fn(self, &other);
             }
         }
 
@@ -117,8 +120,7 @@ macro_rules! impl_bounded_ops {
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
             fn $assign_fn(&mut self, other: &'a $type) {
-                let result = core::ops::$trait::$fn(&*self, other);
-                *self = result
+                ($impl)(self, other)
             }
         }
 
@@ -132,7 +134,9 @@ macro_rules! impl_bounded_ops {
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces, clippy::redundant_closure_call)]
             fn $fn(self, other: $native) -> Self::Output {
-                ($constant_impl)(self, other)
+                let mut result = self.clone();
+                core::ops::$assign_trait::$assign_fn(&mut result, other);
+                result
             }
         }
 
@@ -145,8 +149,9 @@ macro_rules! impl_bounded_ops {
 
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
-            fn $fn(self, other: $native) -> Self::Output {
-                core::ops::$trait::$fn(&self, other)
+            fn $fn(mut self, other: $native) -> Self::Output {
+                core::ops::$assign_trait::$assign_fn(&mut self, other);
+                self
             }
         }
 
@@ -155,12 +160,10 @@ macro_rules! impl_bounded_ops {
 
             $($bounds)*
         {
-
             #[tracing::instrument(target = "r1cs", skip(self))]
             #[allow(unused_braces)]
             fn $assign_fn(&mut self, other: $native) {
-                let result = core::ops::$trait::$fn(&*self, other);
-                *self = result
+                ($constant_impl)(self, other)
             }
         }
     }
