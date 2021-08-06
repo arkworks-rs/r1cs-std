@@ -23,6 +23,10 @@ pub trait GroupOpsBounds<'a, F, T: 'a>:
 {
 }
 
+pub trait CurveWithVar<ConstraintF: Field>: ProjectiveCurve {
+    type Var: CurveVar<Self, ConstraintF>;
+}
+
 /// A variable that represents a curve point for
 /// the curve `C`.
 pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:

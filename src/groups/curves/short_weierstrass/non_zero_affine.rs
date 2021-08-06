@@ -5,13 +5,12 @@ use super::*;
 #[derive(Derivative)]
 #[derivative(
     Debug(bound = "P: SWModelParameters"),
-    Clone(bound = "P: SWModelParameters"),
+    Clone(bound = "P: SWModelParameters")
 )]
 #[must_use]
 pub struct NonZeroAffineVar<P: SWModelParameters>
- where
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+where
+    BF<P>: FieldWithVar,
 {
     /// The x-coordinate.
     pub x: BFVar<P>,
@@ -24,9 +23,8 @@ pub struct NonZeroAffineVar<P: SWModelParameters>
 impl<P> NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     BFVar<P>: FieldVar<P::BaseField, CF<P>>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     pub(crate) fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
         Self {
@@ -41,14 +39,25 @@ where
     pub(crate) fn into_projective(&self) -> ProjectiveVar<P> {
         ProjectiveVar::new(self.x.clone(), self.y.clone(), BFVar::<P>::one())
     }
+}
 
+impl<P> NonZeroAffineVar<P>
+where
+    P: SWModelParameters,
+    BF<P>: FieldWithVar,
+    BFVar<P>: FieldVar<P::BaseField, CF<P>>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+{
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub(crate) fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
             let result =
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
-            Ok(Self::new(BFVar::<P>::constant(result.x), BFVar::<P>::constant(result.y)))
+            Ok(Self::new(
+                BFVar::<P>::constant(result.x),
+                BFVar::<P>::constant(result.y),
+            ))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
@@ -75,7 +84,10 @@ where
             let result = self.value()?.into_projective().double().into_affine();
             // Panic if the result is zero.
             assert!(!result.is_zero());
-            Ok(Self::new(BFVar::<P>::constant(result.x), BFVar::<P>::constant(result.y)))
+            Ok(Self::new(
+                BFVar::<P>::constant(result.x),
+                BFVar::<P>::constant(result.y),
+            ))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let x1_sqr = x1.square()?;
@@ -138,8 +150,7 @@ where
 impl<P> R1CSVar<CF<P>> for NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
 {
     type Value = SWAffine<P>;
 
@@ -155,8 +166,7 @@ where
 impl<P> CondSelectGadget<CF<P>> for NonZeroAffineVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]

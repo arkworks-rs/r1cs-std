@@ -1,15 +1,17 @@
 use ark_ec::{
     twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
-    AffineCurve, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
+    AffineCurve, ModelParameters, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{fields::FieldWithVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 use crate::fields::fp::FpVar;
 use core::{borrow::Borrow, marker::PhantomData};
+
+type BFVar<P> = <<P as ModelParameters>::BaseField as FieldWithVar>::Var;
 
 /// An implementation of arithmetic for Montgomery curves that relies on
 /// incomplete addition formulae for the affine model, as outlined in the
@@ -18,18 +20,19 @@ use core::{borrow::Borrow, marker::PhantomData};
 /// This is intended for use primarily for implementing efficient
 /// multi-scalar-multiplication in the Bowe-Hopwood-Pedersen hash.
 #[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derivative(
+    Debug(bound = "P: TEModelParameters, P::BaseField: FieldWithVar"),
+    Clone(bound = "P: TEModelParameters, P::BaseField: FieldWithVar")
+)]
 #[must_use]
-pub struct MontgomeryAffineVar<
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+pub struct MontgomeryAffineVar<P: TEModelParameters>
+where
+    P::BaseField: FieldWithVar,
 {
     /// The x-coordinate.
-    pub x: F,
+    pub x: BFVar<P>,
     /// The y-coordinate.
-    pub y: F,
+    pub y: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
@@ -40,11 +43,10 @@ mod montgomery_affine_impl {
     use ark_ff::Field;
     use core::ops::Add;
 
-    impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for MontgomeryAffineVar<P, F>
+    impl<P> R1CSVar<<P::BaseField as Field>::BasePrimeField> for MontgomeryAffineVar<P>
     where
+        P::BaseField: FieldWithVar,
         P: TEModelParameters,
-        F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-        for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
     {
         type Value = (P::BaseField, P::BaseField);
 
@@ -59,15 +61,12 @@ mod montgomery_affine_impl {
         }
     }
 
-    impl<
-            P: TEModelParameters,
-            F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-        > MontgomeryAffineVar<P, F>
+    impl<P: TEModelParameters> MontgomeryAffineVar<P>
     where
-        for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+        P::BaseField: FieldWithVar,
     {
         /// Constructs `Self` from an `(x, y)` coordinate pair.
-        pub fn new(x: F, y: F) -> Self {
+        pub fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
             Self {
                 x,
                 y,
@@ -103,14 +102,22 @@ mod montgomery_affine_impl {
             p: &TEAffine<P>,
         ) -> Result<Self, SynthesisError> {
             let montgomery_coords = Self::from_edwards_to_coords(p)?;
-            let u = F::new_witness(ark_relations::ns!(cs, "u"), || Ok(montgomery_coords.0))?;
-            let v = F::new_witness(ark_relations::ns!(cs, "v"), || Ok(montgomery_coords.1))?;
+            let u =
+                BFVar::<P>::new_witness(ark_relations::ns!(cs, "u"), || Ok(montgomery_coords.0))?;
+            let v =
+                BFVar::<P>::new_witness(ark_relations::ns!(cs, "v"), || Ok(montgomery_coords.1))?;
             Ok(Self::new(u, v))
         }
+    }
 
+    impl<P: TEModelParameters> MontgomeryAffineVar<P>
+    where
+        P::BaseField: FieldWithVar,
+        for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
+    {
         /// Converts `self` into a Twisted Edwards curve point variable.
         #[tracing::instrument(target = "r1cs")]
-        pub fn into_edwards(&self) -> Result<AffineVar<P, F>, SynthesisError> {
+        pub fn into_edwards(&self) -> Result<AffineVar<P>, SynthesisError> {
             let cs = self.cs();
 
             let mode = if cs.is_none() {
@@ -120,7 +127,7 @@ mod montgomery_affine_impl {
             };
 
             // Compute u = x / y
-            let u = F::new_variable(
+            let u = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "u"),
                 || {
                     let y_inv = self
@@ -135,7 +142,7 @@ mod montgomery_affine_impl {
 
             u.mul_equals(&self.y, &self.x)?;
 
-            let v = F::new_variable(
+            let v = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "v"),
                 || {
                     let mut t0 = self.x.value()?;
@@ -156,13 +163,13 @@ mod montgomery_affine_impl {
         }
     }
 
-    impl<'a, P, F> Add<&'a MontgomeryAffineVar<P, F>> for MontgomeryAffineVar<P, F>
+    impl<'a, P> Add<&'a MontgomeryAffineVar<P>> for MontgomeryAffineVar<P>
     where
         P: TEModelParameters,
-        F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-        for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+        P::BaseField: FieldWithVar,
+        for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     {
-        type Output = MontgomeryAffineVar<P, F>;
+        type Output = MontgomeryAffineVar<P>;
 
         #[tracing::instrument(target = "r1cs")]
         fn add(self, other: &'a Self) -> Self::Output {
@@ -176,7 +183,7 @@ mod montgomery_affine_impl {
             let coeff_b = P::MontgomeryModelParameters::COEFF_B;
             let coeff_a = P::MontgomeryModelParameters::COEFF_A;
 
-            let lambda = F::new_variable(
+            let lambda = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "lambda"),
                 || {
                     let n = other.y.value()? - &self.y.value()?;
@@ -191,7 +198,7 @@ mod montgomery_affine_impl {
             lambda_d.mul_equals(&lambda, &lambda_n).unwrap();
 
             // Compute x'' = B*lambda^2 - A - x - x'
-            let xprime = F::new_variable(
+            let xprime = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "xprime"),
                 || {
                     Ok(lambda.value()?.square() * &coeff_b
@@ -208,7 +215,7 @@ mod montgomery_affine_impl {
             let lambda_b = &lambda * coeff_b;
             lambda_b.mul_equals(&lambda, &xprime_lc).unwrap();
 
-            let yprime = F::new_variable(
+            let yprime = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "yprime"),
                 || {
                     Ok(-(self.y.value()?
@@ -230,29 +237,29 @@ mod montgomery_affine_impl {
 /// the complete formulae for the affine model, as outlined in the
 /// [EFD](https://www.hyperelliptic.org/EFD/g1p/auto-twisted.html).
 #[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derivative(
+    Debug(bound = "P: TEModelParameters, P::BaseField: FieldWithVar"),
+    Clone(bound = "P: TEModelParameters, P::BaseField: FieldWithVar")
+)]
 #[must_use]
-pub struct AffineVar<
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+pub struct AffineVar<P: TEModelParameters>
+where
+    P::BaseField: FieldWithVar,
 {
     /// The x-coordinate.
-    pub x: F,
+    pub x: BFVar<P>,
     /// The y-coordinate.
-    pub y: F,
+    pub y: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
-impl<P: TEModelParameters, F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>>
-    AffineVar<P, F>
+impl<P: TEModelParameters> AffineVar<P>
 where
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     /// Constructs `Self` from an `(x, y)` coordinate triple.
-    pub fn new(x: F, y: F) -> Self {
+    pub fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
         Self {
             x,
             y,
@@ -283,24 +290,23 @@ where
             ),
         };
 
-        let x = F::new_variable(ark_relations::ns!(cs, "x"), || x, mode)?;
-        let y = F::new_variable(ark_relations::ns!(cs, "y"), || y, mode)?;
+        let x = BFVar::<P>::new_variable(ark_relations::ns!(cs, "x"), || x, mode)?;
+        let y = BFVar::<P>::new_variable(ark_relations::ns!(cs, "y"), || y, mode)?;
 
         Ok(Self::new(x, y))
     }
 }
 
-impl<P: TEModelParameters, F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>>
-    AffineVar<P, F>
+impl<P: TEModelParameters> AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>
+    P::BaseField: FieldWithVar,
+    BFVar<P>: TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>
         + ThreeBitCondNegLookupGadget<
             <P::BaseField as Field>::BasePrimeField,
             TableConstant = P::BaseField,
         >,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Compute a scalar multiplication of `bases` with respect to `scalars`,
     /// where the elements of `scalars` are length-three slices of bits, and
@@ -316,10 +322,10 @@ where
         J: Borrow<[Boolean<<P::BaseField as Field>::BasePrimeField>]>,
     {
         const CHUNK_SIZE: usize = 3;
-        let mut ed_result: Option<AffineVar<P, F>> = None;
-        let mut result: Option<MontgomeryAffineVar<P, F>> = None;
+        let mut ed_result: Option<AffineVar<P>> = None;
+        let mut result: Option<MontgomeryAffineVar<P>> = None;
 
-        let mut process_segment_result = |result: &MontgomeryAffineVar<P, F>| {
+        let mut process_segment_result = |result: &MontgomeryAffineVar<P>| {
             let sgmt_result = result.into_edwards()?;
             ed_result = match ed_result.as_ref() {
                 None => Some(sgmt_result),
@@ -358,14 +364,14 @@ where
 
                 let precomp = bits[0].and(&bits[1])?;
 
-                let x = F::zero()
+                let x = BFVar::<P>::zero()
                     + x_coeffs[0]
-                    + F::from(bits[0].clone()) * (x_coeffs[1] - &x_coeffs[0])
-                    + F::from(bits[1].clone()) * (x_coeffs[2] - &x_coeffs[0])
-                    + F::from(precomp.clone())
+                    + BFVar::<P>::from(bits[0].clone()) * (x_coeffs[1] - &x_coeffs[0])
+                    + BFVar::<P>::from(bits[1].clone()) * (x_coeffs[2] - &x_coeffs[0])
+                    + BFVar::<P>::from(precomp.clone())
                         * (x_coeffs[3] - &x_coeffs[2] - &x_coeffs[1] + &x_coeffs[0]);
 
-                let y = F::three_bit_cond_neg_lookup(&bits, &precomp, &y_coeffs)?;
+                let y = BFVar::<P>::three_bit_cond_neg_lookup(&bits, &precomp, &y_coeffs)?;
 
                 let tmp = MontgomeryAffineVar::new(x, y);
                 result = match result.as_ref() {
@@ -384,11 +390,10 @@ where
     }
 }
 
-impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> R1CSVar<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     type Value = TEProjective<P>;
 
@@ -404,12 +409,13 @@ where
     }
 }
 
-impl<P, F> CurveVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> CurveVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>:
+        TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(g: TEProjective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
@@ -417,7 +423,7 @@ where
     }
 
     fn zero() -> Self {
-        Self::new(F::zero(), F::one())
+        Self::new(BFVar::<P>::zero(), BFVar::<P>::one())
     }
 
     fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
@@ -490,7 +496,7 @@ where
             let a_x2 = &x2 * a;
 
             // Compute x3 = (2xy) / (ax^2 + y^2)
-            let x3 = F::new_witness(ark_relations::ns!(cs, "x3"), || {
+            let x3 = BFVar::<P>::new_witness(ark_relations::ns!(cs, "x3"), || {
                 let t0 = xy.value()?.double();
                 let t1 = a * &x2.value()? + &y2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -502,7 +508,7 @@ where
 
             // Compute y3 = (y^2 - ax^2) / (2 - ax^2 - y^2)
             let two = P::BaseField::one().double();
-            let y3 = F::new_witness(ark_relations::ns!(cs, "y3"), || {
+            let y3 = BFVar::<P>::new_witness(ark_relations::ns!(cs, "y3"), || {
                 let a_x2 = a * &x2.value()?;
                 let t0 = y2.value()? - &a_x2;
                 let t1 = two - &a_x2 - &y2.value()?;
@@ -544,8 +550,8 @@ where
                 let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
                 let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
-                let x = F::two_bit_lookup(&bits, &x_s)?;
-                let y = F::two_bit_lookup(&bits, &y_s)?;
+                let x = BFVar::<P>::two_bit_lookup(&bits, &x_s)?;
+                let y = BFVar::<P>::two_bit_lookup(&bits, &y_s)?;
                 *self += Self::new(x, y);
             } else if bits.len() == 1 {
                 let bit = &bits[0];
@@ -558,12 +564,13 @@ where
     }
 }
 
-impl<P, F> AllocVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> AllocVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>:
+        TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEProjective<P>>>(
@@ -659,12 +666,13 @@ where
     }
 }
 
-impl<P, F> AllocVar<TEAffine<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> AllocVar<TEAffine<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>:
+        TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEAffine<P>>>(
@@ -676,12 +684,11 @@ where
     }
 }
 
-impl<P, F> ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
-    F: ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>: ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField>,
 {
     fn to_constraint_field(
         &self,
@@ -707,15 +714,14 @@ fn div2(limbs: &mut [u64]) {
 }
 
 impl_bounded_ops!(
-    AffineVar<P, F>,
+    AffineVar<P>,
     TEProjective<P>,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a AffineVar<P, F>, other: &'a AffineVar<P, F>| {
-
-        if [this, other].is_constant() {
+    |this: &mut AffineVar<P>, other: &'a AffineVar<P>| {
+        *this = if [this, other].is_constant() {
             assert!(this.is_constant() && other.is_constant());
             AffineVar::constant(this.value().unwrap() + &other.value().unwrap())
         } else {
@@ -739,7 +745,7 @@ impl_bounded_ops!(
             let v2 = &v0 * &v1 * d;
 
             // Compute x3 = (v0 + v1) / (1 + v2)
-            let x3 = F::new_witness(ark_relations::ns!(cs, "x3"), || {
+            let x3 = BFVar::<P>::new_witness(ark_relations::ns!(cs, "x3"), || {
                 let t0 = v0.value()? + &v1.value()?;
                 let t1 = P::BaseField::one() + &v2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -750,7 +756,7 @@ impl_bounded_ops!(
             x3.mul_equals(&v2_plus_one, &v0_plus_v1).unwrap();
 
             // Compute y3 = (U + a * v0 - v1) / (1 - v2)
-            let y3 = F::new_witness(ark_relations::ns!(cs, "y3"), || {
+            let y3 = BFVar::<P>::new_witness(ark_relations::ns!(cs, "y3"), || {
                 let t0 = u.value()? + &(a * &v0.value()?) - &v1.value()?;
                 let t1 = P::BaseField::one() - &v2.value()?;
                 Ok(t0 * &t1.inverse().ok_or(SynthesisError::DivisionByZero)?)
@@ -763,57 +769,58 @@ impl_bounded_ops!(
             y3.mul_equals(&one_minus_v2, &u_plus_a_v0_minus_v1).unwrap();
 
             AffineVar::new(x3, y3)
-        }
+        };
     },
-    |this: &'a AffineVar<P, F>, other: TEProjective<P>| this + AffineVar::constant(other),
+    |this: &mut AffineVar<P>, other: TEProjective<P>| *this = &*this + AffineVar::constant(other),
     (
-        F :FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-            + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
         P: TEModelParameters,
     ),
-    for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>: TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 );
 
 impl_bounded_ops!(
-    AffineVar<P, F>,
+    AffineVar<P>,
     TEProjective<P>,
     Sub,
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a AffineVar<P, F>, other: &'a AffineVar<P, F>| this + other.negate().unwrap(),
-    |this: &'a AffineVar<P, F>, other: TEProjective<P>| this - AffineVar::constant(other),
+    |this: &mut AffineVar<P>, other: &'a AffineVar<P>| *this += other.negate().unwrap(),
+    |this: &mut AffineVar<P>, other: TEProjective<P>| *this = &*this - AffineVar::constant(other),
     (
-        F :FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-            + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
         P: TEModelParameters,
     ),
-    for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>
+    P::BaseField: FieldWithVar,
+    BFVar<P>: TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
 );
 
-impl<'a, P, F> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P, F>> for AffineVar<P, F>
+impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>:
+        TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
-impl<'a, P, F> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P, F>> for &'a AffineVar<P, F>
+impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for &'a AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
+    BFVar<P>:
+        TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
-impl<P, F> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
@@ -829,11 +836,10 @@ where
     }
 }
 
-impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> EqGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(
@@ -870,11 +876,10 @@ where
     }
 }
 
-impl<P, F> ToBitsGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> ToBitsGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(
@@ -898,11 +903,10 @@ where
     }
 }
 
-impl<P, F> ToBytesGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P> ToBytesGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P>
 where
     P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(

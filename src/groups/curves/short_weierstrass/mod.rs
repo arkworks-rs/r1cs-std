@@ -1,32 +1,37 @@
 use ark_ec::{
     short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
-    AffineCurve, ProjectiveCurve, SWModelParameters, ModelParameters
+    AffineCurve, ModelParameters, ProjectiveCurve, SWModelParameters,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 use non_zero_affine::NonZeroAffineVar;
 
-use crate::{fields::{FieldExt, fp::FpVar}, prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{
+    fields::{fp::FpVar, FieldWithVar},
+    prelude::*,
+    ToConstraintFieldGadget, Vec,
+};
 
 /// This module provides a generic implementation of G1 and G2 for
 /// the [\[BLS12]\](<https://eprint.iacr.org/2002/088.pdf>) family of bilinear groups.
-// pub mod bls12;
+pub mod bls12;
 
 /// This module provides a generic implementation of G1 and G2 for
 /// the [\[MNT4]\](<https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf>)
 ///  family of bilinear groups.
-// pub mod mnt4;
+pub mod mnt4;
+
 /// This module provides a generic implementation of G1 and G2 for
 /// the [\[MNT6]\](<https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.20.8113&rep=rep1&type=pdf>)
 ///  family of bilinear groups.
-// pub mod mnt6;
+pub mod mnt6;
 
 mod non_zero_affine;
 
 type BF<P> = <P as ModelParameters>::BaseField;
 type CF<P> = <BF<P> as Field>::BasePrimeField;
-type BFVar<P> = <BF<P> as FieldExt>::Var;
+type BFVar<P> = <BF<P> as FieldWithVar>::Var;
 
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
@@ -34,12 +39,12 @@ type BFVar<P> = <BF<P> as FieldExt>::Var;
 #[derive(Derivative)]
 #[derivative(
     Debug(bound = "P: SWModelParameters"),
-    Clone(bound = "P: SWModelParameters"),
+    Clone(bound = "P: SWModelParameters")
 )]
 #[must_use]
-pub struct ProjectiveVar<P: SWModelParameters> 
-where 
-    BF<P>: FieldExt 
+pub struct ProjectiveVar<P: SWModelParameters>
+where
+    BF<P>: FieldWithVar,
 {
     /// The x-coordinate.
     pub x: BFVar<P>,
@@ -53,11 +58,14 @@ where
 
 /// An affine representation of a curve point.
 #[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derivative(
+    Debug(bound = "P: SWModelParameters, BF<P>: FieldWithVar"),
+    Clone(bound = "P: SWModelParameters, BF<P>: FieldWithVar")
+)]
 #[must_use]
-pub struct AffineVar<P: SWModelParameters> 
+pub struct AffineVar<P: SWModelParameters>
 where
-    BF<P>: FieldExt 
+    BF<P>: FieldWithVar,
 {
     /// The x-coordinate.
     pub x: BFVar<P>,
@@ -71,8 +79,7 @@ where
 
 impl<P: SWModelParameters> AffineVar<P>
 where
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
 {
     fn new(x: BFVar<P>, y: BFVar<P>, infinity: Boolean<CF<P>>) -> Self {
         Self {
@@ -96,14 +103,11 @@ where
 
 impl<P> ToConstraintFieldGadget<CF<P>> for AffineVar<P>
 where
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     P: SWModelParameters,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
 {
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
         let mut res = Vec::<FpVar<CF<P>>>::new();
 
         res.extend_from_slice(&self.x.to_constraint_field()?);
@@ -117,8 +121,7 @@ where
 impl<P> R1CSVar<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
 {
     type Value = SWProjective<P>;
 
@@ -137,10 +140,9 @@ where
     }
 }
 
-impl<P: SWModelParameters> ProjectiveVar<P> 
+impl<P: SWModelParameters> ProjectiveVar<P>
 where
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
 {
     /// Constructs `Self` from an `(x, y, z)` coordinate triple.
     pub fn new(x: BFVar<P>, y: BFVar<P>, z: BFVar<P>) -> Self {
@@ -150,6 +152,10 @@ where
             z,
             _params: PhantomData,
         }
+    }
+
+    fn is_zero(&self) -> Result<Boolean<CF<P>>, SynthesisError> {
+        self.z.is_zero()
     }
 
     /// Convert this point into affine form.
@@ -178,8 +184,8 @@ where
             // Thus, `z_inv * self.z = !self.is_zero()`.
             z_inv.mul_equals(&self.z, &BFVar::<P>::from(infinity.not()))?;
 
-            let non_zero_x = &self.x * &z_inv;
-            let non_zero_y = &self.y * &z_inv;
+            let non_zero_x = z_inv.clone() * &self.x;
+            let non_zero_y = z_inv * &self.y;
 
             let x = infinity.select(&zero_x, &non_zero_x)?;
             let y = infinity.select(&zero_y, &non_zero_y)?;
@@ -226,7 +232,13 @@ where
 
         Ok(Self::new(x, y, z))
     }
+}
 
+impl<P: SWModelParameters> ProjectiveVar<P>
+where
+    BF<P>: FieldWithVar,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+{
     /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub(crate) fn add_mixed(&self, other: &NonZeroAffineVar<P>) -> Result<Self, SynthesisError> {
@@ -358,7 +370,7 @@ where
 impl<P> CurveVar<SWProjective<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(g: SWProjective<P>) -> Self {
@@ -553,13 +565,11 @@ where
 impl<P> ToConstraintFieldGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+    BF<P>: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
         self.to_affine()?.to_constraint_field()
     }
 }
@@ -567,7 +577,7 @@ where
 fn mul_by_coeff_a<P: SWModelParameters>(f: &BFVar<P>) -> BFVar<P>
 where
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
 {
     if !P::COEFF_A.is_zero() {
         f * P::COEFF_A
@@ -583,28 +593,31 @@ impl_bounded_ops!(
     add,
     AddAssign,
     add_assign,
-    |mut this: &'a ProjectiveVar<P>, mut other: &'a ProjectiveVar<P>| {
+    |this: &mut ProjectiveVar<P>, other: &'a ProjectiveVar<P>| {
         // Implement complete addition for Short Weierstrass curves, following
         // the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060).
         //
         // We special case handling of constants to get better constraint weight.
         if this.is_constant() {
-            // we'll just act like `other` is constant.
-            core::mem::swap(&mut this, &mut other);
+            // The value should exist because `other` is a constant.
+            let this_val = this.value().unwrap();
+            if !this_val.is_zero() {
+                // We'll use mixed addition to add non-zero constants.
+                let x = BFVar::<P>::constant(this_val.x);
+                let y = BFVar::<P>::constant(this_val.y);
+                *this = other.add_mixed(&NonZeroAffineVar::new(x, y)).unwrap()
+            }
         }
 
         if other.is_constant() {
             // The value should exist because `other` is a constant.
             let other = other.value().unwrap();
-            if other.is_zero() {
-                // this + 0 = this
-                this.clone()
-            } else {
+            if !other.is_zero() {
                 // We'll use mixed addition to add non-zero constants.
                 let x = BFVar::<P>::constant(other.x);
                 let y = BFVar::<P>::constant(other.y);
-                this.add_mixed(&NonZeroAffineVar::new(x, y)).unwrap()
+                *this = this.add_mixed(&NonZeroAffineVar::new(x, y)).unwrap()
             }
         } else {
             // Complete addition formula from Renes-Costello-Batina 2015
@@ -639,20 +652,18 @@ impl_bounded_ops!(
             let bxz3 = &xz_pairs * three_b; // 28
             let b3_xz_pairs = mul_by_coeff_a::<P>(&(&xx - &azz)) + &bxz3; // 30, 31, 32
 
-            let x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
-            let y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
-            let z = (&yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
-
-            ProjectiveVar::new(x, y, z)
+            this.x = (&yy_m_bzz3 * &xy_pairs) - &yz_pairs * &b3_xz_pairs; // 35, 39, 40
+            this.y = (&yy_p_bzz3 * &yy_m_bzz3) + &xx3_p_azz * b3_xz_pairs; // 24, 36, 37, 38
+            this.z = (yy_p_bzz3 * &yz_pairs) + xy_pairs * xx3_p_azz; // 41, 42, 43
         }
 
     },
-    |this: &'a ProjectiveVar<P>, other: SWProjective<P>| {
-        this + ProjectiveVar::constant(other)
+    |this: &mut ProjectiveVar<P>, other: SWProjective<P>| {
+        *this = &*this + ProjectiveVar::constant(other)
     },
     (P: SWModelParameters),
     for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
 );
 
 impl_bounded_ops!(
@@ -662,17 +673,17 @@ impl_bounded_ops!(
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a ProjectiveVar<P>, other: &'a ProjectiveVar<P>| this + other.negate().unwrap(),
-    |this: &'a ProjectiveVar<P>, other: SWProjective<P>| this - ProjectiveVar::constant(other),
+    |this: &mut ProjectiveVar<P>, other: &'a ProjectiveVar<P>| *this += other.negate().unwrap(),
+    |this: &mut ProjectiveVar<P>, other: SWProjective<P>| *this = &*this - ProjectiveVar::constant(other),
     (P: SWModelParameters),
     for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
 );
 
 impl<'a, P> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
@@ -680,7 +691,7 @@ where
 impl<'a, P> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P>> for &'a ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
@@ -688,7 +699,7 @@ where
 impl<P> CondSelectGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[inline]
@@ -709,14 +720,11 @@ where
 impl<P> EqGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn is_eq(
-        &self,
-        other: &Self,
-    ) -> Result<Boolean<CF<P>>, SynthesisError> {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<CF<P>>, SynthesisError> {
         let x_equal = (&self.x * &other.z).is_eq(&(&other.x * &self.z))?;
         let y_equal = (&self.y * &other.z).is_eq(&(&other.y * &self.z))?;
         let coordinates_equal = x_equal.and(&y_equal)?;
@@ -758,7 +766,7 @@ where
 impl<P> AllocVar<SWAffine<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn new_variable<T: Borrow<SWAffine<P>>>(
@@ -770,11 +778,10 @@ where
     }
 }
 
-impl<P> AllocVar<SWProjective<P>, CF<P>>
-    for ProjectiveVar<P>
+impl<P> AllocVar<SWProjective<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn new_variable<T: Borrow<SWProjective<P>>>(
@@ -885,13 +892,11 @@ fn div2(limbs: &mut [u64]) {
 impl<P> ToBitsGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bits = g.x.to_bits_le()?;
         let y_bits = g.y.to_bits_le()?;
@@ -901,9 +906,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
+    fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bits = g.x.to_non_unique_bits_le()?;
         let y_bits = g.y.to_non_unique_bits_le()?;
@@ -916,13 +919,11 @@ where
 impl<P> ToBytesGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
-    BF<P>: FieldExt,
+    BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
+    fn to_bytes(&self) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bytes = g.x.to_bytes()?;
         let y_bytes = g.y.to_bytes()?;
@@ -933,9 +934,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
+    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bytes = g.x.to_non_unique_bytes()?;
         let y_bytes = g.y.to_non_unique_bytes()?;
