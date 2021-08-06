@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use ark_ec::PairingEngine;
-use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
 
@@ -11,39 +10,37 @@ pub mod mnt4;
 /// This module implements pairings for MNT6 bilinear groups.
 pub mod mnt6;
 
+pub trait PairingWithGadget: PairingEngine {
+    type Gadget: PairingGadget<Self>;
+}
+
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>::Fq> {
+pub trait PairingGadget<E: PairingEngine> {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1Projective, ConstraintF>
-        + AllocVar<E::G1Projective, ConstraintF>
-        + AllocVar<E::G1Affine, ConstraintF>;
+    type G1Var: CurveVar<E::G1Projective, E::Fq>
+        + AllocVar<E::G1Projective, E::Fq>
+        + AllocVar<E::G1Affine, E::Fq>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2Projective, ConstraintF>
-        + AllocVar<E::G2Projective, ConstraintF>
-        + AllocVar<E::G2Affine, ConstraintF>;
+    type G2Var: CurveVar<E::G2Projective, E::Fq>
+        + AllocVar<E::G2Projective, E::Fq>
+        + AllocVar<E::G2Affine, E::Fq>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::Fqk, ConstraintF>;
+    type GTVar: FieldVar<E::Fqk, E::Fq>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G1Prepared`.
-    type G1PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G1Prepared, ConstraintF>
-        + Clone
-        + Debug;
+    type G1PreparedVar: ToBytesGadget<E::Fq> + AllocVar<E::G1Prepared, E::Fq> + Clone + Debug;
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G2Prepared`.
-    type G2PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G2Prepared, ConstraintF>
-        + Clone
-        + Debug;
+    type G2PreparedVar: ToBytesGadget<E::Fq> + AllocVar<E::G2Prepared, E::Fq> + Clone + Debug;
 
     /// Computes a multi-miller loop between elements
     /// of `p` and `q`.

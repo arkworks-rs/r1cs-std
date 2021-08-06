@@ -1,9 +1,9 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::PairingVar as PG;
+use super::{PairingGadget as PG, PairingWithGadget};
 
 use crate::{
-    fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar},
+    fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar, FieldWithVar},
     groups::bls12::{G1AffineVar, G1PreparedVar, G1Var, G2PreparedVar, G2Var},
 };
 use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
@@ -11,11 +11,14 @@ use ark_ff::fields::BitIteratorBE;
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
-pub struct PairingVar<P: Bls12Parameters>(PhantomData<P>);
+pub struct Bls12Gadget<P: Bls12Parameters>(PhantomData<P>);
 
 type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Params>;
 
-impl<P: Bls12Parameters> PairingVar<P> {
+impl<P: Bls12Parameters> Bls12Gadget<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     // Evaluate the line function at point p.
     #[tracing::instrument(target = "r1cs")]
     fn ell(
@@ -59,7 +62,17 @@ impl<P: Bls12Parameters> PairingVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
+impl<P: Bls12Parameters> PairingWithGadget for Bls12<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
+    type Gadget = Bls12Gadget<P>;
+}
+
+impl<P: Bls12Parameters> PG<Bls12<P>> for Bls12Gadget<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
