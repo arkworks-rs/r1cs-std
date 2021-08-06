@@ -61,9 +61,9 @@ pub mod prelude {
         alloc::*,
         bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8, ToBitsGadget, ToBytesGadget},
         eq::*,
-        fields::{FieldOpsBounds, FieldVar},
-        groups::{CurveVar, GroupOpsBounds},
-        pairing::PairingGadget,
+        fields::{FieldOpsBounds, FieldVar, FieldWithVar},
+        groups::{CurveVar, GroupOpsBounds, CurveWithVar},
+        pairing::{PairingGadget, PairingWithGadget},
         select::*,
         R1CSVar,
     };
