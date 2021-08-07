@@ -6,6 +6,8 @@
 
 ### Features
 
+- [\#45](https://github.com/arkworks-rs/nonnative/pull/45) Add `new_witness_with_le_bits` which returns the bits used during variable allocation.
+
 ### Improvements
 
 ### Bug fixes

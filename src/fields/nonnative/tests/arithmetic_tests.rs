@@ -1,12 +1,12 @@
 use ark_bls12_381::Bls12_381;
 use ark_ec::PairingEngine;
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger, PrimeField};
 use ark_mnt4_298::MNT4_298;
 use ark_mnt4_753::MNT4_753;
 use ark_mnt6_298::MNT6_298;
 use ark_mnt6_753::MNT6_753;
 
-use ark_nonnative_field::NonNativeFieldVar;
+use ark_nonnative_field::{AllocatedNonNativeFieldVar, NonNativeFieldVar};
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use ark_std::rand::RngCore;
@@ -37,6 +37,21 @@ fn allocation_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     assert!(
         a_actual.eq(&a_expected),
         "allocated value does not equal the expected value"
+    );
+
+    let (_a, a_bits) =
+        AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_witness_with_le_bits(
+            ark_relations::ns!(cs, "alloc a2"),
+            || Ok(a_native),
+        )
+        .unwrap();
+
+    let a_bits_actual: Vec<bool> = a_bits.into_iter().map(|b| b.value().unwrap()).collect();
+    let mut a_bits_expected = a_native.into_repr().to_bits_le();
+    a_bits_expected.truncate(TargetField::size_in_bits());
+    assert_eq!(
+        a_bits_actual, a_bits_expected,
+        "allocated bits does not equal the expected bits"
     );
 }
 

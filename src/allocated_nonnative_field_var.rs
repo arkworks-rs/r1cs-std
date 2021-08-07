@@ -530,6 +530,108 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             OptimizationGoal::Weight => OptimizationType::Weight,
         }
     }
+
+    /// Allocates a new variable, but does not check that the allocation's limbs are in-range.
+    fn new_variable_unchecked<T: Borrow<TargetField>>(
+        cs: impl Into<Namespace<BaseField>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> R1CSResult<Self> {
+        let ns = cs.into();
+        let cs = ns.cs();
+
+        let optimization_type = match cs.optimization_goal() {
+            OptimizationGoal::None => OptimizationType::Constraints,
+            OptimizationGoal::Constraints => OptimizationType::Constraints,
+            OptimizationGoal::Weight => OptimizationType::Weight,
+        };
+
+        let zero = TargetField::zero();
+
+        let elem = match f() {
+            Ok(t) => *(t.borrow()),
+            Err(_) => zero,
+        };
+        let elem_representations = Self::get_limbs_representations(&elem, optimization_type)?;
+        let mut limbs = Vec::new();
+
+        for limb in elem_representations.iter() {
+            limbs.push(FpVar::<BaseField>::new_variable(
+                ark_relations::ns!(cs, "alloc"),
+                || Ok(limb),
+                mode,
+            )?);
+        }
+
+        let num_of_additions_over_normal_form = if mode != AllocationMode::Witness {
+            BaseField::zero()
+        } else {
+            BaseField::one()
+        };
+
+        Ok(Self {
+            cs,
+            limbs,
+            num_of_additions_over_normal_form,
+            is_in_the_normal_form: mode != AllocationMode::Witness,
+            target_phantom: PhantomData,
+        })
+    }
+
+    /// Check that this element is in-range; i.e., each limb is in-range, and the whole number is
+    /// less than the modulus.
+    ///
+    /// Returns the bits of the element, in little-endian form
+    fn enforce_in_range(
+        &self,
+        cs: impl Into<Namespace<BaseField>>,
+    ) -> R1CSResult<Vec<Boolean<BaseField>>> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let optimization_type = match cs.optimization_goal() {
+            OptimizationGoal::None => OptimizationType::Constraints,
+            OptimizationGoal::Constraints => OptimizationType::Constraints,
+            OptimizationGoal::Weight => OptimizationType::Weight,
+        };
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            optimization_type,
+        );
+        let mut bits = Vec::new();
+        for limb in self.limbs.iter().rev().take(params.num_limbs - 1) {
+            bits.extend(
+                Reducer::<TargetField, BaseField>::limb_to_bits(limb, params.bits_per_limb)?
+                    .into_iter()
+                    .rev(),
+            );
+        }
+
+        bits.extend(
+            Reducer::<TargetField, BaseField>::limb_to_bits(
+                &self.limbs[0],
+                TargetField::size_in_bits() - (params.num_limbs - 1) * params.bits_per_limb,
+            )?
+            .into_iter()
+            .rev(),
+        );
+        Ok(bits)
+    }
+
+    /// Allocates a new non-native field witness with value given by the function `f`.  Enforces
+    /// that the field element has value in `[0, modulus)`, and returns the bits of its binary
+    /// representation. The bits are in little-endian (i.e., the bit at index 0 is the LSB) and the
+    /// bit-vector is empty in non-witness allocation modes.
+    pub fn new_witness_with_le_bits<T: Borrow<TargetField>>(
+        cs: impl Into<Namespace<BaseField>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+    ) -> R1CSResult<(Self, Vec<Boolean<BaseField>>)> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let this = Self::new_variable_unchecked(ns!(cs, "alloc"), f, AllocationMode::Witness)?;
+        let bits = this.enforce_in_range(ns!(cs, "bits"))?;
+        Ok((this, bits))
+    }
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
@@ -754,59 +856,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
     ) -> R1CSResult<Self> {
         let ns = cs.into();
         let cs = ns.cs();
-
-        let optimization_type = match cs.optimization_goal() {
-            OptimizationGoal::None => OptimizationType::Constraints,
-            OptimizationGoal::Constraints => OptimizationType::Constraints,
-            OptimizationGoal::Weight => OptimizationType::Weight,
-        };
-
-        let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
-            optimization_type,
-        );
-        let zero = TargetField::zero();
-
-        let elem = match f() {
-            Ok(t) => *(t.borrow()),
-            Err(_) => zero,
-        };
-        let elem_representations = Self::get_limbs_representations(&elem, optimization_type)?;
-        let mut limbs = Vec::new();
-
-        for limb in elem_representations.iter() {
-            limbs.push(FpVar::<BaseField>::new_variable(
-                ark_relations::ns!(cs, "alloc"),
-                || Ok(limb),
-                mode,
-            )?);
-        }
-
-        let num_of_additions_over_normal_form = if mode != AllocationMode::Witness {
-            BaseField::zero()
-        } else {
-            BaseField::one()
-        };
-
+        let this = Self::new_variable_unchecked(ns!(cs, "alloc"), f, mode)?;
         if mode == AllocationMode::Witness {
-            for limb in limbs.iter().rev().take(params.num_limbs - 1) {
-                Reducer::<TargetField, BaseField>::limb_to_bits(limb, params.bits_per_limb)?;
-            }
-
-            Reducer::<TargetField, BaseField>::limb_to_bits(
-                &limbs[0],
-                TargetField::size_in_bits() - (params.num_limbs - 1) * params.bits_per_limb,
-            )?;
+            this.enforce_in_range(ns!(cs, "bits"))?;
         }
-
-        Ok(Self {
-            cs,
-            limbs,
-            num_of_additions_over_normal_form,
-            is_in_the_normal_form: mode != AllocationMode::Witness,
-            target_phantom: PhantomData,
-        })
+        Ok(this)
     }
 }
 
