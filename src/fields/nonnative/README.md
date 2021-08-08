@@ -18,7 +18,7 @@ This library implements a field gadget for a prime field `Fp` over another prime
 When writing constraint systems for many cryptographic proofs, we are restricted to a native field (e.g., the scalar field of the pairing-friendly curve).
 This can be inconvenient; for example, the recursive composition of proofs via cycles of curves requires the verifier to compute over a non-native field.
 
-The library makes it possible to write computations over a non-native field in the same way one would write computations over the native field. This naturally introduces additional overhead, which we minimize using a variety of optimizations.
+The library makes it possible to write computations over a non-native field in the same way one would write computations over the native field. This naturally introduces additional overhead, which we minimize using a variety of optimizations. (Nevertheless, the overhead is still substantial, and native fields should be used where possible.)
 
 ## Usage
 
