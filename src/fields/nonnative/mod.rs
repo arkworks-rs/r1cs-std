@@ -1,4 +1,3 @@
-//! The library is based on the constraint-writing framework [arkworks-rs](https://github.com/arkworks-rs) and is released under the MIT License and the Apache v2 License (see [License](#license)).
 //!
 //! ## Overview
 //!
@@ -11,7 +10,7 @@
 //!
 //! ## Usage
 //!
-//! Because `NonnativeFieldVar` implements the `FieldVar` trait in arkworks, we can treat it like a native field variable (`FpVar`).
+//! Because [`NonNativeFieldVar`] implements the [`FieldVar`] trait in arkworks, we can treat it like a native field variable ([`FpVar`]).
 //!
 //! We can do the standard field operations, such as `+`, `-`, and `*`. See the following example:
 //!
@@ -34,15 +33,16 @@
 //!
 //! // enforce equality
 //! a.enforce_equal(&b)?;
-//! }
+//! #}
 //! ```
 //!
 //! ## Advanced optimization
 //!
-//! After each multiplication, our library internally performs a *reduce* operation, which reduces an intermediate type `NonNativeFieldMulResultVar` to the normalized type `NonNativeFieldVar`.
+//! After each multiplication, our library internally performs a *reduce* operation, 
+//! which reduces an intermediate type [`NonNativeFieldMulResultVar`] to the normalized type [`NonNativeFieldVar`].
 //! This enables a user to seamlessly perform a sequence of operations without worrying about the underlying details.
 //!
-//! However, this operation is expensive and is sometimes avoidable. We can reduce the number of constraints by using this intermediate type, which only supports additions. To multiply, it must be reduced back to `NonNativeFieldVar`. See below for a skeleton example.
+//! However, this operation is expensive and is sometimes avoidable. We can reduce the number of constraints by using this intermediate type, which only supports additions. To multiply, it must be reduced back to [`NonNativeFieldVar`]. See below for a skeleton example.
 //!
 //! ---
 //!
@@ -58,7 +58,7 @@
 //!
 //! ---
 //!
-//! We can save one reduction by using the `NonNativeFieldMulResultGadget`, as follows:
+//! We can save one reduction by using the [`NonNativeFieldMulResultVar`], as follows:
 //!
 //! ```ignore
 //! let a_times_b = a.mul_without_reduce(&b)?;
@@ -78,11 +78,23 @@
 //!
 //! After some computation, the limbs become saturated and need to be **reduced**, in order to engage in more computation.
 //!
-//! We heavily use the optimization techniques in [[KPS18]](https://akosba.github.io/papers/xjsnark.pdf) and [[OWWB20]](https://eprint.iacr.org/2019/1494). Both works have their own open-source libraries: [xJsnark](https://github.com/akosba/xjsnark) and [bellman-bignat](https://github.com/alex-ozdemir/bellman-bignat). Compared with them, this library works with the arkworks environment. It also provides the option (based on an `optimization_goal` for the constraint system) to optimize for constraint density instead of number of constraints, which is useful for holographic zero-knowledge proofs like [Marlin](https://github.com/arkworks-rs/marlin).
-//! ## References
-//! [KPS18]: A. E. Kosba, C. Papamanthou, and E. Shi. "xJsnark: a framework for efficient verifiable computation," in *Proceedings of the 39th Symposium on Security and Privacy*, ser. S&P ’18, 2018, pp. 944–961.
+//! We heavily use the optimization techniques in [\[KPS18\]](https://akosba.github.io/papers/xjsnark.pdf) and [\[OWWB20\]](https://eprint.iacr.org/2019/1494).
+//! Both works have their own open-source libraries:
+//! [xJsnark](https://github.com/akosba/xjsnark) and
+//! [bellman-bignat](https://github.com/alex-ozdemir/bellman-bignat).
+//! Compared with these, this module works with the `arkworks` ecosystem.
+//! It also provides the option (based on an `optimization_goal` for the constraint system) to optimize
+//! for constraint density instead of number of constraints, which improves efficiency in
+//! proof systems like [Marlin](https://github.com/arkworks-rs/marlin).
 //!
-//! [OWWB20]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
+//! ## References
+//! \[KPS18\]: A. E. Kosba, C. Papamanthou, and E. Shi. "xJsnark: a framework for efficient verifiable computation," in *Proceedings of the 39th Symposium on Security and Privacy*, ser. S&P ’18, 2018, pp. 944–961.
+//!
+//! \[OWWB20\]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
+//! 
+//! [`NonNativeFieldVar`]: crate::fields::nonnative::NonNativeFieldVar
+//! [`NonNativeFieldMulResultVar`]: crate::fields::nonnative::NonNativeFieldMulResultVar
+//! [`FpVar`]: crate::fields::fp::FpVar
 
 #![allow(
     clippy::redundant_closure_call,
@@ -91,7 +103,6 @@
     clippy::cast_possible_truncation,
     clippy::unseparated_literal_suffix
 )]
-#![forbid(unsafe_code)]
 
 use ark_std::fmt::Debug;
 
@@ -150,14 +161,14 @@ pub struct NonNativeFieldParams {
     pub bits_per_limb: usize,
 }
 
-mod allocated_nonnative_field_var;
-pub use allocated_nonnative_field_var::*;
+mod allocated_field_var;
+pub use allocated_field_var::*;
 
-mod nonnative_field_var;
-pub use nonnative_field_var::*;
+mod allocated_mul_result_var;
+pub use allocated_mul_result_var::*;
 
-mod allocated_nonnative_field_mul_result_var;
-pub use allocated_nonnative_field_mul_result_var::*;
+mod field_var;
+pub use field_var::*;
 
-mod nonnative_field_mul_result_var;
-pub use nonnative_field_mul_result_var::*;
+mod mul_result_var;
+pub use mul_result_var::*;

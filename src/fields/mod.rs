@@ -21,7 +21,7 @@ pub mod quadratic_extension;
 pub mod fp;
 
 /// This module contains a generic implementation of "nonnative" prime field variables.
-/// It emulates `Fp` arithmetic over `Fq` arithmetic, where `p != q`.
+/// It emulates `Fp` arithmetic using `Fq` operations, where `p != q`.
 pub mod nonnative;
 
 /// This module contains a generic implementation of the degree-12 tower
