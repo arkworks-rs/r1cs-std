@@ -38,7 +38,7 @@
 //!
 //! ## Advanced optimization
 //!
-//! After each multiplication, our library internally performs a *reduce* operation, 
+//! After each multiplication, our library internally performs a *reduce* operation,
 //! which reduces an intermediate type [`NonNativeFieldMulResultVar`] to the normalized type [`NonNativeFieldVar`].
 //! This enables a user to seamlessly perform a sequence of operations without worrying about the underlying details.
 //!
@@ -91,7 +91,7 @@
 //! \[KPS18\]: A. E. Kosba, C. Papamanthou, and E. Shi. "xJsnark: a framework for efficient verifiable computation," in *Proceedings of the 39th Symposium on Security and Privacy*, ser. S&P ’18, 2018, pp. 944–961.
 //!
 //! \[OWWB20\]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
-//! 
+//!
 //! [`NonNativeFieldVar`]: crate::fields::nonnative::NonNativeFieldVar
 //! [`NonNativeFieldMulResultVar`]: crate::fields::nonnative::NonNativeFieldMulResultVar
 //! [`FpVar`]: crate::fields::fp::FpVar
