@@ -204,7 +204,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         let mut kp_plus_r_gadget = Self {
-            cs: cs,
+            cs,
             limbs: prod_limbs,
             prod_of_num_of_additions: (p_gadget.num_of_additions_over_normal_form
                 + BaseField::one())

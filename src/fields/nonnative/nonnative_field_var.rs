@@ -1,12 +1,12 @@
 use super::params::OptimizationType;
 use super::{AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
-use ark_ff::PrimeField;
-use ark_ff::{to_bytes, FpParameters};
 use crate::boolean::Boolean;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use crate::prelude::*;
 use crate::{R1CSVar, ToConstraintFieldGadget};
+use ark_ff::PrimeField;
+use ark_ff::{to_bytes, FpParameters};
 use ark_relations::r1cs::Result as R1CSResult;
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::hash::{Hash, Hasher};

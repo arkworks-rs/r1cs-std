@@ -1,10 +1,10 @@
 use super::params::{get_params, OptimizationType};
 use super::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
 use super::AllocatedNonNativeFieldMulResultVar;
-use ark_ff::{BigInteger, FpParameters, PrimeField};
 use crate::fields::fp::FpVar;
 use crate::prelude::*;
 use crate::ToConstraintFieldGadget;
+use ark_ff::{BigInteger, FpParameters, PrimeField};
 use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{
     ns,
