@@ -1,4 +1,4 @@
-use crate::NonNativeFieldParams;
+use super::NonNativeFieldParams;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]

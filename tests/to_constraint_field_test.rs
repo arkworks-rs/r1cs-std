@@ -1,4 +1,4 @@
-use ark_nonnative_field::NonNativeFieldVar;
+use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 use ark_r1cs_std::alloc::AllocVar;
 use ark_r1cs_std::{R1CSVar, ToConstraintFieldGadget};
 use ark_relations::r1cs::ConstraintSystem;

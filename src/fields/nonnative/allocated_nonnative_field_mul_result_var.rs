@@ -1,9 +1,9 @@
-use crate::params::{get_params, OptimizationType};
-use crate::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
-use crate::AllocatedNonNativeFieldVar;
+use super::params::{get_params, OptimizationType};
+use super::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
+use super::AllocatedNonNativeFieldVar;
+use crate::fields::fp::FpVar;
+use crate::prelude::*;
 use ark_ff::{FpParameters, PrimeField};
-use ark_r1cs_std::fields::fp::FpVar;
-use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{ns, r1cs::ConstraintSystemRef};
 use ark_std::marker::PhantomData;

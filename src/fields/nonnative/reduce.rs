@@ -1,10 +1,11 @@
-use crate::params::get_params;
-use crate::{overhead, AllocatedNonNativeFieldVar};
+use super::params::get_params;
+use super::AllocatedNonNativeFieldVar;
+use crate::overhead;
 use ark_ff::{biginteger::BigInteger, fields::FpParameters, BitIteratorBE, One, PrimeField, Zero};
-use ark_r1cs_std::eq::EqGadget;
-use ark_r1cs_std::fields::fp::FpVar;
-use ark_r1cs_std::fields::FieldVar;
-use ark_r1cs_std::{alloc::AllocVar, boolean::Boolean, R1CSVar};
+use crate::eq::EqGadget;
+use crate::fields::fp::FpVar;
+use crate::fields::FieldVar;
+use crate::{alloc::AllocVar, boolean::Boolean, R1CSVar};
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystemRef, Result as R1CSResult},

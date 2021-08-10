@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use ark_nonnative_field::NonNativeFieldVar;
+use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
 use ark_relations::{
     ns,

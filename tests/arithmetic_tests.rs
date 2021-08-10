@@ -6,7 +6,7 @@ use ark_mnt4_753::MNT4_753;
 use ark_mnt6_298::MNT6_298;
 use ark_mnt6_753::MNT6_753;
 
-use ark_nonnative_field::{AllocatedNonNativeFieldVar, NonNativeFieldVar};
+use ark_r1cs_std::fields::nonnative::{AllocatedNonNativeFieldVar, NonNativeFieldVar};
 use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use ark_std::rand::RngCore;
