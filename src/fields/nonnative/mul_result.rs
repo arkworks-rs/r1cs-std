@@ -9,7 +9,7 @@ use ark_relations::r1cs::Result as R1CSResult;
 /// obtain this intermediate representation, which can still be added.
 /// Then, one can call `reduce` to reduce it back to `NonNativeFieldVar`.
 /// This may help cut the number of reduce operations.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use]
 pub enum NonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// as a constant

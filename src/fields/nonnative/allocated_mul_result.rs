@@ -11,7 +11,7 @@ use ark_std::vec::Vec;
 use num_bigint::BigUint;
 
 /// The allocated form of `NonNativeFieldMulResultVar` (introduced below)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use]
 pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// Constraint system reference

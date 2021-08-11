@@ -182,36 +182,47 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     ///
     /// If there are 0 items in the iterator, then this returns `Ok(None)`.
     pub fn add_many<'a, I: Iterator<Item = &'a Self>>(
-        iter: I,
+        mut iter: I,
     ) -> Result<Option<Self>, SynthesisError> {
-        let mut limbs_iter = Vec::new();
+        let mut intermediate_results = Vec::new();
         let cs;
-        let mut num_of_additions_over_normal_form = BaseField::zero();
+        let mut num_of_additions_over_normal_form ;
         let is_in_the_normal_form = false;
         if let Some(first) = iter.next() {
+            let mut limbs_iter = Vec::new();
             cs = first.cs();
+            let optimization_type = first.get_optimization_type();
             for limb in &first.limbs {
                 limbs_iter.push(vec![limb]);
             }
+            num_of_additions_over_normal_form = first.num_of_additions_over_normal_form;
             for elem in iter {
-                for (cur_limb, limbs) in elem.limbs.iter().zip(limbs_iter) {
+                for (cur_limb, limbs) in elem.limbs.iter().zip(&mut limbs_iter) {
                     limbs.push(cur_limb);
                 }
-                num_of_additions_over_normal_form += BaseField::one();
-            }
-            let limbs = limbs_iter
-                .into_iter()
-                .map(|limbs| limbs.into_iter().sum::<FpVar<_>>())
-                .collect::<Vec<_>>();
+                num_of_additions_over_normal_form += elem.num_of_additions_over_normal_form + BaseField::one();
 
-            let result = Self {
-                cs,
-                limbs,
-                num_of_additions_over_normal_form,
-                is_in_the_normal_form,
-                target_phantom: PhantomData,
-            };
-            Reducer::<TargetField, BaseField>::post_add_reduce(&mut result)?;
+                // Reduce the result if we're past the budget.
+                if Reducer::<TargetField, BaseField>::should_reduce_post_addition(num_of_additions_over_normal_form, optimization_type) {
+                    let limbs = limbs_iter
+                        .into_iter()
+                        .map(|limbs| limbs.into_iter().sum::<FpVar<_>>())
+                        .collect::<Vec<_>>();
+
+                    let mut result = Self {
+                        cs: cs.clone(),
+                        limbs,
+                        num_of_additions_over_normal_form,
+                        is_in_the_normal_form,
+                        target_phantom: PhantomData,
+                    };
+                    Reducer::<TargetField, BaseField>::post_add_reduce(&mut result)?;
+                    intermediate_results.push(result);
+                    limbs_iter = Vec::new();
+                }
+            }
+            let result = intermediate_results.into_iter().fold(Self::zero(cs.clone()).unwrap(), |sum, new| sum.add(&new).unwrap());
+            
             Ok(Some(result))
         } else {
             Ok(None)

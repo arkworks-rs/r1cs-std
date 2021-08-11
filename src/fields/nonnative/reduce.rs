@@ -1,4 +1,4 @@
-use super::overhead;
+use super::{overhead, params::OptimizationType};
 use super::params::get_params;
 use super::AllocatedNonNativeFieldVar;
 use crate::eq::EqGadget;
@@ -125,22 +125,26 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         Ok(())
     }
 
+    pub fn should_reduce_post_addition(num_of_additions_over_normal_form: BaseField, optimization_type: OptimizationType) -> bool {
+        let params = get_params(
+            TargetField::size_in_bits(),
+            BaseField::size_in_bits(),
+            optimization_type,
+        );
+        let surfeit = overhead!(num_of_additions_over_normal_form + BaseField::one()) + 1;
+
+        BaseField::size_in_bits() <= (2 * params.bits_per_limb + surfeit + 1)
+    }
+
     /// Reduction to be enforced after additions
     #[tracing::instrument(target = "r1cs")]
     pub fn post_add_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
     ) -> R1CSResult<()> {
-        let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
-            elem.get_optimization_type(),
-        );
-        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
-
-        if BaseField::size_in_bits() > 2 * params.bits_per_limb + surfeit + 1 {
-            Ok(())
-        } else {
+        if Self::should_reduce_post_addition(elem.num_of_additions_over_normal_form, elem.get_optimization_type()) {
             Self::reduce(elem)
+        } else {
+            Ok(())
         }
     }
 
