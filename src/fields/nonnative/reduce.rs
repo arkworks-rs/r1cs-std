@@ -1,6 +1,6 @@
+use super::overhead;
 use super::params::get_params;
 use super::AllocatedNonNativeFieldVar;
-use super::overhead;
 use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
