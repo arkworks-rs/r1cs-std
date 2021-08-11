@@ -1,9 +1,9 @@
 use super::params::get_params;
 use super::AllocatedNonNativeFieldVar;
+use super::overhead;
 use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
-use crate::overhead;
 use crate::{alloc::AllocVar, boolean::Boolean, R1CSVar};
 use ark_ff::{biginteger::BigInteger, fields::FpParameters, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{

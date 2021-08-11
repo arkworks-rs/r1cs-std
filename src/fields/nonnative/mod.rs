@@ -126,11 +126,10 @@ use ark_std::fmt::Debug;
 pub mod params;
 /// a submodule for reducing the representations
 #[doc(hidden)]
-pub mod reduce;
+pub(crate) mod reduce;
 
 /// a macro for computing ceil(log2(x)) for a field element x
 #[doc(hidden)]
-#[macro_export]
 macro_rules! overhead {
     ($x:expr) => {{
         use ark_ff::BigInteger;
@@ -159,6 +158,8 @@ macro_rules! overhead {
         }
     }};
 }
+
+pub(crate) use overhead;
 
 /// Parameters for a specific `NonNativeFieldVar` instantiation
 #[derive(Clone, Debug)]
