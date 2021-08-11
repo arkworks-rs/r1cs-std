@@ -14,6 +14,8 @@
 
 ### Bug Fixes
 
+- [\#77](https://github.com/arkworks-rs/r1cs-std/pull/77) Fix BLS12 `G2PreparedGadget`'s `AllocVar` when G2 uses a divisive twist.
+
 ## v0.3.1
 
 ### Features
