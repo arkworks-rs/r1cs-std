@@ -10,7 +10,6 @@ use crate::{
     groups::curves::short_weierstrass::*,
     Vec,
 };
-use core::fmt::Debug;
 
 type FpVar<P> = <<P as Bls12Parameters>::Fp as FieldWithVar>::Var;
 
