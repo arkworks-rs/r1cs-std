@@ -10,7 +10,6 @@ use crate::{
     groups::curves::short_weierstrass::*,
     Vec,
 };
-
 use core::fmt::Debug;
 
 /// Represents a projective point in G1.
@@ -124,16 +123,32 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
         let cs = ns.cs();
         let g2_prep = f().map(|b| {
             let projective_coeffs = &b.borrow().ell_coeffs;
-            let mut z_s = projective_coeffs
-                .iter()
-                .map(|(_, _, z)| *z)
-                .collect::<Vec<_>>();
-            ark_ff::fields::batch_inversion(&mut z_s);
-            projective_coeffs
-                .iter()
-                .zip(z_s)
-                .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
-                .collect::<Vec<_>>()
+            match P::TWIST_TYPE {
+                TwistType::M => {
+                    let mut z_s = projective_coeffs
+                        .iter()
+                        .map(|(_, _, z)| *z)
+                        .collect::<Vec<_>>();
+                    ark_ff::fields::batch_inversion(&mut z_s);
+                    projective_coeffs
+                        .iter()
+                        .zip(z_s)
+                        .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
+                        .collect::<Vec<_>>()
+                }
+                TwistType::D => {
+                    let mut z_s = projective_coeffs
+                        .iter()
+                        .map(|(z, _, _)| *z)
+                        .collect::<Vec<_>>();
+                    ark_ff::fields::batch_inversion(&mut z_s);
+                    projective_coeffs
+                        .iter()
+                        .zip(z_s)
+                        .map(|((_, x, y), z_inv)| (*x * &z_inv, *y * &z_inv))
+                        .collect::<Vec<_>>()
+                }
+            }
         });
 
         let l = Vec::new_variable(
