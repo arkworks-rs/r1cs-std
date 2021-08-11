@@ -15,9 +15,17 @@
 //! We can do the standard field operations, such as `+`, `-`, and `*`. See the following example:
 //!
 //! ```rust
-//! # fn main() {
-//! use ark_r1cs_std::fields::NonNativeFieldVar;
+//! # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+//! # use ark_std::UniformRand;
+//! # use ark_relations::{ns, r1cs::ConstraintSystem};
+//! # use ark_r1cs_std::prelude::*;
+//! use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 //! use ark_bls12_377::{Fr, Fq};
+//!
+//! # let mut rng = ark_std::test_rng();
+//! # let a_value = Fr::rand(&mut rng);
+//! # let b_value = Fr::rand(&mut rng);
+//! # let cs = ConstraintSystem::<Fq>::new_ref();
 //!
 //! let a = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "a"), || Ok(a_value))?;
 //! let b = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "b"), || Ok(b_value))?;
@@ -29,11 +37,12 @@
 //! let a_minus_b = &a - &b;
 //!
 //! // multiply
-//! let a_times_b = &a * $b;
+//! let a_times_b = &a * &b;
 //!
 //! // enforce equality
 //! a.enforce_equal(&b)?;
-//! #}
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Advanced optimization
@@ -164,11 +173,11 @@ pub struct NonNativeFieldParams {
 mod allocated_field_var;
 pub use allocated_field_var::*;
 
-mod allocated_mul_result_var;
-pub use allocated_mul_result_var::*;
+mod allocated_mul_result;
+pub use allocated_mul_result::*;
 
 mod field_var;
 pub use field_var::*;
 
-mod mul_result_var;
-pub use mul_result_var::*;
+mod mul_result;
+pub use mul_result::*;
