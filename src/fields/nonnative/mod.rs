@@ -81,7 +81,7 @@
 //!
 //! This implementation employs the standard idea of using multiple **limbs** to represent an element of the target field. For example, an element in the TargetField may be represented by three BaseField elements (i.e., the limbs).
 //!
-//! ```ignore
+//! ```text
 //! TargetField -> limb 1, limb 2, and limb 3 (each is a BaseField element)
 //! ```
 //!
@@ -115,21 +115,17 @@
 
 use ark_std::fmt::Debug;
 
-/// Example parameters of non-native field gadget
+/// Utilities for sampling parameters for non-native field gadgets
 ///
-/// Sample parameters for non-native field gadgets
 /// - `BaseField`:              the constraint field
 /// - `TargetField`:            the field being simulated
 /// - `num_limbs`:              how many limbs are used
 /// - `bits_per_limb`:          the size of the limbs
-///
 pub mod params;
-/// a submodule for reducing the representations
-#[doc(hidden)]
+/// How are non-native elements reduced?
 pub(crate) mod reduce;
 
 /// a macro for computing ceil(log2(x)) for a field element x
-#[doc(hidden)]
 macro_rules! overhead {
     ($x:expr) => {{
         use ark_ff::BigInteger;
