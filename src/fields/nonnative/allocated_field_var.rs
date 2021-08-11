@@ -186,7 +186,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     ) -> Result<Option<Self>, SynthesisError> {
         let mut intermediate_results = Vec::new();
         let cs;
-        let mut num_of_additions_over_normal_form ;
+        let mut num_of_additions_over_normal_form;
         let is_in_the_normal_form = false;
         if let Some(first) = iter.next() {
             let mut limbs_iter = Vec::new();
@@ -200,10 +200,14 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
                 for (cur_limb, limbs) in elem.limbs.iter().zip(&mut limbs_iter) {
                     limbs.push(cur_limb);
                 }
-                num_of_additions_over_normal_form += elem.num_of_additions_over_normal_form + BaseField::one();
+                num_of_additions_over_normal_form +=
+                    elem.num_of_additions_over_normal_form + BaseField::one();
 
                 // Reduce the result if we're past the budget.
-                if Reducer::<TargetField, BaseField>::should_reduce_post_addition(num_of_additions_over_normal_form, optimization_type) {
+                if Reducer::<TargetField, BaseField>::should_reduce_post_addition(
+                    num_of_additions_over_normal_form,
+                    optimization_type,
+                ) {
                     let limbs = limbs_iter
                         .into_iter()
                         .map(|limbs| limbs.into_iter().sum::<FpVar<_>>())
@@ -221,8 +225,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
                     limbs_iter = Vec::new();
                 }
             }
-            let result = intermediate_results.into_iter().fold(Self::zero(cs.clone()).unwrap(), |sum, new| sum.add(&new).unwrap());
-            
+            let result = intermediate_results
+                .into_iter()
+                .fold(Self::zero(cs.clone()).unwrap(), |sum, new| {
+                    sum.add(&new).unwrap()
+                });
+
             Ok(Some(result))
         } else {
             Ok(None)

@@ -1,6 +1,6 @@
-use super::{overhead, params::OptimizationType};
 use super::params::get_params;
 use super::AllocatedNonNativeFieldVar;
+use super::{overhead, params::OptimizationType};
 use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
@@ -125,7 +125,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         Ok(())
     }
 
-    pub fn should_reduce_post_addition(num_of_additions_over_normal_form: BaseField, optimization_type: OptimizationType) -> bool {
+    pub fn should_reduce_post_addition(
+        num_of_additions_over_normal_form: BaseField,
+        optimization_type: OptimizationType,
+    ) -> bool {
         let params = get_params(
             TargetField::size_in_bits(),
             BaseField::size_in_bits(),
@@ -141,7 +144,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn post_add_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
     ) -> R1CSResult<()> {
-        if Self::should_reduce_post_addition(elem.num_of_additions_over_normal_form, elem.get_optimization_type()) {
+        if Self::should_reduce_post_addition(
+            elem.num_of_additions_over_normal_form,
+            elem.get_optimization_type(),
+        ) {
             Self::reduce(elem)
         } else {
             Ok(())
