@@ -6,7 +6,9 @@
 
 ### Features
 
+- [\#79](https://github.com/arkworks-rs/r1cs-std/pull/79) Move `NonNativeFieldVar` from `ark-nonnative` to `ark-r1cs-std`.
 - [\#76](https://github.com/arkworks-rs/r1cs-std/pull/76) Implement `ToBytesGadget` for `Vec<UInt8>`.
+- [nonnative/\#45](https://github.com/arkworks-rs/nonnative/pull/45) Add `new_witness_with_le_bits` which returns the bits used during variable allocation.
 
 ### Improvements
 
@@ -32,10 +34,11 @@
 - [\#60](https://github.com/arkworks-rs/r1cs-std/pull/60) Rename `AllocatedBit` to `AllocatedBool` for consistency with the `Boolean` variable.
   You can update downstream usage with `grep -rl 'AllocatedBit' . | xargs env LANG=C env LC_CTYPE=C sed -i '' 's/AllocatedBit/AllocatedBool/g'`.
 - [\#65](https://github.com/arkworks-rs/r1cs-std/pull/65) Rename `Radix2Domain` in `r1cs-std` to `Radix2DomainVar`.
+- [nonnative/\#43](https://github.com/arkworks-rs/nonnative/pull/43) Add padding to allocated nonnative element's `to_bytes`.
 
 ### Features
 
-- [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and Lagrange interpolation. 
+- [\#53](https://github.com/arkworks-rs/r1cs-std/pull/53) Add univariate evaluation domain and Lagrange interpolation.
 
 ### Improvements
 
