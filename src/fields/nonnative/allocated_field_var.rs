@@ -176,6 +176,48 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(res)
     }
 
+    /// Add many allocated elements together.
+    ///
+    /// This does not create any constraints and only creates #limbs linear combinations.
+    ///
+    /// If there are 0 items in the iterator, then this returns `Ok(None)`.
+    pub fn add_many<'a, I: Iterator<Item = &'a Self>>(
+        iter: I,
+    ) -> Result<Option<Self>, SynthesisError> {
+        let mut limbs_iter = Vec::new();
+        let cs;
+        let mut num_of_additions_over_normal_form = BaseField::zero();
+        let is_in_the_normal_form = false;
+        if let Some(first) = iter.next() {
+            cs = first.cs();
+            for limb in &first.limbs {
+                limbs_iter.push(vec![limb]);
+            }
+            for elem in iter {
+                for (cur_limb, limbs) in elem.limbs.iter().zip(limbs_iter) {
+                    limbs.push(cur_limb);
+                }
+                num_of_additions_over_normal_form += BaseField::one();
+            }
+            let limbs = limbs_iter
+                .into_iter()
+                .map(|limbs| limbs.into_iter().sum::<FpVar<_>>())
+                .collect::<Vec<_>>();
+
+            let result = Self {
+                cs,
+                limbs,
+                num_of_additions_over_normal_form,
+                is_in_the_normal_form,
+                target_phantom: PhantomData,
+            };
+            Reducer::<TargetField, BaseField>::post_add_reduce(&mut result)?;
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Subtract a nonnative field element, without the final reduction step
     #[tracing::instrument(target = "r1cs")]
     pub fn sub_without_reduce(&self, other: &Self) -> R1CSResult<Self> {
