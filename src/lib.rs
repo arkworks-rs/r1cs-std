@@ -62,7 +62,7 @@ pub mod prelude {
         bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8, ToBitsGadget, ToBytesGadget},
         eq::*,
         fields::{FieldOpsBounds, FieldVar, FieldWithVar},
-        groups::{CurveVar, GroupOpsBounds, CurveWithVar},
+        groups::{CurveVar, CurveWithVar, GroupOpsBounds},
         pairing::{PairingGadget, PairingWithGadget},
         select::*,
         R1CSVar,
