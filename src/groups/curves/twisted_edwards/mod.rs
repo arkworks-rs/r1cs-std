@@ -302,10 +302,7 @@ where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>
-        + ThreeBitCondNegLookupGadget<
-            CF<P>,
-            TableConstant = P::BaseField,
-        >,
+        + ThreeBitCondNegLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Compute a scalar multiplication of `bases` with respect to `scalars`,
@@ -409,15 +406,13 @@ where
     }
 }
 
-
 type CF<P> = <<P as ModelParameters>::BaseField as Field>::BasePrimeField;
 
-impl<P: TEModelParameters> CurveWithVar<CF<P>> for TEProjective<P> 
+impl<P: TEModelParameters> CurveWithVar<CF<P>> for TEProjective<P>
 where
     P::BaseField: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     type Var = AffineVar<P>;
@@ -427,8 +422,7 @@ impl<P> CurveVar<TEProjective<P>, CF<P>> for AffineVar<P>
 where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(g: TEProjective<P>) -> Self {
@@ -582,8 +576,7 @@ impl<P> AllocVar<TEProjective<P>, CF<P>> for AffineVar<P>
 where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
@@ -684,8 +677,7 @@ impl<P> AllocVar<TEAffine<P>, CF<P>> for AffineVar<P>
 where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
@@ -704,9 +696,7 @@ where
     P::BaseField: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
 {
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
         let mut res = Vec::new();
 
         res.extend_from_slice(&self.x.to_constraint_field()?);
@@ -815,8 +805,7 @@ impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for AffineVar<P>
 where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
@@ -825,8 +814,7 @@ impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for &'a AffineVar<
 where
     P: TEModelParameters,
     P::BaseField: FieldWithVar,
-    BFVar<P>:
-        TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
+    BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
@@ -856,10 +844,7 @@ where
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn is_eq(
-        &self,
-        other: &Self,
-    ) -> Result<Boolean<CF<P>>, SynthesisError> {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<CF<P>>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
         x_equal.and(&y_equal)
@@ -896,9 +881,7 @@ where
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_bits_le()?;
         let y_bits = self.y.to_bits_le()?;
         x_bits.extend_from_slice(&y_bits);
@@ -906,9 +889,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
+    fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_non_unique_bits_le()?;
         let y_bits = self.y.to_non_unique_bits_le()?;
         x_bits.extend_from_slice(&y_bits);
@@ -923,9 +904,7 @@ where
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
+    fn to_bytes(&self) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_bytes()?;
         let y_bytes = self.y.to_bytes()?;
         x_bytes.extend_from_slice(&y_bytes);
@@ -933,9 +912,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
+    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_non_unique_bytes()?;
         let y_bytes = self.y.to_non_unique_bytes()?;
         x_bytes.extend_from_slice(&y_bytes);
