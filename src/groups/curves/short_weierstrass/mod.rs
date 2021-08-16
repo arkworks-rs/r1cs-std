@@ -367,6 +367,14 @@ where
     }
 }
 
+impl<P: SWModelParameters> CurveWithVar<CF<P>> for SWProjective<P> 
+where
+    BF<P>: FieldWithVar,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+{
+    type Var = ProjectiveVar<P>;
+}
+
 impl<P> CurveVar<SWProjective<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWModelParameters,
