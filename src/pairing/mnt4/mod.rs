@@ -1,6 +1,6 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::{PairingGadget as PG, PairingWithGadget};
+use super::PairingGadget as PG;
 
 use crate::{
     fields::{fp::FpVar, fp2::Fp2Var, fp4::Fp4Var, FieldVar, FieldWithVar},
@@ -189,14 +189,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> PairingWithGadget for MNT4<P>
-where
-    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
-{
-    type Gadget = MNT4Gadget<P>;
-}
-
-impl<P: MNT4Parameters> PG<MNT4<P>> for MNT4Gadget<P>
+impl<P: MNT4Parameters> PG for MNT4<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -213,7 +206,7 @@ where
     ) -> Result<Self::GTVar, SynthesisError> {
         let mut result = Fp4G::<P>::one();
         for (p, q) in ps.iter().zip(qs) {
-            result *= Self::ate_miller_loop(p, q)?;
+            result *= MNT4Gadget::ate_miller_loop(p, q)?;
         }
 
         Ok(result)
@@ -221,7 +214,7 @@ where
 
     #[tracing::instrument(target = "r1cs")]
     fn final_exponentiation(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
-        Self::final_exponentiation(r)
+        MNT4Gadget::<P>::final_exponentiation(r)
     }
 
     #[tracing::instrument(target = "r1cs")]

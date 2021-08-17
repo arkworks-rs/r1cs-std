@@ -63,7 +63,7 @@ pub mod prelude {
         eq::*,
         fields::{FieldOpsBounds, FieldVar, FieldWithVar},
         groups::{CurveVar, CurveWithVar, GroupOpsBounds},
-        pairing::{PairingGadget, PairingWithGadget},
+        pairing::PairingGadget,
         select::*,
         R1CSVar,
     };

@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{fields::fp::FpVar, prelude::*};
 use ark_ec::PairingEngine;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
@@ -10,37 +10,46 @@ pub mod mnt4;
 /// This module implements pairings for MNT6 bilinear groups.
 pub mod mnt6;
 
-pub trait PairingWithGadget: PairingEngine {
-    type Gadget: PairingGadget<Self>;
-}
-
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingGadget<E: PairingEngine> {
+pub trait PairingGadget: PairingEngine
+where
+    Self::Fq: FieldWithVar<Var = FpVar<Self::Fq>>,
+    Self::Fqe: FieldWithVar,
+    Self::Fqk: FieldWithVar<Var = Self::GTVar>,
+    Self::G1Projective: CurveWithVar<Self::Fq, Var = Self::G1Var>,
+    Self::G2Projective: CurveWithVar<Self::Fq, Var = Self::G2Var>,
+{
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1Projective, E::Fq>
-        + AllocVar<E::G1Projective, E::Fq>
-        + AllocVar<E::G1Affine, E::Fq>;
+    type G1Var: CurveVar<Self::G1Projective, Self::Fq>
+        + AllocVar<Self::G1Projective, Self::Fq>
+        + AllocVar<Self::G1Affine, Self::Fq>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2Projective, E::Fq>
-        + AllocVar<E::G2Projective, E::Fq>
-        + AllocVar<E::G2Affine, E::Fq>;
+    type G2Var: CurveVar<Self::G2Projective, Self::Fq>
+        + AllocVar<Self::G2Projective, Self::Fq>
+        + AllocVar<Self::G2Affine, Self::Fq>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::Fqk, E::Fq>;
+    type GTVar: FieldVar<Self::Fqk, Self::Fq>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G1Prepared`.
-    type G1PreparedVar: ToBytesGadget<E::Fq> + AllocVar<E::G1Prepared, E::Fq> + Clone + Debug;
+    type G1PreparedVar: ToBytesGadget<Self::Fq>
+        + AllocVar<Self::G1Prepared, Self::Fq>
+        + Clone
+        + Debug;
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G2Prepared`.
-    type G2PreparedVar: ToBytesGadget<E::Fq> + AllocVar<E::G2Prepared, E::Fq> + Clone + Debug;
+    type G2PreparedVar: ToBytesGadget<Self::Fq>
+        + AllocVar<Self::G2Prepared, Self::Fq>
+        + Clone
+        + Debug;
 
     /// Computes a multi-miller loop between elements
     /// of `p` and `q`.
@@ -58,8 +67,8 @@ pub trait PairingGadget<E: PairingEngine> {
         p: Self::G1PreparedVar,
         q: Self::G2PreparedVar,
     ) -> Result<Self::GTVar, SynthesisError> {
-        let tmp = Self::miller_loop(&[p], &[q])?;
-        Self::final_exponentiation(&tmp)
+        let tmp = <Self as PairingGadget>::miller_loop(&[p], &[q])?;
+        <Self as PairingGadget>::final_exponentiation(&tmp)
     }
 
     /// Computes a product of pairings over the elements in `p` and `q`.
@@ -69,8 +78,8 @@ pub trait PairingGadget<E: PairingEngine> {
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
-        let miller_result = Self::miller_loop(p, q)?;
-        Self::final_exponentiation(&miller_result)
+        let miller_result = <Self as PairingGadget>::miller_loop(p, q)?;
+        <Self as PairingGadget>::final_exponentiation(&miller_result)
     }
 
     /// Performs the precomputation to generate `Self::G1PreparedVar`.

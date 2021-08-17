@@ -1,6 +1,6 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::{PairingGadget as PG, PairingWithGadget};
+use super::PairingGadget as PG;
 
 use crate::{
     fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar, FieldWithVar},
@@ -62,14 +62,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> PairingWithGadget for Bls12<P>
-where
-    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
-{
-    type Gadget = Bls12Gadget<P>;
-}
-
-impl<P: Bls12Parameters> PG<Bls12<P>> for Bls12Gadget<P>
+impl<P: Bls12Parameters> PG for Bls12<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -94,12 +87,12 @@ where
             f.square_in_place()?;
 
             for &mut (p, ref mut coeffs) in pairs.iter_mut() {
-                Self::ell(&mut f, coeffs.next().unwrap(), &p.0)?;
+                Bls12Gadget::<P>::ell(&mut f, coeffs.next().unwrap(), &p.0)?;
             }
 
             if i {
                 for &mut (p, ref mut coeffs) in pairs.iter_mut() {
-                    Self::ell(&mut f, &coeffs.next().unwrap(), &p.0)?;
+                    Bls12Gadget::<P>::ell(&mut f, &coeffs.next().unwrap(), &p.0)?;
                 }
             }
         }
@@ -141,15 +134,15 @@ where
             let mut y0 = r.cyclotomic_square()?;
             y0 = y0.unitary_inverse()?;
 
-            let mut y5 = Self::exp_by_x(&r)?;
+            let mut y5 = Bls12Gadget::<P>::exp_by_x(&r)?;
 
             let mut y1 = y5.cyclotomic_square()?;
             let mut y3 = y0 * &y5;
-            y0 = Self::exp_by_x(&y3)?;
-            let y2 = Self::exp_by_x(&y0)?;
-            let mut y4 = Self::exp_by_x(&y2)?;
+            y0 = Bls12Gadget::<P>::exp_by_x(&y3)?;
+            let y2 = Bls12Gadget::<P>::exp_by_x(&y0)?;
+            let mut y4 = Bls12Gadget::<P>::exp_by_x(&y2)?;
             y4 *= &y1;
-            y1 = Self::exp_by_x(&y4)?;
+            y1 = Bls12Gadget::<P>::exp_by_x(&y4)?;
             y3 = y3.unitary_inverse()?;
             y1 *= &y3;
             y1 *= &r;
