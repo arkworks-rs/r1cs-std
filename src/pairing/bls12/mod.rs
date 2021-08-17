@@ -73,7 +73,7 @@ where
     type GTVar = Fp12Var<P::Fp12Params>;
 
     #[tracing::instrument(target = "r1cs")]
-    fn miller_loop(
+    fn miller_loop_gadget(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
@@ -105,7 +105,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn final_exponentiation(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
+    fn final_exponentiation_gadget(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
         // Computing the final exponentation following
         // https://eprint.iacr.org/2016/130.pdf.
         // We don't use their "faster" formula because it is difficult to make

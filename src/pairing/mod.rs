@@ -53,33 +53,33 @@ where
 
     /// Computes a multi-miller loop between elements
     /// of `p` and `q`.
-    fn miller_loop(
+    fn miller_loop_gadget(
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError>;
 
     /// Computes a final exponentiation over `p`.
-    fn final_exponentiation(p: &Self::GTVar) -> Result<Self::GTVar, SynthesisError>;
+    fn final_exponentiation_gadget(p: &Self::GTVar) -> Result<Self::GTVar, SynthesisError>;
 
     /// Computes a pairing over `p` and `q`.
     #[tracing::instrument(target = "r1cs")]
-    fn pairing(
+    fn pairing_gadget(
         p: Self::G1PreparedVar,
         q: Self::G2PreparedVar,
     ) -> Result<Self::GTVar, SynthesisError> {
-        let tmp = <Self as PairingGadget>::miller_loop(&[p], &[q])?;
-        <Self as PairingGadget>::final_exponentiation(&tmp)
+        let tmp = <Self as PairingGadget>::miller_loop_gadget(&[p], &[q])?;
+        <Self as PairingGadget>::final_exponentiation_gadget(&tmp)
     }
 
     /// Computes a product of pairings over the elements in `p` and `q`.
     #[must_use]
     #[tracing::instrument(target = "r1cs")]
-    fn product_of_pairings(
+    fn product_of_pairings_gadget(
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
-        let miller_result = <Self as PairingGadget>::miller_loop(p, q)?;
-        <Self as PairingGadget>::final_exponentiation(&miller_result)
+        let miller_result = <Self as PairingGadget>::miller_loop_gadget(p, q)?;
+        <Self as PairingGadget>::final_exponentiation_gadget(&miller_result)
     }
 
     /// Performs the precomputation to generate `Self::G1PreparedVar`.

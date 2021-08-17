@@ -200,7 +200,7 @@ where
     type GTVar = GTVar<P>;
 
     #[tracing::instrument(target = "r1cs")]
-    fn miller_loop(
+    fn miller_loop_gadget(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
@@ -213,7 +213,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn final_exponentiation(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
+    fn final_exponentiation_gadget(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
         MNT4Gadget::<P>::final_exponentiation(r)
     }
 
