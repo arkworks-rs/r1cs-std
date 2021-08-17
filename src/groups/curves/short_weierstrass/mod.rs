@@ -610,7 +610,9 @@ impl_bounded_ops!(
         if this.is_constant() {
             // The value should exist because `other` is a constant.
             let this_val = this.value().unwrap();
-            if !this_val.is_zero() {
+            if this_val.is_zero() {
+                *this = other.clone();
+            } else {
                 // We'll use mixed addition to add non-zero constants.
                 let x = BFVar::<P>::constant(this_val.x);
                 let y = BFVar::<P>::constant(this_val.y);
