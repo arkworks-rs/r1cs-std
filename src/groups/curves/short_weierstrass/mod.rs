@@ -618,9 +618,7 @@ impl_bounded_ops!(
                 let y = BFVar::<P>::constant(this_val.y);
                 *this = other.add_mixed(&NonZeroAffineVar::new(x, y)).unwrap()
             }
-        }
-
-        if other.is_constant() {
+        } else if other.is_constant() {
             // The value should exist because `other` is a constant.
             let other = other.value().unwrap();
             if !other.is_zero() {
