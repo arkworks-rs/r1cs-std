@@ -227,6 +227,7 @@ where
 #[cfg(test)]
 mod test_non_zero_affine {
     use crate::alloc::AllocVar;
+    use crate::eq::EqGadget;
     use crate::fields::fp::{AllocatedFp, FpVar};
     use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
     use crate::groups::curves::short_weierstrass::ProjectiveVar;
@@ -354,5 +355,45 @@ mod test_non_zero_affine {
         assert!(cs.is_satisfied().unwrap());
         assert_eq!(sum_a.0, sum_b.0);
         assert_eq!(sum_a.1, sum_b.1);
+    }
+
+    #[test]
+    fn correctness_test_eq() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+            })
+            .unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+            })
+            .unwrap(),
+        );
+
+        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+        let n = 10;
+
+        let a_multiples: Vec<NonZeroAffineVar::<G1Parameters, FpVar<Fq>>> =
+            std::iter::successors(Some(a.clone()), |acc| Some(acc.add_unchecked(&a).unwrap()))
+            .take(n)
+            .collect();
+
+        let all_equal: Vec<NonZeroAffineVar::<G1Parameters, FpVar<Fq>>> = (0..n/2)
+            .map(|i| a_multiples[i].add_unchecked(&a_multiples[n-i-1]).unwrap())
+            .collect();
+
+        for i in 0..n-1 {
+            a_multiples[i].enforce_not_equal(&a_multiples[i+1]).unwrap();
+        }
+        for i in 0..all_equal.len()-1 {
+            all_equal[i].enforce_equal(&all_equal[i+1]).unwrap();
+        }
+
+        assert!(cs.is_satisfied().unwrap());
     }
 }
