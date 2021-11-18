@@ -25,7 +25,7 @@ where
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    pub(crate) fn new(x: F, y: F) -> Self {
+    pub fn new(x: F, y: F) -> Self {
         Self {
             x,
             y,
@@ -35,13 +35,13 @@ where
 
     /// Converts self into a non-zero projective point.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn into_projective(&self) -> ProjectiveVar<P, F> {
+    pub fn into_projective(&self) -> ProjectiveVar<P, F> {
         ProjectiveVar::new(self.x.clone(), self.y.clone(), F::one())
     }
 
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
-    pub(crate) fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
             let result =
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
@@ -64,10 +64,35 @@ where
         }
     }
 
+    /// Performs a subtraction without checking that other != ±self.
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    pub fn sub_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+        if [self, other].is_constant() {
+            let result =
+                (self.value()?.into_projective() - other.value()?.into_projective()).into_affine();
+            Ok(Self::new(F::constant(result.x), F::constant(result.y)))
+        } else {
+            let (x1, y1) = (&self.x, &self.y);
+            let (x2, y2) = (&other.x, other.y.clone().negate()?);
+            // Then,
+            // slope lambda := (y2 - y1)/(x2 - x1);
+            // x3 = lambda^2 - x1 - x2;
+            // y3 = lambda * (x1 - x3) - y1
+            let numerator = y2 - y1;
+            let denominator = x2 - x1;
+            // It's okay to use `unchecked` here, because the precondition of `add_unchecked` is that
+            // self != ±other, which means that `numerator` and `denominator` are both non-zero.
+            let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
+            let x3 = lambda.square()? - x1 - x2;
+            let y3 = lambda * &(x1 - &x3) - y1;
+            Ok(Self::new(x3, y3))
+        }
+    }
+
     /// Doubles `self`. As this is a prime order curve point,
     /// the output is guaranteed to not be the point at infinity.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
+    pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
             let result = self.value()?.into_projective().double().into_affine();
             // Panic if the result is zero.
@@ -96,7 +121,7 @@ where
     ///
     /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
@@ -126,7 +151,7 @@ where
 
     /// Doubles `self` in place.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_in_place(&mut self) -> Result<(), SynthesisError> {
+    pub fn double_in_place(&mut self) -> Result<(), SynthesisError> {
         *self = self.double()?;
         Ok(())
     }
@@ -166,6 +191,61 @@ where
         let y = cond.select(&true_value.y, &false_value.y)?;
 
         Ok(Self::new(x, y))
+    }
+}
+
+impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+where
+    P: SWModelParameters,
+    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+{
+    #[tracing::instrument(target = "r1cs")]
+    fn is_eq(
+        &self,
+        other: &Self,
+    ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        x_equal.and(&y_equal)
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        let coordinates_equal = x_equal.and(&y_equal)?;
+        coordinates_equal.conditional_enforce_equal(&Boolean::Constant(true), condition)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn enforce_equal(
+        &self,
+        other: &Self,
+    ) -> Result<(), SynthesisError> {
+        self.x.enforce_equal(&other.x)?;
+        self.y.enforce_equal(&other.y)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let is_equal = self.is_eq(other)?;
+        is_equal
+            .and(condition)?
+            .enforce_equal(&Boolean::Constant(false))
     }
 }
 
