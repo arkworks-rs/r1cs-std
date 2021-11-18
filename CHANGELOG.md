@@ -6,6 +6,8 @@
 
 ### Features
 
+- [\#84](https://github.com/arkworks-rs/r1cs-std/pull/84) Expose `short_weierstrass::non_zero_affine` module
+  and implement `EqGadget` for `NonZeroAffineVar`.
 - [\#79](https://github.com/arkworks-rs/r1cs-std/pull/79) Move `NonNativeFieldVar` from `ark-nonnative` to `ark-r1cs-std`.
 - [\#76](https://github.com/arkworks-rs/r1cs-std/pull/76) Implement `ToBytesGadget` for `Vec<UInt8>`.
 - [nonnative/\#45](https://github.com/arkworks-rs/nonnative/pull/45) Add `new_witness_with_le_bits` which returns the bits used during variable allocation.
