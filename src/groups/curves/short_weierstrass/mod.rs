@@ -22,6 +22,8 @@ pub mod mnt4;
 ///  family of bilinear groups.
 pub mod mnt6;
 
+/// This module provides a generic implementation of elliptic curve operations for points on
+/// short-weierstrass curves in affine coordinates that **are not** equal to zero.
 pub mod non_zero_affine;
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
