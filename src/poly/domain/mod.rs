@@ -83,26 +83,13 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         query_pos: &[Boolean<F>],
         coset_dim: u64,
     ) -> Result<Vec<FpVar<F>>, SynthesisError> {
-        let coset_index = truncate_to_coset_index(query_pos, self.dim, coset_dim);
-        let mut coset = Vec::new();
-
-        let offset_var: FpVar<F> =
-            FpVar::Constant(self.gen).pow_le(&coset_index).unwrap() * &self.offset;
-
-        coset.push(offset_var);
-        for i in 1..(1 << (coset_dim as usize)) {
-            let new_elem =
-                &coset[i - 1] * &FpVar::Constant(self.gen.pow(&[1 << (self.dim - coset_dim)]));
-            coset.push(new_elem);
-        }
-
-        Ok(coset)
+        Ok(self
+            .query_position_to_coset(query_pos, coset_dim)?
+            .elements())
     }
 
     /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
     /// returns all points of `h*g^{position}<g^{n-query_pos.len()}>`
-    ///
-    /// If you just need to get coset elements, use `query_position_to_coset_elements` instead.
     ///
     /// # Panics
     /// This function panics when `query_pos.len() != coset_dim` or `query_pos.len() != self.dim`.  
@@ -136,14 +123,12 @@ fn truncate_to_coset_index<F: PrimeField>(
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use ark_ff::PrimeField;
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{rand::Rng, test_rng};
 
-    use crate::{
-        alloc::AllocVar, boolean::Boolean, fields::fp::FpVar, poly::domain::Radix2DomainVar,
-        R1CSVar,
-    };
+    use crate::{alloc::AllocVar, fields::fp::FpVar, poly::domain::Radix2DomainVar, R1CSVar};
 
     fn test_query_coset_template<F: PrimeField>() {
         const COSET_DIM: u64 = 7;
@@ -156,27 +141,33 @@ mod tests {
         let offset_var = FpVar::new_witness(cs.clone(), || Ok(offset)).unwrap();
         let domain = Radix2DomainVar::new(gen, COSET_DIM, offset_var).unwrap();
 
-        let query_index = (0..COSET_DIM)
-            .map(|_| Boolean::<F>::new_witness(cs.clone(), || Ok(rng.gen::<bool>())).unwrap())
+        let num_cosets = 1 << (COSET_DIM - LOCALIZATION);
+
+        let coset_index = rng.gen_range(0..num_cosets);
+        let coset_index_var = UInt32::new_witness(cs.clone(), || Ok(coset_index))
+            .unwrap()
+            .to_bits_le()
+            .into_iter()
+            .take(COSET_DIM as usize)
             .collect::<Vec<_>>();
 
-        let queried_coset = domain
-            .query_position_to_coset(&query_index, LOCALIZATION)
-            .unwrap();
+        let elements_actual = domain
+            .query_position_to_coset(&coset_index_var, LOCALIZATION)
+            .unwrap()
+            .elements();
 
-        let queried_coset_elements_left = domain
-            .query_position_to_coset_elements(&query_index, LOCALIZATION)
-            .unwrap();
-
-        let queried_coset_elements_right = queried_coset.elements();
-
-        assert_eq!(
-            queried_coset_elements_left.len(),
-            queried_coset_elements_right.len()
-        );
-        queried_coset_elements_left
+        let elements_expected = domain
+            .elements()
             .into_iter()
-            .zip(queried_coset_elements_right.into_iter())
+            .skip(coset_index as usize)
+            .step_by(1 << (COSET_DIM - LOCALIZATION))
+            .collect::<Vec<_>>();
+
+        assert_eq!(elements_expected.len(), elements_actual.len());
+
+        elements_expected
+            .into_iter()
+            .zip(elements_actual.into_iter())
             .for_each(|(left, right)| {
                 assert_eq!(left.value().unwrap(), right.value().unwrap());
             });
