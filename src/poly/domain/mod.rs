@@ -60,7 +60,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
     pub fn elements(&self) -> Vec<FpVar<F>> {
         let mut result = Vec::new();
         result.push(self.offset.clone());
-        for _ in 0..(1 << self.dim) {
+        for _ in 1..(1 << self.dim) {
             let new_element = result.last().unwrap() * self.gen;
             result.push(new_element);
         }
