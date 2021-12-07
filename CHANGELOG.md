@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- [\#86](https://github.com/arkworks-rs/r1cs-std/pull/86) Change the API for domains for coset.
+
 ### Features
 
 - [\#79](https://github.com/arkworks-rs/r1cs-std/pull/79) Move `NonNativeFieldVar` from `ark-nonnative` to `ark-r1cs-std`.
@@ -14,6 +16,7 @@
 
 ### Bug Fixes
 
+- [\#86](https://github.com/arkworks-rs/r1cs-std/pull/86) Make result of `query_position_to_coset` consistent with `ark-ldt`.
 - [\#77](https://github.com/arkworks-rs/r1cs-std/pull/77) Fix BLS12 `G2PreparedGadget`'s `AllocVar` when G2 uses a divisive twist.
 
 ## v0.3.1
