@@ -113,12 +113,8 @@ fn truncate_to_coset_index<F: PrimeField>(
     codeword_dim: u64,
     coset_dim: u64,
 ) -> Vec<Boolean<F>> {
-    assert!(query_pos.len() == codeword_dim as usize || query_pos.len() == coset_dim as usize);
-    if query_pos.len() == codeword_dim as usize {
-        query_pos[0..(query_pos.len() - coset_dim as usize)].to_vec()
-    } else {
-        query_pos.to_vec()
-    }
+    assert!(query_pos.len() >= (codeword_dim - coset_dim) as usize);
+    query_pos[0..(codeword_dim - coset_dim) as usize].to_vec()
 }
 
 #[cfg(test)]
