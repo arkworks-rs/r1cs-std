@@ -92,7 +92,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
     /// returns all points of `h*g^{position}<g^{n-query_pos.len()}>`
     ///
     /// # Panics
-    /// This function panics when `query_pos.len() != coset_dim` or `query_pos.len() != self.dim`.  
+    /// This function panics when `query_pos.len() < log2_num_cosets`.
     pub fn query_position_to_coset(
         &self,
         query_pos: &[Boolean<F>],
@@ -113,8 +113,9 @@ fn truncate_to_coset_index<F: PrimeField>(
     codeword_dim: u64,
     coset_dim: u64,
 ) -> Vec<Boolean<F>> {
-    assert!(query_pos.len() >= (codeword_dim - coset_dim) as usize);
-    query_pos[0..(codeword_dim - coset_dim) as usize].to_vec()
+    let log2_num_cosets = (codeword_dim - coset_dim) as usize;
+    assert!(query_pos.len() >= log2_num_cosets);
+    query_pos[0..log2_num_cosets].to_vec()
 }
 
 #[cfg(test)]
