@@ -140,3 +140,52 @@ jobs:
         run: |
           cargo build --no-default-features --target aarch64-unknown-none
           cargo check --examples --no-default-features --target aarch64-unknown-none
+
+  test_against_curves:
+    name: Test against curves
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
+    strategy:
+      matrix:
+        curve:
+          - bls12_377
+          - pallas
+          - vesta
+          - bw6_761
+          - mnt4_298
+          - mnt6_298
+          - mnt6_753
+          - ed_on_bls12_381
+    steps:
+      - name: Checkout curves
+        uses: actions/checkout@v2
+        with:
+          repository: arkworks-rs/curves
+
+      - name: Checkout r1cs-std
+        uses: actions/checkout@v2
+        with:
+          repository: arkworks-rs/r1cs-std
+          path: r1cs-std
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Patch cargo.toml
+        run: |
+          if  grep -q "\[patch.crates-io\]" Cargo.toml ; then
+              MATCH=$(awk '/\[patch.crates-io\]/{ print NR; exit }' Cargo.toml); 
+              sed -i "$MATCH,\$d" Cargo.toml
+          fi
+          {
+            echo      "[patch.crates-io]";
+            echo      "ark-r1cs-std = { path = 'r1cs-std' }"
+          } >> Cargo.toml
+
+      - name: Test on ${{ matrix.curve }}
+        run: "cd ${{ matrix.curve }} && cargo test --features 'r1cs'"
