@@ -152,7 +152,6 @@ jobs:
           - bls12_377
           - pallas
           - vesta
-          - bw6_761
           - mnt4_298
           - mnt6_298
           - mnt6_753
