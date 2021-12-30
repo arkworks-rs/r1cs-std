@@ -165,7 +165,6 @@ jobs:
       - name: Checkout r1cs-std
         uses: actions/checkout@v2
         with:
-          repository: arkworks-rs/r1cs-std
           path: r1cs-std
 
       - name: Install Rust
