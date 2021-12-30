@@ -177,14 +177,10 @@ jobs:
 
       - name: Patch cargo.toml
         run: |
-          if  grep -q "\[patch.crates-io\]" Cargo.toml ; then
-              MATCH=$(awk '/\[patch.crates-io\]/{ print NR; exit }' Cargo.toml); 
-              sed -i "$MATCH,\$d" Cargo.toml
+          if ! grep -q "\[patch.crates-io\]" Cargo.toml ; then
+            echo "[patch.crates-io]" >> Cargo.toml
           fi
-          {
-            echo      "[patch.crates-io]";
-            echo      "ark-r1cs-std = { path = 'r1cs-std' }"
-          } >> Cargo.toml
+          echo "ark-r1cs-std = { path = 'r1cs-std' }" >> Cargo.toml
 
       - name: Test on ${{ matrix.curve }}
         run: "cd ${{ matrix.curve }} && cargo test --features 'r1cs'"
