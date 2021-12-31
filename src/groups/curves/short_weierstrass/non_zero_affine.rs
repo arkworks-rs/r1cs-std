@@ -385,7 +385,7 @@ mod test_non_zero_affine {
                 a_multiples[i]
                     .add_unchecked(&a_multiples[n - i - 1])
                     .unwrap()
-            )}
+            })
             .collect();
 
         for i in 0..n - 1 {
