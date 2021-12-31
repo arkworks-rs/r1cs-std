@@ -201,10 +201,7 @@ where
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn enforce_equal(
-        &self,
-        other: &Self,
-    ) -> Result<(), SynthesisError> {
+    fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
         self.x.enforce_equal(&other.x)?;
         self.y.enforce_equal(&other.y)?;
         Ok(())
@@ -378,20 +375,26 @@ mod test_non_zero_affine {
 
         let n = 10;
 
-        let a_multiples: Vec<NonZeroAffineVar::<G1Parameters, FpVar<Fq>>> =
+        let a_multiples: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> =
             std::iter::successors(Some(a.clone()), |acc| Some(acc.add_unchecked(&a).unwrap()))
-            .take(n)
+                .take(n)
+                .collect();
+
+        let all_equal: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> = (0..n / 2)
+            .map(|i| {
+                a_multiples[i]
+                    .add_unchecked(&a_multiples[n - i - 1])
+                    .unwrap()
+            )}
             .collect();
 
-        let all_equal: Vec<NonZeroAffineVar::<G1Parameters, FpVar<Fq>>> = (0..n/2)
-            .map(|i| a_multiples[i].add_unchecked(&a_multiples[n-i-1]).unwrap())
-            .collect();
-
-        for i in 0..n-1 {
-            a_multiples[i].enforce_not_equal(&a_multiples[i+1]).unwrap();
+        for i in 0..n - 1 {
+            a_multiples[i]
+                .enforce_not_equal(&a_multiples[i + 1])
+                .unwrap();
         }
-        for i in 0..all_equal.len()-1 {
-            all_equal[i].enforce_equal(&all_equal[i+1]).unwrap();
+        for i in 0..all_equal.len() - 1 {
+            all_equal[i].enforce_equal(&all_equal[i + 1]).unwrap();
         }
 
         assert!(cs.is_satisfied().unwrap());
