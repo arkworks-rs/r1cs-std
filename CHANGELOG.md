@@ -14,6 +14,8 @@
 
 ### Improvements
 
+- [\#72](https://github.com/arkworks-rs/r1cs-std/pull/72) Implement `pow_by_constant` with NAF for `FpVar`.
+
 ### Bug Fixes
 
 - [\#86](https://github.com/arkworks-rs/r1cs-std/pull/86) Make result of `query_position_to_coset` consistent with `ark-ldt`.
