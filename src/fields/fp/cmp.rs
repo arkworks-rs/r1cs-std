@@ -106,7 +106,7 @@ impl<F: PrimeField> FpVar<F> {
         // self <= (p-1)/2, which implies self < p.
         let _ = Boolean::enforce_smaller_or_equal_than_le(
             &self.to_non_unique_bits_le()?,
-            F::modulus_minus_one_div_two(),
+            F::MODULUS_MINUS_ONE_DIV_TWO,
         )?;
         Ok(())
     }
@@ -186,12 +186,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                }
+                },
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                }
-                _ => {}
+                },
+                _ => {},
             }
 
             if i == 0 {
@@ -212,12 +212,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                }
+                },
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                }
-                _ => {}
+                },
+                _ => {},
             }
 
             assert!(!cs.is_satisfied().unwrap());

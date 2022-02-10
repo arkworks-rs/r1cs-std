@@ -1,4 +1,4 @@
-use ark_ff::{Field, FpParameters, PrimeField, ToConstraintField};
+use ark_ff::{Field, PrimeField, ToConstraintField};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
@@ -152,7 +152,7 @@ impl<F: Field> UInt8<F> {
         let values_len = values.len();
         let field_elements: Vec<F> = ToConstraintField::<F>::to_field_elements(values).unwrap();
 
-        let max_size = 8 * (F::Params::CAPACITY / 8) as usize;
+        let max_size = 8 * ((F::MODULUS_BIT_SIZE - 1) / 8) as usize;
         let mut allocated_bits = Vec::new();
         for field_element in field_elements.into_iter() {
             let fe = AllocatedFp::new_input(cs.clone(), || Ok(field_element))?;
@@ -343,7 +343,7 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
-        let max_size = (ConstraintF::Params::CAPACITY / 8) as usize;
+        let max_size = ((ConstraintF::MODULUS_BIT_SIZE - 1) / 8) as usize;
         self.chunks(max_size)
             .map(|chunk| Boolean::le_bits_to_fp_var(chunk.to_bits_le()?.as_slice()))
             .collect::<Result<Vec<_>, SynthesisError>>()
@@ -426,8 +426,8 @@ mod test {
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {
-                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
-                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
+                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
+                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
                     _ => unreachable!(),
                 }
             }

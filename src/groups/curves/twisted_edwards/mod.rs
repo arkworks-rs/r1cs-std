@@ -276,7 +276,7 @@ where
             Ok(ge) => {
                 let ge: TEAffine<P> = ge.into();
                 (Ok(ge.x), Ok(ge.y))
-            }
+            },
             _ => (
                 Err(SynthesisError::AssignmentMissing),
                 Err(SynthesisError::AssignmentMissing),
@@ -458,7 +458,7 @@ where
     /// is unchanged.
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
-        let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        let r_minus_1 = (-P::ScalarField::one()).into_bigint();
 
         let mut result = Self::zero();
         for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
@@ -592,7 +592,7 @@ where
                 let cofactor_weight = BitIteratorBE::new(cofactor.as_slice())
                     .filter(|b| *b)
                     .count();
-                let modulus_minus_1 = (-P::ScalarField::one()).into_repr(); // r - 1
+                let modulus_minus_1 = (-P::ScalarField::one()).into_bigint(); // r - 1
                 let modulus_minus_1_weight =
                     BitIteratorBE::new(modulus_minus_1).filter(|b| *b).count();
 
@@ -620,9 +620,9 @@ where
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
-                                let mut power_of_two = P::ScalarField::one().into_repr();
+                                let mut power_of_two = P::ScalarField::one().into_bigint();
                                 power_of_two.muln(power_of_2);
-                                let power_of_two_inv = P::ScalarField::from_repr(power_of_two)
+                                let power_of_two_inv = P::ScalarField::from_bigint(power_of_two)
                                     .and_then(|n| n.inverse())
                                     .unwrap();
                                 g.mul(power_of_two_inv)
@@ -654,7 +654,7 @@ where
                     ge.enforce_equal(&ge)?;
                     Ok(ge)
                 }
-            }
+            },
         }
     }
 }

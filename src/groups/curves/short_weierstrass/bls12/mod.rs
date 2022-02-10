@@ -135,7 +135,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                         .zip(z_s)
                         .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
                         .collect::<Vec<_>>()
-                }
+                },
                 TwistType::D => {
                     let mut z_s = projective_coeffs
                         .iter()
@@ -147,7 +147,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                         .zip(z_s)
                         .map(|((_, x, y), z_inv)| (*x * &z_inv, *y * &z_inv))
                         .collect::<Vec<_>>()
-                }
+                },
             }
         });
 

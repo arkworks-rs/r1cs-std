@@ -54,10 +54,10 @@ pub const fn find_parameters(
         match optimization_type {
             OptimizationType::Constraints => {
                 this_cost += 2 * num_of_limbs - 1;
-            }
+            },
             OptimizationType::Weight => {
                 this_cost += 6 * num_of_limbs * num_of_limbs;
-            }
+            },
         };
 
         match optimization_type {
@@ -67,7 +67,7 @@ pub const fn find_parameters(
                                                                            //this_cost += 2 * num_of_limbs - 1; // compute kp
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
                 // equality check
-            }
+            },
             OptimizationType::Weight => {
                 this_cost += target_field_prime_bit_length * 3 + target_field_prime_bit_length; // allocation of k
                 this_cost += target_field_prime_bit_length * 3
@@ -79,7 +79,7 @@ pub const fn find_parameters(
                     + 6 * num_of_groups
                     + (num_of_groups - 1) * (2 * limb_size + surfeit) * 4
                     + 2; // equality check
-            }
+            },
         };
 
         if !found || this_cost < min_cost {

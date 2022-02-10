@@ -327,15 +327,15 @@ fn randomized_arithmetic_test<TargetField: PrimeField, BaseField: PrimeField, R:
             0 => {
                 num_native += &next_native;
                 num += &next;
-            }
+            },
             1 => {
                 num_native *= &next_native;
                 num *= &next;
-            }
+            },
             2 => {
                 num_native -= &next_native;
                 num -= &next;
-            }
+            },
             _ => (),
         };
 

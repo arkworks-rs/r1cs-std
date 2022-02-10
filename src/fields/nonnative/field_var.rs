@@ -5,8 +5,8 @@ use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use crate::prelude::*;
 use crate::{R1CSVar, ToConstraintFieldGadget};
+use ark_ff::to_bytes;
 use ark_ff::PrimeField;
-use ark_ff::{to_bytes, FpParameters};
 use ark_relations::r1cs::Result as R1CSResult;
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::hash::{Hash, Hasher};
@@ -248,12 +248,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
                     should_enforce.enforce_equal(&Boolean::FALSE)?;
                 }
                 Ok(())
-            }
+            },
             (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
                 let cs = v.cs();
                 let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
                 c.conditional_enforce_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_equal(v2, should_enforce),
         }
     }
@@ -270,12 +270,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
                     should_enforce.enforce_equal(&Boolean::FALSE)?;
                 }
                 Ok(())
-            }
+            },
             (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
                 let cs = v.cs();
                 let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
                 c.conditional_enforce_not_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_not_equal(v2, should_enforce),
         }
     }
@@ -296,8 +296,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
     fn to_non_unique_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseField>>> {
         use ark_ff::BitIteratorLE;
         match self {
-            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
-                .take((TargetField::Params::MODULUS_BITS) as usize)
+            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_bigint())
+                .take((TargetField::MODULUS_BIT_SIZE) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),
@@ -350,7 +350,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
                     Self::Var(v) => v.clone(),
                 };
                 cond.select(&true_value, &false_value).map(Self::Var)
-            }
+            },
         }
     }
 }
@@ -473,7 +473,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
                     Ok(NonNativeFieldMulResultVar::Var(
                         other_v.mul_without_reduce(&self_v)?,
                     ))
-                }
+                },
             },
             Self::Var(v) => {
                 let other_v = match other {
@@ -482,13 +482,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
                             self.cs(),
                             other_c,
                         )?
-                    }
+                    },
                     Self::Var(other_v) => other_v.clone(),
                 };
                 Ok(NonNativeFieldMulResultVar::Var(
                     v.mul_without_reduce(&other_v)?,
                 ))
-            }
+            },
         }
     }
 }
