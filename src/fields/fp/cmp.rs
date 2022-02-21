@@ -165,7 +165,7 @@ mod test {
     fn test_cmp() {
         let mut rng = ark_std::test_rng();
         fn rand_in_range<R: Rng>(rng: &mut R) -> Fr {
-            let pminusonedivtwo: Fr = Fr::modulus_minus_one_div_two().into();
+            let pminusonedivtwo: Fr = Fr::MODULUS_MINUS_ONE_DIV_TWO.into();
             let mut r;
             loop {
                 r = Fr::rand(rng);

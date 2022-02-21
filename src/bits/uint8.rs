@@ -335,7 +335,7 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::Params::CAPACITY` chunks and
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::MODULUS_BIT_SIZE` chunks and
 /// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
 /// representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
@@ -363,7 +363,7 @@ mod test {
     use crate::fields::fp::FpVar;
     use crate::prelude::AllocationMode::{Constant, Input, Witness};
     use crate::{prelude::*, ToConstraintFieldGadget, Vec};
-    use ark_ff::{FpParameters, PrimeField, ToConstraintField};
+    use ark_ff::{PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
     use ark_std::rand::distributions::Uniform;
     use ark_std::rand::Rng;
@@ -475,7 +475,7 @@ mod test {
     #[test]
     fn test_uint8_to_constraint_field() -> Result<(), SynthesisError> {
         let mut rng = ark_std::test_rng();
-        let max_size = (<Fr as PrimeField>::Params::CAPACITY / 8) as usize;
+        let max_size = ((<Fr as PrimeField>::MODULUS_BIT_SIZE - 1) / 8) as usize;
 
         let modes = [Input, Witness, Constant];
         for mode in &modes {
