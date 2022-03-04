@@ -335,7 +335,7 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::MODULUS_BIT_SIZE` chunks and
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::MODULUS_BIT_SIZE - 1` chunks and
 /// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
 /// representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
