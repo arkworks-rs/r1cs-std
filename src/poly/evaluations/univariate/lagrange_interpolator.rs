@@ -118,7 +118,7 @@ mod tests {
         let domain = Radix2DomainVar::new(
             gen,
             4, // 2^4 = 16
-            FpVar::constant(Fr::multiplicative_generator()),
+            FpVar::constant(Fr::GENERATOR),
         )
         .unwrap();
         // generate evaluations of `poly` on this domain

@@ -19,7 +19,7 @@ fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> us
             let matrices = cs_bak.to_matrices().unwrap();
 
             matrices.a_num_non_zero + matrices.b_num_non_zero + matrices.c_num_non_zero
-        }
+        },
     }
 }
 

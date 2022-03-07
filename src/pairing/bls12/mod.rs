@@ -13,13 +13,13 @@ use core::marker::PhantomData;
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
 pub struct PairingVar<P: Bls12Parameters>(PhantomData<P>);
 
-type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Params>;
+type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
 
 impl<P: Bls12Parameters> PairingVar<P> {
     // Evaluate the line function at point p.
     #[tracing::instrument(target = "r1cs")]
     fn ell(
-        f: &mut Fp12Var<P::Fp12Params>,
+        f: &mut Fp12Var<P::Fp12Config>,
         coeffs: &(Fp2V<P>, Fp2V<P>),
         p: &G1AffineVar<P>,
     ) -> Result<(), SynthesisError> {
@@ -35,7 +35,7 @@ impl<P: Bls12Parameters> PairingVar<P> {
                 c1.c1 *= &p.x;
                 *f = f.mul_by_014(&c0, &c1, &c2)?;
                 Ok(())
-            }
+            },
             TwistType::D => {
                 let c0 = Fp2V::<P>::new(p.y.clone(), zero);
                 let mut c1 = coeffs.0.clone();
@@ -45,12 +45,12 @@ impl<P: Bls12Parameters> PairingVar<P> {
                 c1.c1 *= &p.x;
                 *f = f.mul_by_034(&c0, &c1, &c2)?;
                 Ok(())
-            }
+            },
         }
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn exp_by_x(f: &Fp12Var<P::Fp12Params>) -> Result<Fp12Var<P::Fp12Params>, SynthesisError> {
+    fn exp_by_x(f: &Fp12Var<P::Fp12Config>) -> Result<Fp12Var<P::Fp12Config>, SynthesisError> {
         let mut result = f.optimized_cyclotomic_exp(P::X)?;
         if P::X_IS_NEGATIVE {
             result = result.unitary_inverse()?;
@@ -64,7 +64,7 @@ impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
     type G2PreparedVar = G2PreparedVar<P>;
-    type GTVar = Fp12Var<P::Fp12Params>;
+    type GTVar = Fp12Var<P::Fp12Config>;
 
     #[tracing::instrument(target = "r1cs")]
     fn miller_loop(

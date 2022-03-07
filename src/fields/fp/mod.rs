@@ -1,4 +1,4 @@
-use ark_ff::{BigInteger, FpParameters, PrimeField};
+use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
@@ -468,15 +468,15 @@ impl<F: PrimeField> ToBitsGadget<F> for AllocatedFp<F> {
         use ark_ff::BitIteratorBE;
         let mut bits = if let Some(value) = self.value {
             let field_char = BitIteratorBE::new(F::characteristic());
-            let bits: Vec<_> = BitIteratorBE::new(value.into_repr())
+            let bits: Vec<_> = BitIteratorBE::new(value.into_bigint())
                 .zip(field_char)
                 .skip_while(|(_, c)| !c)
                 .map(|(b, _)| Some(b))
                 .collect();
-            assert_eq!(bits.len(), F::Params::MODULUS_BITS as usize);
+            assert_eq!(bits.len(), F::MODULUS_BIT_SIZE as usize);
             bits
         } else {
-            vec![None; F::Params::MODULUS_BITS as usize]
+            vec![None; F::MODULUS_BIT_SIZE as usize]
         };
 
         // Convert to little-endian
@@ -573,7 +573,7 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedFp<F> {
                 )?;
 
                 Ok(result)
-            }
+            },
         }
     }
 }
@@ -717,13 +717,13 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             (Constant(_), Constant(_), Constant(_)) => Ok(()),
             (Constant(_), Constant(_), _) | (Constant(_), Var(_), _) | (Var(_), Constant(_), _) => {
                 result.enforce_equal(&(self * other))
-            } // this multiplication should be free
+            }, // this multiplication should be free
             (Var(v1), Var(v2), Var(v3)) => v1.mul_equals(v2, v3),
             (Var(v1), Var(v2), Constant(f)) => {
                 let cs = v1.cs.clone();
                 let v3 = AllocatedFp::new_constant(cs, f).unwrap();
                 v1.mul_equals(v2, &v3)
-            }
+            },
         }
     }
 
@@ -737,12 +737,12 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
                 let cs = r.cs.clone();
                 let v = AllocatedFp::new_witness(cs, || Ok(f))?;
                 v.square_equals(&r)
-            }
+            },
             (Var(v), Constant(f)) => {
                 let cs = v.cs.clone();
                 let r = AllocatedFp::new_witness(cs, || Ok(f))?;
                 v.square_equals(&r)
-            }
+            },
             (Var(v1), Var(v2)) => v1.square_equals(v2),
         }
     }
@@ -763,7 +763,7 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
                 let mut f = *f;
                 f.frobenius_map(power);
                 Ok(FpVar::Constant(f))
-            }
+            },
         }
     }
 
@@ -850,7 +850,7 @@ impl<F: PrimeField> EqGadget<F> for FpVar<F> {
                 let cs = v.cs.clone();
                 let c = AllocatedFp::new_constant(cs, c)?;
                 c.is_eq(v)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.is_eq(v2),
         }
     }
@@ -867,7 +867,7 @@ impl<F: PrimeField> EqGadget<F> for FpVar<F> {
                 let cs = v.cs.clone();
                 let c = AllocatedFp::new_constant(cs, c)?;
                 c.conditional_enforce_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_equal(v2, should_enforce),
         }
     }
@@ -884,7 +884,7 @@ impl<F: PrimeField> EqGadget<F> for FpVar<F> {
                 let cs = v.cs.clone();
                 let c = AllocatedFp::new_constant(cs, c)?;
                 c.conditional_enforce_not_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_not_equal(v2, should_enforce),
         }
     }
@@ -903,8 +903,8 @@ impl<F: PrimeField> ToBitsGadget<F> for FpVar<F> {
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
         use ark_ff::BitIteratorLE;
         match self {
-            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
-                .take((F::Params::MODULUS_BITS) as usize)
+            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_bigint())
+                .take((F::MODULUS_BIT_SIZE) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),
@@ -956,7 +956,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
                         let not = AllocatedFp::from(cond.not());
                         // cond * t + (1 - cond) * f
                         Ok(is.mul_constant(*t).add(&not.mul_constant(*f)).into())
-                    }
+                    },
                     (..) => {
                         let cs = cond.cs();
                         let true_value = match true_value {
@@ -968,9 +968,9 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
                             Self::Var(v) => v.clone(),
                         };
                         cond.select(&true_value, &false_value).map(Self::Var)
-                    }
+                    },
                 }
-            }
+            },
         }
     }
 }
@@ -1049,7 +1049,7 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
             FpVar::Constant(c) => {
                 sum_constants += c;
                 None
-            }
+            },
             FpVar::Var(v) => Some(v),
         })));
 

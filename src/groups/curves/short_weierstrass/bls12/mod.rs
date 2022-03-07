@@ -98,14 +98,14 @@ impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Params>;
+type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "Fp2Var<P::Fp2Params>: Clone"),
-    Debug(bound = "Fp2Var<P::Fp2Params>: Debug")
+    Clone(bound = "Fp2Var<P::Fp2Config>: Clone"),
+    Debug(bound = "Fp2Var<P::Fp2Config>: Debug")
 )]
 pub struct G2PreparedVar<P: Bls12Parameters> {
     #[doc(hidden)]
@@ -135,7 +135,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                         .zip(z_s)
                         .map(|((x, y, _), z_inv)| (*x * &z_inv, *y * &z_inv))
                         .collect::<Vec<_>>()
-                }
+                },
                 TwistType::D => {
                     let mut z_s = projective_coeffs
                         .iter()
@@ -147,7 +147,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                         .zip(z_s)
                         .map(|((_, x, y), z_inv)| (*x * &z_inv, *y * &z_inv))
                         .collect::<Vec<_>>()
-                }
+                },
             }
         });
 
