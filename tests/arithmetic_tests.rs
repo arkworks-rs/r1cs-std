@@ -47,8 +47,8 @@ fn allocation_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
         .unwrap();
 
     let a_bits_actual: Vec<bool> = a_bits.into_iter().map(|b| b.value().unwrap()).collect();
-    let mut a_bits_expected = a_native.into_repr().to_bits_le();
-    a_bits_expected.truncate(TargetField::size_in_bits());
+    let mut a_bits_expected = a_native.into_bigint().to_bits_le();
+    a_bits_expected.truncate(TargetField::MODULUS_BIT_SIZE as usize);
     assert_eq!(
         a_bits_actual, a_bits_expected,
         "allocated bits does not equal the expected bits"
@@ -107,8 +107,8 @@ fn multiplication_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCor
         a_times_b_actual.eq(&a_times_b_expected),
         "a_times_b = {:?}, a_times_b_actual = {:?}, a_times_b_expected = {:?}",
         a_times_b,
-        a_times_b_actual.into_repr().as_ref(),
-        a_times_b_expected.into_repr().as_ref()
+        a_times_b_actual.into_bigint().as_ref(),
+        a_times_b_expected.into_bigint().as_ref()
     );
 }
 
@@ -181,50 +181,50 @@ fn edge_cases_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     assert!(
         a_plus_zero_native.eq(&a_native),
         "a_plus_zero = {:?}, a = {:?}",
-        a_plus_zero_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_plus_zero_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         a_minus_zero_native.eq(&a_native),
         "a_minus_zero = {:?}, a = {:?}",
-        a_minus_zero_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_minus_zero_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         zero_minus_a_native.eq(&minus_a_native),
         "zero_minus_a = {:?}, minus_a = {:?}",
-        zero_minus_a_native.into_repr().as_ref(),
-        minus_a_native.into_repr().as_ref()
+        zero_minus_a_native.into_bigint().as_ref(),
+        minus_a_native.into_bigint().as_ref()
     );
     assert!(
         a_times_zero_native.eq(&zero_native),
         "a_times_zero = {:?}, zero = {:?}",
-        a_times_zero_native.into_repr().as_ref(),
-        zero_native.into_repr().as_ref()
+        a_times_zero_native.into_bigint().as_ref(),
+        zero_native.into_bigint().as_ref()
     );
     assert!(
         zero_plus_a_native.eq(&a_native),
         "zero_plus_a = {:?}, a = {:?}",
-        zero_plus_a_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        zero_plus_a_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         zero_times_a_native.eq(&zero_native),
         "zero_times_a = {:?}, zero = {:?}",
-        zero_times_a_native.into_repr().as_ref(),
-        zero_native.into_repr().as_ref()
+        zero_times_a_native.into_bigint().as_ref(),
+        zero_native.into_bigint().as_ref()
     );
     assert!(
         a_times_one_native.eq(&a_native),
         "a_times_one = {:?}, a = {:?}",
-        a_times_one_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_times_one_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         one_times_a_native.eq(&a_native),
         "one_times_a = {:?}, a = {:?}",
-        one_times_a_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        one_times_a_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
 }
 
@@ -465,7 +465,7 @@ fn double_stress_test_1<TargetField: PrimeField, BaseField: PrimeField, R: RngCo
     )
     .unwrap();
     // Add to at least BaseField::size_in_bits() to ensure that we teat the overflowing
-    for _ in 0..TEST_COUNT + BaseField::size_in_bits() {
+    for _ in 0..TEST_COUNT + BaseField::MODULUS_BIT_SIZE as usize {
         // double
         num_native = num_native + &num_native;
         num = &num + &num;
