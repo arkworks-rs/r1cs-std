@@ -130,7 +130,7 @@ macro_rules! overhead {
     ($x:expr) => {{
         use ark_ff::BigInteger;
         let num = $x;
-        let num_bits = num.into_repr().to_bits_be();
+        let num_bits = num.into_bigint().to_bits_be();
         let mut skipped_bits = 0;
         for b in num_bits.iter() {
             if *b == false {
@@ -159,7 +159,7 @@ pub(crate) use overhead;
 
 /// Parameters for a specific `NonNativeFieldVar` instantiation
 #[derive(Clone, Debug)]
-pub struct NonNativeFieldParams {
+pub struct NonNativeFieldConfig {
     /// The number of limbs (`BaseField` elements) used to represent a `TargetField` element. Highest limb first.
     pub num_limbs: usize,
 

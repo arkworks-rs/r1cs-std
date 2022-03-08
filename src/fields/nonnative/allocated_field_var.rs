@@ -4,7 +4,7 @@ use super::AllocatedNonNativeFieldMulResultVar;
 use crate::fields::fp::FpVar;
 use crate::prelude::*;
 use crate::ToConstraintFieldGadget;
-use ark_ff::{BigInteger, FpParameters, PrimeField};
+use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{
     ns,
@@ -44,17 +44,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         optimization_type: OptimizationType,
     ) -> TargetField {
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             optimization_type,
         );
 
-        let mut base_repr: <TargetField as PrimeField>::BigInt = TargetField::one().into_repr();
+        let mut base_repr: <TargetField as PrimeField>::BigInt = TargetField::one().into_bigint();
 
         // Convert 2^{(params.bits_per_limb - 1)} into the TargetField and then double the base
         // This is because 2^{(params.bits_per_limb)} might indeed be larger than the target field's prime.
         base_repr.muln((params.bits_per_limb - 1) as u32);
-        let mut base: TargetField = TargetField::from_repr(base_repr).unwrap();
+        let mut base: TargetField = TargetField::from_bigint(base_repr).unwrap();
         base = base + &base;
 
         let mut result = TargetField::zero();
@@ -64,7 +64,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             let mut val = TargetField::zero();
             let mut cur = TargetField::one();
 
-            for bit in limb.into_repr().to_bits_be().iter().rev() {
+            for bit in limb.into_bigint().to_bits_be().iter().rev() {
                 if *bit {
                     val += &cur;
                 }
@@ -182,18 +182,19 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             self.get_optimization_type(),
         );
 
         // Step 1: reduce the `other` if needed
         let mut surfeit = overhead!(other.num_of_additions_over_normal_form + BaseField::one()) + 1;
         let mut other = other.clone();
-        if (surfeit + params.bits_per_limb > BaseField::size_in_bits() - 1)
+        if (surfeit + params.bits_per_limb > BaseField::MODULUS_BIT_SIZE as usize - 1)
             || (surfeit
-                + (TargetField::size_in_bits() - params.bits_per_limb * (params.num_limbs - 1))
-                > BaseField::size_in_bits() - 1)
+                + (TargetField::MODULUS_BIT_SIZE as usize
+                    - params.bits_per_limb * (params.num_limbs - 1))
+                > BaseField::MODULUS_BIT_SIZE as usize - 1)
         {
             Reducer::reduce(&mut other)?;
             surfeit = overhead!(other.num_of_additions_over_normal_form + BaseField::one()) + 1;
@@ -201,18 +202,18 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         // Step 2: construct the padding
         let mut pad_non_top_limb_repr: <BaseField as PrimeField>::BigInt =
-            BaseField::one().into_repr();
+            BaseField::one().into_bigint();
         let mut pad_top_limb_repr: <BaseField as PrimeField>::BigInt = pad_non_top_limb_repr;
 
         pad_non_top_limb_repr.muln((surfeit + params.bits_per_limb) as u32);
-        let pad_non_top_limb = BaseField::from_repr(pad_non_top_limb_repr).unwrap();
+        let pad_non_top_limb = BaseField::from_bigint(pad_non_top_limb_repr).unwrap();
 
         pad_top_limb_repr.muln(
             (surfeit
-                + (TargetField::size_in_bits() - params.bits_per_limb * (params.num_limbs - 1)))
-                as u32,
+                + (TargetField::MODULUS_BIT_SIZE as usize
+                    - params.bits_per_limb * (params.num_limbs - 1))) as u32,
         );
-        let pad_top_limb = BaseField::from_repr(pad_top_limb_repr).unwrap();
+        let pad_top_limb = BaseField::from_bigint(pad_top_limb_repr).unwrap();
 
         let mut pad_limbs = Vec::new();
         pad_limbs.push(pad_top_limb);
@@ -307,7 +308,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         elem: &TargetField,
         optimization_type: OptimizationType,
     ) -> R1CSResult<Vec<BaseField>> {
-        Self::get_limbs_representations_from_big_integer(&elem.into_repr(), optimization_type)
+        Self::get_limbs_representations_from_big_integer(&elem.into_bigint(), optimization_type)
     }
 
     /// Obtain the limbs directly from a big int
@@ -316,8 +317,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         optimization_type: OptimizationType,
     ) -> R1CSResult<Vec<BaseField>> {
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             optimization_type,
         );
 
@@ -329,7 +330,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             let cur_mod_r = <BaseField as PrimeField>::BigInt::from_bits_be(
                 &cur_bits[cur_bits.len() - params.bits_per_limb..],
             ); // therefore, the lowest `bits_per_non_top_limb` bits is what we want.
-            limbs.push(BaseField::from_repr(cur_mod_r).unwrap());
+            limbs.push(BaseField::from_bigint(cur_mod_r).unwrap());
             cur.divn(params.bits_per_limb as u32);
         }
 
@@ -349,8 +350,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             self.get_optimization_type(),
         );
 
@@ -443,15 +444,15 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             self.get_optimization_type(),
         );
 
         // Get p
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
-                &<TargetField as PrimeField>::Params::MODULUS,
+                &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
@@ -594,8 +595,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             OptimizationGoal::Weight => OptimizationType::Weight,
         };
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             optimization_type,
         );
         let mut bits = Vec::new();
@@ -610,7 +611,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         bits.extend(
             Reducer::<TargetField, BaseField>::limb_to_bits(
                 &self.limbs[0],
-                TargetField::size_in_bits() - (params.num_limbs - 1) * params.bits_per_limb,
+                TargetField::MODULUS_BIT_SIZE as usize
+                    - (params.num_limbs - 1) * params.bits_per_limb,
             )?
             .into_iter()
             .rev(),
@@ -640,8 +642,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseField>>> {
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             self.get_optimization_type(),
         );
 
@@ -746,8 +748,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
         };
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             optimization_type,
         );
         let mut limbs_constants = Vec::new();
@@ -805,8 +807,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
         };
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             optimization_type,
         );
 
@@ -874,8 +876,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
 
         // step 2: obtain the parameters for weight-optimized (often, fewer limbs)
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             OptimizationType::Weight,
         );
 

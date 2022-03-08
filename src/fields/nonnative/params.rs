@@ -1,4 +1,4 @@
-use super::NonNativeFieldParams;
+use super::NonNativeFieldConfig;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]
@@ -6,10 +6,10 @@ pub const fn get_params(
     target_field_size: usize,
     base_field_size: usize,
     optimization_type: OptimizationType,
-) -> NonNativeFieldParams {
+) -> NonNativeFieldConfig {
     let (num_of_limbs, limb_size) =
         find_parameters(base_field_size, target_field_size, optimization_type);
-    NonNativeFieldParams {
+    NonNativeFieldConfig {
         num_limbs: num_of_limbs,
         bits_per_limb: limb_size,
     }
@@ -54,10 +54,10 @@ pub const fn find_parameters(
         match optimization_type {
             OptimizationType::Constraints => {
                 this_cost += 2 * num_of_limbs - 1;
-            }
+            },
             OptimizationType::Weight => {
                 this_cost += 6 * num_of_limbs * num_of_limbs;
-            }
+            },
         };
 
         match optimization_type {
@@ -67,7 +67,7 @@ pub const fn find_parameters(
                                                                            //this_cost += 2 * num_of_limbs - 1; // compute kp
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
                 // equality check
-            }
+            },
             OptimizationType::Weight => {
                 this_cost += target_field_prime_bit_length * 3 + target_field_prime_bit_length; // allocation of k
                 this_cost += target_field_prime_bit_length * 3
@@ -79,7 +79,7 @@ pub const fn find_parameters(
                     + 6 * num_of_groups
                     + (num_of_groups - 1) * (2 * limb_size + surfeit) * 4
                     + 2; // equality check
-            }
+            },
         };
 
         if !found || this_cost < min_cost {

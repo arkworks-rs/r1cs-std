@@ -1,31 +1,33 @@
 use crate::fields::{fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
-use ark_ff::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Parameters, Field, QuadExtParameters};
+use ark_ff::fields::{fp12_2over3over2::*, Field};
+use ark_ff::fp6_3over2::Fp6Config;
+use ark_ff::QuadExtConfig;
 use ark_relations::r1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a
 /// quadratic extension over a cubic extension over a quadratic extension field.
 /// This is the R1CS equivalent of `ark_ff::fp12_2over3over2::Fp12<P>`.
-pub type Fp12Var<P> = QuadExtVar<Fp6Var<<P as Fp12Parameters>::Fp6Params>, Fp12ParamsWrapper<P>>;
+pub type Fp12Var<P> = QuadExtVar<Fp6Var<<P as Fp12Config>::Fp6Config>, Fp12ConfigWrapper<P>>;
 
-type Fp2Params<P> = <<P as Fp12Parameters>::Fp6Params as Fp6Parameters>::Fp2Params;
+type Fp2Config<P> = <<P as Fp12Config>::Fp6Config as Fp6Config>::Fp2Config;
 
-impl<P: Fp12Parameters> QuadExtVarParams<Fp6Var<P::Fp6Params>> for Fp12ParamsWrapper<P> {
-    fn mul_base_field_var_by_frob_coeff(fe: &mut Fp6Var<P::Fp6Params>, power: usize) {
+impl<P: Fp12Config> QuadExtVarConfig<Fp6Var<P::Fp6Config>> for Fp12ConfigWrapper<P> {
+    fn mul_base_field_var_by_frob_coeff(fe: &mut Fp6Var<P::Fp6Config>, power: usize) {
         fe.c0 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
         fe.c1 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
         fe.c2 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
     }
 }
 
-impl<P: Fp12Parameters> Fp12Var<P> {
+impl<P: Fp12Config> Fp12Var<P> {
     /// Multiplies by a sparse element of the form `(c0 = (c0, c1, 0), c1 = (0,
     /// d1, 0))`.
     #[inline]
     pub fn mul_by_014(
         &self,
-        c0: &Fp2Var<Fp2Params<P>>,
-        c1: &Fp2Var<Fp2Params<P>>,
-        d1: &Fp2Var<Fp2Params<P>>,
+        c0: &Fp2Var<Fp2Config<P>>,
+        c1: &Fp2Var<Fp2Config<P>>,
+        d1: &Fp2Var<Fp2Config<P>>,
     ) -> Result<Self, SynthesisError> {
         let v0 = self.c0.mul_by_c0_c1_0(&c0, &c1)?;
         let v1 = self.c1.mul_by_0_c1_0(&d1)?;
@@ -40,9 +42,9 @@ impl<P: Fp12Parameters> Fp12Var<P> {
     #[inline]
     pub fn mul_by_034(
         &self,
-        c0: &Fp2Var<Fp2Params<P>>,
-        d0: &Fp2Var<Fp2Params<P>>,
-        d1: &Fp2Var<Fp2Params<P>>,
+        c0: &Fp2Var<Fp2Config<P>>,
+        d0: &Fp2Var<Fp2Config<P>>,
+        d1: &Fp2Var<Fp2Config<P>>,
     ) -> Result<Self, SynthesisError> {
         let a0 = &self.c0.c0 * c0;
         let a1 = &self.c0.c1 * c0;
@@ -62,7 +64,7 @@ impl<P: Fp12Parameters> Fp12Var<P> {
     /// Squares `self` when `self` is in the cyclotomic subgroup.
     pub fn cyclotomic_square(&self) -> Result<Self, SynthesisError> {
         if characteristic_square_mod_6_is_one(Fp12::<P>::characteristic()) {
-            let fp2_nr = <P::Fp6Params as Fp6Parameters>::NONRESIDUE;
+            let fp2_nr = <P::Fp6Config as Fp6Config>::NONRESIDUE;
 
             let z0 = &self.c0.c0;
             let z4 = &self.c0.c1;
@@ -143,12 +145,12 @@ impl<P: Fp12Parameters> Fp12Var<P> {
         &self,
         exponent: impl AsRef<[u64]>,
     ) -> Result<Self, SynthesisError> {
-        use ark_ff::biginteger::arithmetic::find_wnaf;
+        use ark_ff::biginteger::arithmetic::find_naf;
         let mut res = Self::one();
         let self_inverse = self.unitary_inverse()?;
 
         let mut found_nonzero = false;
-        let naf = find_wnaf(exponent.as_ref());
+        let naf = find_naf(exponent.as_ref());
 
         for &value in naf.iter().rev() {
             if found_nonzero {

@@ -129,7 +129,7 @@ mod tests {
 
     fn test_query_coset_template<F: PrimeField>() {
         const COSET_DIM: u64 = 7;
-        const COSET_SIZE: usize = 1 << COSET_DIM;
+        const COSET_SIZE: u64 = 1 << COSET_DIM;
         const LOCALIZATION: u64 = 3;
         let cs = ConstraintSystem::new_ref();
         let mut rng = test_rng();

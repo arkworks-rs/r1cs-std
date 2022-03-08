@@ -215,7 +215,7 @@ where
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
-            }
+            },
             _ => (
                 Err(SynthesisError::AssignmentMissing),
                 Err(SynthesisError::AssignmentMissing),
@@ -282,7 +282,7 @@ where
         multiple_of_power_of_two: &mut NonZeroAffineVar<P, F>,
         bits: &[&Boolean<<P::BaseField as Field>::BasePrimeField>],
     ) -> Result<(), SynthesisError> {
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE as usize;
 
         assert!(scalar_modulus_bits >= bits.len());
         let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
@@ -424,7 +424,7 @@ where
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
         unimplemented!("cannot enforce prime order");
-        // let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        // let r_minus_1 = (-P::ScalarField::one()).into_bigint();
 
         // let mut result = Self::zero();
         // for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
@@ -519,11 +519,11 @@ where
         // little-endian.
         bits.reverse();
 
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE;
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
         // We chunk up `bits` into `p`-sized chunks.
-        for bits in bits.chunks(scalar_modulus_bits) {
+        for bits in bits.chunks(scalar_modulus_bits as usize) {
             self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
         }
 
@@ -809,7 +809,7 @@ where
                 let cofactor_weight = BitIteratorBE::new(cofactor.as_slice())
                     .filter(|b| *b)
                     .count();
-                let modulus_minus_1 = (-P::ScalarField::one()).into_repr(); // r - 1
+                let modulus_minus_1 = (-P::ScalarField::one()).into_bigint(); // r - 1
                 let modulus_minus_1_weight =
                     BitIteratorBE::new(modulus_minus_1).filter(|b| *b).count();
 
@@ -837,9 +837,9 @@ where
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
-                                let mut power_of_two = P::ScalarField::one().into_repr();
+                                let mut power_of_two = P::ScalarField::one().into_bigint();
                                 power_of_two.muln(power_of_2);
-                                let power_of_two_inv = P::ScalarField::from_repr(power_of_two)
+                                let power_of_two_inv = P::ScalarField::from_bigint(power_of_two)
                                     .and_then(|n| n.inverse())
                                     .unwrap();
                                 g.mul(power_of_two_inv)
@@ -872,7 +872,7 @@ where
                     ge.enforce_equal(&ge)?;
                     Ok(ge)
                 }
-            }
+            },
         }
     }
 }

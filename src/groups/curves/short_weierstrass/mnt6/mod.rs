@@ -31,9 +31,9 @@ pub struct G1PreparedVar<P: MNT6Parameters> {
     #[doc(hidden)]
     pub y: FpVar<P::Fp>,
     #[doc(hidden)]
-    pub x_twist: Fp3Var<P::Fp3Params>,
+    pub x_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y_twist: Fp3Var<P::Fp3Params>,
+    pub y_twist: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> G1PreparedVar<P> {
@@ -131,7 +131,7 @@ impl<P: MNT6Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     }
 }
 
-type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Params>;
+type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
@@ -139,13 +139,13 @@ type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Params>;
 #[derivative(Clone(bound = "P: MNT6Parameters"), Debug(bound = "P: MNT6Parameters"))]
 pub struct G2PreparedVar<P: MNT6Parameters> {
     #[doc(hidden)]
-    pub x: Fp3Var<P::Fp3Params>,
+    pub x: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y: Fp3Var<P::Fp3Params>,
+    pub y: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub x_over_twist: Fp3Var<P::Fp3Params>,
+    pub x_over_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y_over_twist: Fp3Var<P::Fp3Params>,
+    pub y_over_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
     pub double_coefficients: Vec<AteDoubleCoefficientsVar<P>>,
     #[doc(hidden)]
@@ -344,10 +344,10 @@ impl<P: MNT6Parameters> G2PreparedVar<P> {
 #[derive(Derivative)]
 #[derivative(Clone(bound = "P: MNT6Parameters"), Debug(bound = "P: MNT6Parameters"))]
 pub struct AteDoubleCoefficientsVar<P: MNT6Parameters> {
-    pub c_h: Fp3Var<P::Fp3Params>,
-    pub c_4c: Fp3Var<P::Fp3Params>,
-    pub c_j: Fp3Var<P::Fp3Params>,
-    pub c_l: Fp3Var<P::Fp3Params>,
+    pub c_h: Fp3Var<P::Fp3Config>,
+    pub c_4c: Fp3Var<P::Fp3Config>,
+    pub c_j: Fp3Var<P::Fp3Config>,
+    pub c_l: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P> {
@@ -427,8 +427,8 @@ impl<P: MNT6Parameters> AteDoubleCoefficientsVar<P> {
 #[derive(Derivative)]
 #[derivative(Clone(bound = "P: MNT6Parameters"), Debug(bound = "P: MNT6Parameters"))]
 pub struct AteAdditionCoefficientsVar<P: MNT6Parameters> {
-    pub c_l1: Fp3Var<P::Fp3Params>,
-    pub c_rz: Fp3Var<P::Fp3Params>,
+    pub c_l1: Fp3Var<P::Fp3Config>,
+    pub c_rz: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
@@ -487,8 +487,8 @@ impl<P: MNT6Parameters> AteAdditionCoefficientsVar<P> {
 
 #[doc(hidden)]
 pub struct G2ProjectiveExtendedVar<P: MNT6Parameters> {
-    pub x: Fp3Var<P::Fp3Params>,
-    pub y: Fp3Var<P::Fp3Params>,
-    pub z: Fp3Var<P::Fp3Params>,
-    pub t: Fp3Var<P::Fp3Params>,
+    pub x: Fp3Var<P::Fp3Config>,
+    pub y: Fp3Var<P::Fp3Config>,
+    pub z: Fp3Var<P::Fp3Config>,
+    pub t: Fp3Var<P::Fp3Config>,
 }
