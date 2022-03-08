@@ -25,7 +25,7 @@ where
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    pub(crate) fn new(x: F, y: F) -> Self {
+    pub fn new(x: F, y: F) -> Self {
         Self {
             x,
             y,
@@ -35,13 +35,13 @@ where
 
     /// Converts self into a non-zero projective point.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn into_projective(&self) -> ProjectiveVar<P, F> {
+    pub fn into_projective(&self) -> ProjectiveVar<P, F> {
         ProjectiveVar::new(self.x.clone(), self.y.clone(), F::one())
     }
 
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
-    pub(crate) fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
             let result =
                 (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
@@ -67,7 +67,7 @@ where
     /// Doubles `self`. As this is a prime order curve point,
     /// the output is guaranteed to not be the point at infinity.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
+    pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
             let result = self.value()?.into_projective().double().into_affine();
             // Panic if the result is zero.
@@ -96,7 +96,7 @@ where
     ///
     /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
@@ -126,7 +126,7 @@ where
 
     /// Doubles `self` in place.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_in_place(&mut self) -> Result<(), SynthesisError> {
+    pub fn double_in_place(&mut self) -> Result<(), SynthesisError> {
         *self = self.double()?;
         Ok(())
     }
@@ -169,9 +169,62 @@ where
     }
 }
 
+impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+where
+    P: SWModelParameters,
+    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+{
+    #[tracing::instrument(target = "r1cs")]
+    fn is_eq(
+        &self,
+        other: &Self,
+    ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        x_equal.and(&y_equal)
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        let coordinates_equal = x_equal.and(&y_equal)?;
+        coordinates_equal.conditional_enforce_equal(&Boolean::Constant(true), condition)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
+        self.x.enforce_equal(&other.x)?;
+        self.y.enforce_equal(&other.y)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let is_equal = self.is_eq(other)?;
+        is_equal
+            .and(condition)?
+            .enforce_equal(&Boolean::Constant(false))
+    }
+}
+
 #[cfg(test)]
 mod test_non_zero_affine {
     use crate::alloc::AllocVar;
+    use crate::eq::EqGadget;
     use crate::fields::fp::{AllocatedFp, FpVar};
     use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
     use crate::groups::curves::short_weierstrass::ProjectiveVar;
@@ -299,5 +352,51 @@ mod test_non_zero_affine {
         assert!(cs.is_satisfied().unwrap());
         assert_eq!(sum_a.0, sum_b.0);
         assert_eq!(sum_a.1, sum_b.1);
+    }
+
+    #[test]
+    fn correctness_test_eq() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+            })
+            .unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
+                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+            })
+            .unwrap(),
+        );
+
+        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+        let n = 10;
+
+        let a_multiples: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> =
+            std::iter::successors(Some(a.clone()), |acc| Some(acc.add_unchecked(&a).unwrap()))
+                .take(n)
+                .collect();
+
+        let all_equal: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> = (0..n / 2)
+            .map(|i| {
+                a_multiples[i]
+                    .add_unchecked(&a_multiples[n - i - 1])
+                    .unwrap()
+            })
+            .collect();
+
+        for i in 0..n - 1 {
+            a_multiples[i]
+                .enforce_not_equal(&a_multiples[i + 1])
+                .unwrap();
+        }
+        for i in 0..all_equal.len() - 1 {
+            all_equal[i].enforce_equal(&all_equal[i + 1]).unwrap();
+        }
+
+        assert!(cs.is_satisfied().unwrap());
     }
 }

@@ -22,7 +22,13 @@ pub mod mnt4;
 ///  family of bilinear groups.
 pub mod mnt6;
 
-mod non_zero_affine;
+/// This module provides a generic implementation of elliptic curve operations for points on
+/// short-weierstrass curves in affine coordinates that **are not** equal to zero.
+///
+/// Note: this module is **unsafe** in general: it can synthesize unsatisfiable or
+/// underconstrained constraint systems when a represented point _is_ equal to zero.
+/// The [ProjectiveVar] gadget is the recommended way of working with elliptic curve points.
+pub mod non_zero_affine;
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](<https://eprint.iacr.org/2015/1060>).
