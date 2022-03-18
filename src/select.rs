@@ -127,6 +127,8 @@ where
         true_value: &Vec<T>,
         false_value: &Vec<T>,
     ) -> Result<Vec<T>, SynthesisError> {
+        assert_eq!(true_value.len(), false_value.len());
+
         true_value
             .iter()
             .zip(false_value.iter())
