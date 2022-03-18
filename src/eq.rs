@@ -128,3 +128,31 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: Field> EqGadget<F> for [T] {
         }
     }
 }
+
+// EqGadget for Vec<T> just calls down to EqGadget for [T]
+impl<T: EqGadget<F> + R1CSVar<F>, F: Field> EqGadget<F> for Vec<T> {
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        self.as_slice().is_eq(other.as_slice())
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice()
+            .conditional_enforce_equal(other.as_slice(), condition)
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice()
+            .conditional_enforce_not_equal(other.as_slice(), should_enforce)
+    }
+}

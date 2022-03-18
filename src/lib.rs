@@ -124,6 +124,19 @@ impl<'a, F: Field, T: 'a + R1CSVar<F>> R1CSVar<F> for &'a T {
     }
 }
 
+// R1CSVar for Vec<T> just calls down to R1CSVar for [T]
+impl<F: Field, T: R1CSVar<F>> R1CSVar<F> for Vec<T> {
+    type Value = Vec<T::Value>;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
+        self.as_slice().cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
+        self.as_slice().value()
+    }
+}
+
 /// A utility trait to convert `Self` to `Result<T, SynthesisErrorA`.>
 pub trait Assignment<T> {
     /// Converts `self` to `Result`.

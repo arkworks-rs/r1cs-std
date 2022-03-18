@@ -115,3 +115,22 @@ where
         constants: &[Self::TableConstant],
     ) -> Result<Self, SynthesisError>;
 }
+
+impl<ConstraintF, T> CondSelectGadget<ConstraintF> for Vec<T>
+where
+    ConstraintF: Field,
+    T: CondSelectGadget<ConstraintF>,
+{
+    #[tracing::instrument(target = "r1cs", skip(true_value, false_value))]
+    fn conditionally_select(
+        cond: &Boolean<ConstraintF>,
+        true_value: &Vec<T>,
+        false_value: &Vec<T>,
+    ) -> Result<Vec<T>, SynthesisError> {
+        true_value
+            .iter()
+            .zip(false_value.iter())
+            .map(|(t, f)| T::conditionally_select(cond, t, f))
+            .collect()
+    }
+}
