@@ -21,10 +21,12 @@ where
     ) -> Result<Self, SynthesisError>;
 
     /// Returns an element of `values` whose index in represented by `position`.
-    /// `position` is an array of boolean that represents an unsigned integer in big endian order.
+    /// `position` is an array of boolean that represents an unsigned integer in
+    /// big endian order.
     ///
     /// # Example
-    /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`) to `position = [True, True, False]`,
+    /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`)
+    /// to `position = [True, True, False]`,
     /// and call `conditionally_select_power_of_two_vector(position, values)`.
     fn conditionally_select_power_of_two_vector(
         position: &[Boolean<ConstraintF>],

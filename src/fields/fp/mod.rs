@@ -127,7 +127,8 @@ impl<F: PrimeField> AllocatedFp<F> {
 
     /// Add many allocated Fp elements together.
     ///
-    /// This does not create any constraints and only creates one linear combination.
+    /// This does not create any constraints and only creates one linear
+    /// combination.
     pub fn addmany<'a, I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
@@ -424,7 +425,7 @@ impl<F: PrimeField> AllocatedFp<F> {
         // The high level logic is as follows:
         // We want to check that self - other != 0. We do this by checking that
         // (self - other).inverse() exists. In more detail, we check the following:
-        // If `should_enforce == true`, then we set `multiplier = (self - other).inverse()`,
+        // If `should_enforce == true`, then we set `multiplier = (self - other).inverse()`, 
         // and check that (self - other) * multiplier == 1. (i.e., that the inverse exists)
         //
         // If `should_enforce == false`, then we set `multiplier == 0`, and check that
@@ -918,7 +919,9 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_be().as_slice(),
+            )),
             Self::Var(v) => v.to_bytes(),
         }
     }
@@ -926,7 +929,9 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_be().as_slice(),
+            )),
             Self::Var(v) => v.to_non_unique_bytes(),
         }
     }
@@ -1060,10 +1065,12 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use crate::alloc::{AllocVar, AllocationMode};
-    use crate::eq::EqGadget;
-    use crate::fields::fp::FpVar;
-    use crate::R1CSVar;
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        eq::EqGadget,
+        fields::fp::FpVar,
+        R1CSVar,
+    };
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{UniformRand, Zero};
     use ark_test_curves::bls12_381::Fr;

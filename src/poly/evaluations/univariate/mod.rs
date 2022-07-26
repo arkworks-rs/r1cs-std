@@ -1,16 +1,21 @@
 pub mod lagrange_interpolator;
 
-use crate::alloc::AllocVar;
-use crate::eq::EqGadget;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
-use crate::poly::domain::Radix2DomainVar;
-use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
-use crate::R1CSVar;
+use crate::{
+    alloc::AllocVar,
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+    poly::{
+        domain::Radix2DomainVar,
+        evaluations::univariate::lagrange_interpolator::LagrangeInterpolator,
+    },
+    R1CSVar,
+};
 use ark_ff::{batch_inversion, PrimeField};
 use ark_relations::r1cs::SynthesisError;
-use ark_std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-use ark_std::vec::Vec;
+use ark_std::{
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+    vec::Vec,
+};
 
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.
@@ -22,8 +27,9 @@ pub struct EvaluationsVar<F: PrimeField> {
     domain: Radix2DomainVar<F>,
     /// Contains all domain elements of `domain.base_domain`.
     ///
-    /// This is a cache for lagrange interpolation when offset is non-constant. Will be `None` if offset is constant
-    /// or `interpolate` is set to `false`.
+    /// This is a cache for lagrange interpolation when offset is non-constant.
+    /// Will be `None` if offset is constant or `interpolate` is set to
+    /// `false`.
     subgroup_points: Option<Vec<F>>,
 }
 
@@ -54,7 +60,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         ev
     }
 
-    /// Precompute necessary calculation for lagrange interpolation and mark it ready to interpolate
+    /// Precompute necessary calculation for lagrange interpolation and mark it
+    /// ready to interpolate
     pub fn generate_interpolation_cache(&mut self) {
         if self.domain.offset().is_constant() {
             let poly_evaluations_val: Vec<_> =
@@ -67,7 +74,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
             };
             self.lagrange_interpolator = Some(lagrange_interpolator)
         } else {
-            // calculate all elements of base subgroup so that in later part we don't need to calculate the exponents again
+            // calculate all elements of base subgroup so that in later part we don't need
+            // to calculate the exponents again
             let mut subgroup_points = Vec::with_capacity(self.domain.size() as usize);
             subgroup_points.push(F::one());
             for i in 1..self.domain.size() as usize {
@@ -77,8 +85,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         }
     }
 
-    /// Compute lagrange coefficients for each evaluation, given `interpolation_point`.
-    /// Only valid if the domain offset is constant.
+    /// Compute lagrange coefficients for each evaluation, given
+    /// `interpolation_point`. Only valid if the domain offset is constant.
     fn compute_lagrange_coefficients(
         &self,
         interpolation_point: &FpVar<F>,
@@ -94,8 +102,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let lagrange_coeffs =
             lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
         let mut lagrange_coeffs_fg = Vec::new();
-        // Now we convert these lagrange coefficients to gadgets, and then constrain them.
-        // The i-th lagrange coefficients constraint is:
+        // Now we convert these lagrange coefficients to gadgets, and then constrain
+        // them. The i-th lagrange coefficients constraint is:
         // (v_inv[i] * t - v_inv[i] * domain_elem[i]) * (coeff) = 1/Z_I(t)
         let vp_t = lagrange_interpolator.domain_vp.evaluate_constraints(t)?;
         // let inv_vp_t = vp_t.inverse()?;
@@ -124,16 +132,19 @@ impl<F: PrimeField> EvaluationsVar<F> {
         Ok(lagrange_coeffs_fg)
     }
 
-    /// Returns constraints for Interpolating and evaluating at `interpolation_point`
+    /// Returns constraints for Interpolating and evaluating at
+    /// `interpolation_point`
     pub fn interpolate_and_evaluate(
         &self,
         interpolation_point: &FpVar<F>,
     ) -> Result<FpVar<F>, SynthesisError> {
-        // specialize: if domain offset is constant, we can optimize to have fewer constraints
+        // specialize: if domain offset is constant, we can optimize to have fewer
+        // constraints
         if self.domain.offset().is_constant() {
             self.lagrange_interpolate_with_constant_offset(interpolation_point)
         } else {
-            // if domain offset is not constant, then we use standard lagrange interpolation code
+            // if domain offset is not constant, then we use standard lagrange interpolation
+            // code
             self.lagrange_interpolate_with_non_constant_offset(interpolation_point)
         }
     }
@@ -156,7 +167,8 @@ impl<F: PrimeField> EvaluationsVar<F> {
         Ok(interpolation)
     }
 
-    /// Generate interpolation constraints. We assume at compile time we know the base coset (i.e. `gen`) but not know `offset`.
+    /// Generate interpolation constraints. We assume at compile time we know
+    /// the base coset (i.e. `gen`) but not know `offset`.
     fn lagrange_interpolate_with_non_constant_offset(
         &self,
         interpolation_point: &FpVar<F>, // = alpha in the following code
@@ -167,10 +179,12 @@ impl<F: PrimeField> EvaluationsVar<F> {
             Call `self.generate_interpolation_cache` first or set `interpolate` to true in constructor. ");
         // Let denote interpolation_point as alpha.
         // Lagrange polynomial for coset element `a` is
-        // \frac{1}{size * offset ^ size} * \frac{alpha^size - offset^size}{alpha * a^{-1} - 1}
-        // Notice that a = (offset * a') where a' is the corresponding element of base coset
+        // \frac{1}{size * offset ^ size} * \frac{alpha^size - offset^size}{alpha *
+        // a^{-1} - 1} Notice that a = (offset * a') where a' is the
+        // corresponding element of base coset
 
-        // let `lhs` be \frac{alpha^size - offset^size}{size * offset ^ size}. This part is shared by all lagrange polynomials
+        // let `lhs` be \frac{alpha^size - offset^size}{size * offset ^ size}. This part
+        // is shared by all lagrange polynomials
         let coset_offset_to_size = self
             .domain
             .offset()
@@ -181,14 +195,16 @@ impl<F: PrimeField> EvaluationsVar<F> {
         // This also means that the denominator is
         lhs_numerator.enforce_not_equal(&FpVar::zero())?;
 
-        // `domain.offset()` is non-zero by construction, so `coset_offset_to_size` is also non-zero, which means `lhs_denominator` is non-zero
+        // `domain.offset()` is non-zero by construction, so `coset_offset_to_size` is
+        // also non-zero, which means `lhs_denominator` is non-zero
         let lhs_denominator = &coset_offset_to_size * FpVar::constant(F::from(self.domain.size()));
 
         // unchecked is okay because the denominator is non-zero.
         let lhs = lhs_numerator.mul_by_inverse_unchecked(&lhs_denominator)?;
 
-        // `rhs` for coset element `a` is \frac{1}{alpha * a^{-1} - 1} = \frac{1}{alpha * offset^{-1} * a'^{-1} - 1}
-        // domain.offset() is non-zero by construction.
+        // `rhs` for coset element `a` is \frac{1}{alpha * a^{-1} - 1} = \frac{1}{alpha
+        // * offset^{-1} * a'^{-1} - 1} domain.offset() is non-zero by
+        // construction.
         let alpha_coset_offset_inv =
             interpolation_point.mul_by_inverse_unchecked(&self.domain.offset())?;
 
@@ -204,12 +220,14 @@ impl<F: PrimeField> EvaluationsVar<F> {
             let lag_denom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
             // lag_denom cannot be zero, so we use `unchecked`.
             //
-            // Proof: lag_denom is zero if and only if alpha * (coset_offset * subgroup_point)^{-1} == 1.
-            // This can happen only if `alpha` is itself in the coset.
+            // Proof: lag_denom is zero if and only if alpha * (coset_offset *
+            // subgroup_point)^{-1} == 1. This can happen only if `alpha` is
+            // itself in the coset.
             //
             // Earlier we asserted that `lhs_numerator` is not zero.
-            // Since `lhs_numerator` is just the vanishing polynomial for the coset evaluated at `alpha`,
-            // and since this is non-zero, `alpha` is not in the coset.
+            // Since `lhs_numerator` is just the vanishing polynomial for the coset
+            // evaluated at `alpha`, and since this is non-zero, `alpha` is not
+            // in the coset.
             let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_denom)?;
 
             let lag_interpoland = &self.evals[i] * lag_coeff;
@@ -346,15 +364,14 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::AllocVar;
-    use crate::fields::fp::FpVar;
-    use crate::fields::FieldVar;
-    use crate::poly::domain::Radix2DomainVar;
-    use crate::poly::evaluations::univariate::EvaluationsVar;
-    use crate::R1CSVar;
+    use crate::{
+        alloc::AllocVar,
+        fields::{fp::FpVar, FieldVar},
+        poly::{domain::Radix2DomainVar, evaluations::univariate::EvaluationsVar},
+        R1CSVar,
+    };
     use ark_ff::{FftField, Field, One, UniformRand};
-    use ark_poly::polynomial::univariate::DensePolynomial;
-    use ark_poly::{Polynomial, UVPolynomial};
+    use ark_poly::{polynomial::univariate::DensePolynomial, Polynomial, UVPolynomial};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::test_rng;
     use ark_test_curves::bls12_381::Fr;

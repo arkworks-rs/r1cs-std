@@ -608,7 +608,8 @@ impl<F: Field> Boolean<F> {
         }
     }
 
-    /// Convert a little-endian bitwise representation of a field element to `FpVar<F>`
+    /// Convert a little-endian bitwise representation of a field element to
+    /// `FpVar<F>`
     #[tracing::instrument(target = "r1cs", skip(bits))]
     pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError>
     where
@@ -761,7 +762,6 @@ impl<F: Field> Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    ///
     #[tracing::instrument(target = "r1cs", skip(first, second))]
     pub fn select<T: CondSelectGadget<F>>(
         &self,

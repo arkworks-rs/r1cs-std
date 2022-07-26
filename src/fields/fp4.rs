@@ -1,6 +1,8 @@
 use crate::fields::{fp2::Fp2Var, quadratic_extension::*};
-use ark_ff::fields::{Fp4ConfigWrapper, QuadExtConfig};
-use ark_ff::Fp4Config;
+use ark_ff::{
+    fields::{Fp4ConfigWrapper, QuadExtConfig},
+    Fp4Config,
+};
 
 /// A quartic extension field constructed as the tower of a
 /// quadratic extension over a quadratic extension field.

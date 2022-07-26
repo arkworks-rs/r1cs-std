@@ -1,11 +1,11 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
+use crate::fields::{fp::FpVar, FieldVar};
 use ark_std::vec::Vec;
 
-/// Stores a polynomial in coefficient form, where coeffcient is represented by a list of `Fpvar<F>`.
+/// Stores a polynomial in coefficient form, where coeffcient is represented by
+/// a list of `Fpvar<F>`.
 pub struct DensePolynomialVar<F: PrimeField> {
     /// The coefficient of `x^i` is stored at location `i` in `self.coeffs`.
     pub coeffs: Vec<FpVar<F>>,
@@ -22,8 +22,9 @@ impl<F: PrimeField> DensePolynomialVar<F> {
         Self { coeffs }
     }
 
-    /// Evaluates `self` at the given `point` and just gives you the gadget for the result.
-    /// Caution for use in holographic lincheck: The output has 2 entries in one matrix
+    /// Evaluates `self` at the given `point` and just gives you the gadget for
+    /// the result. Caution for use in holographic lincheck: The output has
+    /// 2 entries in one matrix
     pub fn evaluate(&self, point: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         let mut result: FpVar<F> = FpVar::zero();
         // current power of point
@@ -40,15 +41,13 @@ impl<F: PrimeField> DensePolynomialVar<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::AllocVar;
-    use crate::fields::fp::FpVar;
-    use crate::poly::polynomial::univariate::dense::DensePolynomialVar;
-    use crate::R1CSVar;
-    use ark_poly::polynomial::univariate::DensePolynomial;
-    use ark_poly::{Polynomial, UVPolynomial};
+    use crate::{
+        alloc::AllocVar, fields::fp::FpVar,
+        poly::polynomial::univariate::dense::DensePolynomialVar, R1CSVar,
+    };
+    use ark_poly::{polynomial::univariate::DensePolynomial, Polynomial, UVPolynomial};
     use ark_relations::r1cs::ConstraintSystem;
-    use ark_std::vec::Vec;
-    use ark_std::{test_rng, UniformRand};
+    use ark_std::{test_rng, vec::Vec, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

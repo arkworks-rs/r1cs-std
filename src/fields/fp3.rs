@@ -1,6 +1,8 @@
 use crate::fields::{cubic_extension::*, fp::FpVar};
-use ark_ff::fields::{CubicExtConfig, Fp3ConfigWrapper};
-use ark_ff::Fp3Config;
+use ark_ff::{
+    fields::{CubicExtConfig, Fp3ConfigWrapper},
+    Fp3Config,
+};
 
 /// A cubic extension field constructed over a prime field.
 /// This is the R1CS equivalent of `ark_ff::Fp3<P>`.

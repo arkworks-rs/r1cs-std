@@ -31,16 +31,14 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
             cur_elem *= domain_generator;
             all_domain_elems.push(cur_elem);
         }
-        /*
-        By computing the following elements as constants,
-        we can further reduce the interpolation costs.
-
-        m = order of the interpolation domain
-        v_inv[i] = prod_{j != i} h(g^i - g^j)
-        We use the following facts to compute this:
-        v_inv[0] = m*h^{m-1}
-        v_inv[i] = g^{-1} * v_inv[i-1]
-        */
+        // By computing the following elements as constants,
+        // we can further reduce the interpolation costs.
+        //
+        // m = order of the interpolation domain
+        // v_inv[i] = prod_{j != i} h(g^i - g^j)
+        // We use the following facts to compute this:
+        // v_inv[0] = m*h^{m-1}
+        // v_inv[i] = g^{-1} * v_inv[i-1]
         // TODO: Include proof of the above two points
         let g_inv = domain_generator.inverse().unwrap();
         let m = F::from((1 << domain_dim) as u128);
@@ -64,16 +62,14 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
     }
 
     pub(crate) fn compute_lagrange_coefficients(&self, interpolation_point: F) -> Vec<F> {
-        /*
-        * Let t be the interpolation point, H be the multiplicative coset, with elements of the form h*g^i.
-        Compute each L_{i,H}(t) as Z_{H}(t) * v_i / (t- h g^i)
-        where:
-        - Z_{H}(t) = \prod_{j} (t-h*g^j) = (t^m-h^m), and
-        - v_{i} = 1 / \prod_{j \neq i} h(g^i-g^j).
-        Below we use the fact that v_{0} = 1/(m * h^(m-1)) and v_{i+1} = g * v_{i}.
-        We first compute the inverse of each coefficient, except for the Z_H(t) term.
-        We then batch invert the entire result, and multiply by Z_H(t).
-        */
+        // Let t be the interpolation point, H be the multiplicative coset, with
+        // elements of the form h*g^i. Compute each L_{i,H}(t) as Z_{H}(t) * v_i
+        // / (t- h g^i) where:
+        // - Z_{H}(t) = \prod_{j} (t-h*g^j) = (t^m-h^m), and
+        // - v_{i} = 1 / \prod_{j \neq i} h(g^i-g^j).
+        // Below we use the fact that v_{0} = 1/(m * h^(m-1)) and v_{i+1} = g * v_{i}.
+        // We first compute the inverse of each coefficient, except for the Z_H(t) term.
+        // We then batch invert the entire result, and multiply by Z_H(t).
         let mut inverted_lagrange_coeffs: Vec<F> = Vec::with_capacity(self.all_domain_elems.len());
         for i in 0..self.domain_order {
             let l = self.v_inv_elems[i];
@@ -98,14 +94,16 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::fields::fp::FpVar;
-    use crate::fields::FieldVar;
-    use crate::poly::domain::Radix2DomainVar;
-    use crate::poly::evaluations::univariate::lagrange_interpolator::LagrangeInterpolator;
-    use crate::R1CSVar;
+    use crate::{
+        fields::{fp::FpVar, FieldVar},
+        poly::{
+            domain::Radix2DomainVar,
+            evaluations::univariate::lagrange_interpolator::LagrangeInterpolator,
+        },
+        R1CSVar,
+    };
     use ark_ff::{FftField, Field, One};
-    use ark_poly::univariate::DensePolynomial;
-    use ark_poly::{Polynomial, UVPolynomial};
+    use ark_poly::{univariate::DensePolynomial, Polynomial, UVPolynomial};
     use ark_std::{test_rng, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 

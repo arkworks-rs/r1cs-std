@@ -1,18 +1,23 @@
-use super::params::{get_params, OptimizationType};
-use super::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
-use super::AllocatedNonNativeFieldMulResultVar;
-use crate::fields::fp::FpVar;
-use crate::prelude::*;
-use crate::ToConstraintFieldGadget;
+use super::{
+    params::{get_params, OptimizationType},
+    reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
+    AllocatedNonNativeFieldMulResultVar,
+};
+use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget};
 use ark_ff::{BigInteger, PrimeField};
-use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{
     ns,
-    r1cs::{ConstraintSystemRef, Namespace, SynthesisError},
+    r1cs::{
+        ConstraintSystemRef, Namespace, OptimizationGoal, Result as R1CSResult, SynthesisError,
+    },
 };
-use ark_std::cmp::{max, min};
-use ark_std::marker::PhantomData;
-use ark_std::{borrow::Borrow, vec, vec::Vec};
+use ark_std::{
+    borrow::Borrow,
+    cmp::{max, min},
+    marker::PhantomData,
+    vec,
+    vec::Vec,
+};
 
 /// The allocated version of `NonNativeFieldVar` (introduced below)
 #[derive(Debug)]
@@ -22,9 +27,12 @@ pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeF
     pub cs: ConstraintSystemRef<BaseField>,
     /// The limbs, each of which is a BaseField gadget.
     pub limbs: Vec<FpVar<BaseField>>,
-    /// Number of additions done over this gadget, using which the gadget decides when to reduce.
+    /// Number of additions done over this gadget, using which the gadget
+    /// decides when to reduce.
     pub num_of_additions_over_normal_form: BaseField,
-    /// Whether the limb representation is the normal form (using only the bits specified in the parameters, and the representation is strictly within the range of TargetField).
+    /// Whether the limb representation is the normal form (using only the bits
+    /// specified in the parameters, and the representation is strictly within
+    /// the range of TargetField).
     pub is_in_the_normal_form: bool,
     #[doc(hidden)]
     pub target_phantom: PhantomData<TargetField>,
@@ -51,8 +59,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         let mut base_repr: <TargetField as PrimeField>::BigInt = TargetField::one().into_bigint();
 
-        // Convert 2^{(params.bits_per_limb - 1)} into the TargetField and then double the base
-        // This is because 2^{(params.bits_per_limb)} might indeed be larger than the target field's prime.
+        // Convert 2^{(params.bits_per_limb - 1)} into the TargetField and then double
+        // the base This is because 2^{(params.bits_per_limb)} might indeed be
+        // larger than the target field's prime.
         base_repr.muln((params.bits_per_limb - 1) as u32);
         let mut base: TargetField = TargetField::from_bigint(base_repr).unwrap();
         base = base + &base;
@@ -303,7 +312,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     }
 
     /// Convert a `TargetField` element into limbs (not constraints)
-    /// This is an internal function that would be reused by a number of other functions
+    /// This is an internal function that would be reused by a number of other
+    /// functions
     pub fn get_limbs_representations(
         elem: &TargetField,
         optimization_type: OptimizationType,
@@ -340,8 +350,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(limbs)
     }
 
-    /// for advanced use, multiply and output the intermediate representations (without reduction)
-    /// This intermediate representations can be added with each other, and they can later be reduced back to the `NonNativeFieldVar`.
+    /// for advanced use, multiply and output the intermediate representations
+    /// (without reduction) This intermediate representations can be added
+    /// with each other, and they can later be reduced back to the
+    /// `NonNativeFieldVar`.
     #[tracing::instrument(target = "r1cs")]
     pub fn mul_without_reduce(
         &self,
@@ -532,7 +544,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
     }
 
-    /// Allocates a new variable, but does not check that the allocation's limbs are in-range.
+    /// Allocates a new variable, but does not check that the allocation's limbs
+    /// are in-range.
     fn new_variable_unchecked<T: Borrow<TargetField>>(
         cs: impl Into<Namespace<BaseField>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -579,8 +592,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         })
     }
 
-    /// Check that this element is in-range; i.e., each limb is in-range, and the whole number is
-    /// less than the modulus.
+    /// Check that this element is in-range; i.e., each limb is in-range, and
+    /// the whole number is less than the modulus.
     ///
     /// Returns the bits of the element, in little-endian form
     fn enforce_in_range(
@@ -620,9 +633,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(bits)
     }
 
-    /// Allocates a new non-native field witness with value given by the function `f`.  Enforces
-    /// that the field element has value in `[0, modulus)`, and returns the bits of its binary
-    /// representation. The bits are in little-endian (i.e., the bit at index 0 is the LSB) and the
+    /// Allocates a new non-native field witness with value given by the
+    /// function `f`.  Enforces that the field element has value in `[0, modulus)`,
+    /// and returns the bits of its binary representation.
+    /// The bits are in little-endian (i.e., the bit at index 0 is the LSB) and the
     /// bit-vector is empty in non-witness allocation modes.
     pub fn new_witness_with_le_bits<T: Borrow<TargetField>>(
         cs: impl Into<Namespace<BaseField>>,
@@ -902,9 +916,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
     }
 }
 
-/*
- * Implementation of a few traits
- */
+// Implementation of a few traits
 
 impl<TargetField: PrimeField, BaseField: PrimeField> Clone
     for AllocatedNonNativeFieldVar<TargetField, BaseField>

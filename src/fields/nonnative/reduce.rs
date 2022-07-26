@@ -1,10 +1,11 @@
-use super::overhead;
-use super::params::get_params;
-use super::AllocatedNonNativeFieldVar;
-use crate::eq::EqGadget;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
-use crate::{alloc::AllocVar, boolean::Boolean, R1CSVar};
+use super::{overhead, params::get_params, AllocatedNonNativeFieldVar};
+use crate::{
+    alloc::AllocVar,
+    boolean::Boolean,
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+    R1CSVar,
+};
 use ark_ff::{biginteger::BigInteger, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{
     ns,
@@ -61,9 +62,10 @@ pub struct Reducer<TargetField: PrimeField, BaseField: PrimeField> {
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseField> {
-    /// convert limbs to bits (take at most `BaseField::MODULUS_BIT_SIZE as usize - 1` bits)
-    /// This implementation would be more efficient than the original `to_bits`
-    /// or `to_non_unique_bits` since we enforce that some bits are always zero.
+    /// convert limbs to bits (take at most `BaseField::MODULUS_BIT_SIZE as
+    /// usize - 1` bits) This implementation would be more efficient than
+    /// the original `to_bits` or `to_non_unique_bits` since we enforce that
+    /// some bits are always zero.
     #[tracing::instrument(target = "r1cs")]
     pub fn limb_to_bits(
         limb: &FpVar<BaseField>,
@@ -147,7 +149,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         }
     }
 
-    /// Reduction used before multiplication to reduce the representations in a way that allows efficient multiplication
+    /// Reduction used before multiplication to reduce the representations in a
+    /// way that allows efficient multiplication
     #[tracing::instrument(target = "r1cs")]
     pub fn pre_mul_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
@@ -244,7 +247,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         };
 
         for (left_limb, right_limb) in left.iter().zip(right.iter()).rev() {
-            // note: the `rev` operation is here, so that the first limb (and the first groupped limb) will be the least significant limb.
+            // note: the `rev` operation is here, so that the first limb (and the first
+            // groupped limb) will be the least significant limb.
             limb_pairs.push((left_limb.clone(), right_limb.clone()));
         }
 

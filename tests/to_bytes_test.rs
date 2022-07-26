@@ -2,9 +2,9 @@ use ark_ec::PairingEngine;
 use ark_ff::{to_bytes, Zero};
 use ark_mnt4_298::MNT4_298;
 use ark_mnt6_298::MNT6_298;
-use ark_r1cs_std::alloc::AllocVar;
-use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
-use ark_r1cs_std::{R1CSVar, ToBitsGadget, ToBytesGadget};
+use ark_r1cs_std::{
+    alloc::AllocVar, fields::nonnative::NonNativeFieldVar, R1CSVar, ToBitsGadget, ToBytesGadget,
+};
 use ark_relations::r1cs::ConstraintSystem;
 
 #[test]

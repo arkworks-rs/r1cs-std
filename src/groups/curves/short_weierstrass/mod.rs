@@ -1,6 +1,8 @@
 use ark_ec::{
-    short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
-    AffineCurve, ProjectiveCurve, SWModelParameters,
+    short_weierstrass::{
+        Affine as SWAffine, Projective as SWProjective, SWCurveConfig as SWModelParameters,
+    },
+    AffineCurve, ProjectiveCurve,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
@@ -22,12 +24,14 @@ pub mod mnt4;
 ///  family of bilinear groups.
 pub mod mnt6;
 
-/// This module provides a generic implementation of elliptic curve operations for points on
-/// short-weierstrass curves in affine coordinates that **are not** equal to zero.
+/// This module provides a generic implementation of elliptic curve operations
+/// for points on short-weierstrass curves in affine coordinates that **are
+/// not** equal to zero.
 ///
-/// Note: this module is **unsafe** in general: it can synthesize unsatisfiable or
-/// underconstrained constraint systems when a represented point _is_ equal to zero.
-/// The [ProjectiveVar] gadget is the recommended way of working with elliptic curve points.
+/// Note: this module is **unsafe** in general: it can synthesize unsatisfiable
+/// or underconstrained constraint systems when a represented point _is_ equal
+/// to zero. The [ProjectiveVar] gadget is the recommended way of working with
+/// elliptic curve points.
 pub mod non_zero_affine;
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
@@ -89,11 +93,10 @@ where
     /// Returns the value assigned to `self` in the underlying
     /// constraint system.
     pub fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
-        Ok(SWAffine::new(
-            self.x.value()?,
-            self.y.value()?,
-            self.infinity.value()?,
-        ))
+        Ok(match self.infinity.value()? {
+            true => SWAffine::zero(),
+            false => SWAffine::new(self.x.value()?, self.y.value()?),
+        })
     }
 }
 
@@ -132,7 +135,7 @@ where
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let (x, y, z) = (self.x.value()?, self.y.value()?, self.z.value()?);
         let result = if let Some(z_inv) = z.inverse() {
-            SWAffine::new(x * &z_inv, y * &z_inv, false)
+            SWAffine::new(x * &z_inv, y * &z_inv)
         } else {
             SWAffine::zero()
         };
@@ -169,8 +172,8 @@ where
             let infinity = self.is_zero()?;
             let zero_x = F::zero();
             let zero_y = F::one();
-            // Allocate a variable whose value is either `self.z.inverse()` if the inverse exists,
-            // and is zero otherwise.
+            // Allocate a variable whose value is either `self.z.inverse()` if the inverse
+            // exists, and is zero otherwise.
             let z_inv = F::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
                 Ok(self.z.value()?.inverse().unwrap_or_else(P::BaseField::zero))
             })?;
@@ -230,7 +233,8 @@ where
         Ok(Self::new(x, y, z))
     }
 
-    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
+    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have
+    /// z = 1.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub(crate) fn add_mixed(&self, other: &NonZeroAffineVar<P, F>) -> Result<Self, SynthesisError> {
         // Complete mixed addition formula from Renes-Costello-Batina 2015
@@ -271,7 +275,8 @@ where
         Ok(ProjectiveVar::new(x, y, z))
     }
 
-    /// Computes a scalar multiplication with a little-endian scalar of size `P::ScalarField::MODULUS_BITS`.
+    /// Computes a scalar multiplication with a little-endian scalar of size
+    /// `P::ScalarField::MODULUS_BITS`.
     #[tracing::instrument(
         target = "r1cs",
         skip(self, mul_result, multiple_of_power_of_two, bits)
@@ -293,27 +298,30 @@ where
         // We rely on *incomplete* affine formulae for partially computing this.
         // However, we avoid exceptional edge cases because we partition the scalar
         // into two chunks: one guaranteed to be less than p - 2, and the rest.
-        // We only use incomplete formulae for the first chunk, which means we avoid exceptions:
+        // We only use incomplete formulae for the first chunk, which means we avoid
+        // exceptions:
         //
         // `add_unchecked(a, b)` is incomplete when either `b.is_zero()`, or when
         // `b = ±a`. During scalar multiplication, we don't hit either case:
-        // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`.
-        //   This implies that `k != p ± 1`, and so `b != (p ± 1) * a`.
-        //   Because the group is finite, this in turn means that `b != ±a`, as required.
-        // * `a` or `b` is zero: for `a`, we handle the zero case after the loop; for `b`, notice
-        //    that it is monotonically increasing, and furthermore, equals `k * a`, where
-        //    `k != p = 0 mod p`.
+        // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`. This implies
+        //   that `k != p ± 1`, and so `b != (p ± 1) * a`. Because the group is finite,
+        //   this in turn means that `b != ±a`, as required.
+        // * `a` or `b` is zero: for `a`, we handle the zero case after the loop; for
+        //   `b`, notice that it is monotonically increasing, and furthermore, equals `k
+        //   * a`, where `k != p = 0 mod p`.
 
-        // Unlike normal double-and-add, here we start off with a non-zero `accumulator`,
-        // because `NonZeroAffineVar::add_unchecked` doesn't support addition with `zero`.
-        // In more detail, we initialize `accumulator` to be the initial value of
-        // `multiple_of_power_of_two`. This ensures that all unchecked additions of `accumulator`
-        // with later values of `multiple_of_power_of_two` are safe.
-        // However, to do this correctly, we need to perform two steps:
-        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we will
-        //   conditionally subtract the initial value of `accumulator`:
-        //     if LSB == 0: subtract initial_acc_value; else, subtract 0.
-        // * Because we are assuming the first bit, we must double `multiple_of_power_of_two`.
+        // Unlike normal double-and-add, here we start off with a non-zero
+        // `accumulator`, because `NonZeroAffineVar::add_unchecked` doesn't
+        // support addition with `zero`. In more detail, we initialize
+        // `accumulator` to be the initial value of `multiple_of_power_of_two`.
+        // This ensures that all unchecked additions of `accumulator` with later
+        // values of `multiple_of_power_of_two` are safe. However, to do this
+        // correctly, we need to perform two steps:
+        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we
+        //   will conditionally subtract the initial value of `accumulator`: if LSB ==
+        //   0: subtract initial_acc_value; else, subtract 0.
+        // * Because we are assuming the first bit, we must double
+        //   `multiple_of_power_of_two`.
 
         let mut accumulator = multiple_of_power_of_two.clone();
         let initial_acc_value = accumulator.into_projective();
@@ -321,7 +329,8 @@ where
         // The powers start at 2 (instead of 1) because we're skipping the first bit.
         multiple_of_power_of_two.double_in_place()?;
 
-        // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
+        // As mentioned, we will skip the LSB, and will later handle it via a
+        // conditional subtraction.
         for bit in affine_bits.iter().skip(1) {
             if bit.is_constant() {
                 if *bit == &Boolean::TRUE {
@@ -335,8 +344,9 @@ where
         }
         // Perform conditional subtraction:
 
-        // We can convert to projective safely because the result is guaranteed to be non-zero
-        // by the condition on `affine_bits.len()`, and by the fact that `accumulator` is non-zero
+        // We can convert to projective safely because the result is guaranteed to be
+        // non-zero by the condition on `affine_bits.len()`, and by the fact
+        // that `accumulator` is non-zero
         let result = accumulator.into_projective();
         // If bits[0] is 0, then we have to subtract `self`; else, we subtract zero.
         let subtrahend = bits[0].select(&Self::zero(), &initial_acc_value)?;
