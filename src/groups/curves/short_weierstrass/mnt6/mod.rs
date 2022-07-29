@@ -291,33 +291,32 @@ impl<P: MNT6Parameters> G2PreparedVar<P> {
             t: Fp3G::<P>::one(),
         };
 
-        for (idx, value) in P::ATE_LOOP_COUNT.iter().rev().enumerate() {
-            let mut tmp = *value;
-            let skip_extraneous_bits = 64 - value.leading_zeros();
-            let mut v = Vec::with_capacity(16);
-            for i in 0..64 {
-                if idx == 0 && (i == 0 || i >= skip_extraneous_bits) {
-                    continue;
-                }
-                v.push(tmp & 1 == 1);
-                tmp >>= 1;
+        for bit in P::ATE_LOOP_COUNT_2.iter().skip(1) {
+            let (r2, coeff) = PairingVar::<P>::doubling_step_for_flipped_miller_loop(&r)?;
+            g2p.double_coefficients.push(coeff);
+            r = r2;
+
+            let add_coeff;
+            let r_temp;
+            match bit {
+                1 => {
+                    (r_temp, add_coeff) =
+                        PairingVar::<P>::mixed_addition_step_for_flipped_miller_loop(
+                            &q.x, &q.y, &r,
+                        )?;
+                },
+                -1 => {
+                    (r_temp, add_coeff) =
+                        PairingVar::<P>::mixed_addition_step_for_flipped_miller_loop(
+                            &q.x,
+                            &q.y.negate()?,
+                            &r,
+                        )?;
+                },
+                _ => continue,
             }
-
-            for bit in v.iter().rev() {
-                let (r2, coeff) = PairingVar::<P>::doubling_step_for_flipped_miller_loop(&r)?;
-                g2p.double_coefficients.push(coeff);
-                r = r2;
-
-                if *bit {
-                    let (r2, coeff) = PairingVar::<P>::mixed_addition_step_for_flipped_miller_loop(
-                        &q.x, &q.y, &r,
-                    )?;
-                    g2p.addition_coefficients.push(coeff);
-                    r = r2;
-                }
-
-                tmp >>= 1;
-            }
+            g2p.addition_coefficients.push(add_coeff);
+            r = r_temp;
         }
 
         if P::ATE_IS_LOOP_COUNT_NEG {
