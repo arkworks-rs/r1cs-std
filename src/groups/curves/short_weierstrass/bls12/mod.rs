@@ -44,7 +44,8 @@ impl<P: Bls12Parameters> G1PreparedVar<P> {
         let infinity = self.0.infinity.value()?;
         let g = infinity
             .then_some(GroupAffine::zero())
-            .unwrap_or( GroupAffine::new(x, y)).into();
+            .unwrap_or(GroupAffine::new(x, y))
+            .into();
         Ok(g)
     }
 

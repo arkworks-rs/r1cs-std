@@ -1,11 +1,12 @@
 use ark_ec::PairingEngine;
-use ark_ff::{to_bytes, Zero};
+use ark_ff::Zero;
 use ark_mnt4_298::MNT4_298;
 use ark_mnt6_298::MNT6_298;
 use ark_r1cs_std::{
     alloc::AllocVar, fields::nonnative::NonNativeFieldVar, R1CSVar, ToBitsGadget, ToBytesGadget,
 };
 use ark_relations::r1cs::ConstraintSystem;
+use ark_serialize::CanonicalSerialize;
 
 #[test]
 fn to_bytes_test() {
@@ -34,7 +35,9 @@ fn to_bytes_test() {
         assert_eq!(*byte, 0);
     }
 
-    assert_eq!(to_bytes!(target_test_elem).unwrap(), target_to_bytes);
+    let mut bytes = Vec::new();
+    target_test_elem.serialize(&mut bytes).unwrap();
+    assert_eq!(bytes, target_to_bytes);
 }
 
 #[test]

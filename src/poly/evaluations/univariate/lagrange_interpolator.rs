@@ -103,7 +103,7 @@ mod tests {
         R1CSVar,
     };
     use ark_ff::{FftField, Field, One};
-    use ark_poly::{univariate::DensePolynomial, Polynomial, UVPolynomial};
+    use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
     use ark_std::{test_rng, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 
