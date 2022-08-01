@@ -7,8 +7,7 @@ macro_rules! make_uint {
         #[doc = " type."]
         pub mod $mod_name {
             use ark_ff::{Field, One, PrimeField, Zero};
-            use core::borrow::Borrow;
-            use core::convert::TryFrom;
+            use core::{borrow::Borrow, convert::TryFrom};
             use num_bigint::BigUint;
             use num_traits::cast::ToPrimitive;
 
@@ -87,7 +86,6 @@ macro_rules! make_uint {
                 /// Construct `Self` from a slice of `Boolean`s.
                 ///
                 /// # Panics
-                ///
                 #[doc = "This method panics if `bits.len() != "]
                 #[doc = $num_bits_doc]
                 #[doc = "`."]
@@ -142,8 +140,8 @@ macro_rules! make_uint {
 
                 /// Outputs `self ^ other`.
                 ///
-                /// If at least one of `self` and `other` are constants, then this method
-                /// *does not* create any constraints or variables.
+                /// If at least one of `self` and `other` are constants, then this
+                /// method *does not* create any constraints or variables.
                 #[tracing::instrument(target = "r1cs", skip(self, other))]
                 pub fn xor(&self, other: &Self) -> Result<Self, SynthesisError> {
                     let mut result = self.clone();
@@ -225,7 +223,8 @@ macro_rules! make_uint {
                                 Boolean::Not(ref bit) => {
                                     all_constants = false;
 
-                                    // Add coeff * (1 - bit_gadget) = coeff * ONE - coeff * bit_gadget
+                                    // Add coeff * (1 - bit_gadget) = coeff * ONE - coeff *
+                                    // bit_gadget
                                     lc = lc + (coeff, Variable::One) - (coeff, bit.variable());
                                 },
                                 Boolean::Constant(bit) => {

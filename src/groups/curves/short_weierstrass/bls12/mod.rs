@@ -1,6 +1,6 @@
 use ark_ec::{
     bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
-    short_weierstrass_jacobian::GroupAffine,
+    short_weierstrass::Affine as GroupAffine,
 };
 use ark_ff::{BitIteratorBE, Field, One};
 use ark_relations::r1cs::{Namespace, SynthesisError};
@@ -42,8 +42,11 @@ impl<P: Bls12Parameters> G1PreparedVar<P> {
         let x = self.0.x.value()?;
         let y = self.0.y.value()?;
         let infinity = self.0.infinity.value()?;
-        let g = GroupAffine::new(x, y, infinity);
-        Ok(g.into())
+        let g = infinity
+            .then_some(GroupAffine::zero())
+            .unwrap_or(GroupAffine::new(x, y))
+            .into();
+        Ok(g)
     }
 
     /// Constructs `Self` from a `G1Var`.
@@ -139,7 +142,7 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
                 TwistType::D => {
                     let mut z_s = projective_coeffs
                         .iter()
-                        .map(|(z, _, _)| *z)
+                        .map(|(z, ..)| *z)
                         .collect::<Vec<_>>();
                     ark_ff::fields::batch_inversion(&mut z_s);
                     projective_coeffs

@@ -1,18 +1,20 @@
-use super::params::OptimizationType;
-use super::{AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
-use crate::boolean::Boolean;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
-use crate::prelude::*;
-use crate::{R1CSVar, ToConstraintFieldGadget};
-use ark_ff::to_bytes;
-use ark_ff::PrimeField;
-use ark_relations::r1cs::Result as R1CSResult;
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use ark_std::hash::{Hash, Hasher};
-use ark_std::{borrow::Borrow, vec::Vec};
+use super::{params::OptimizationType, AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
+use crate::{
+    boolean::Boolean,
+    fields::{fp::FpVar, FieldVar},
+    prelude::*,
+    R1CSVar, ToConstraintFieldGadget,
+};
+use ark_ff::{BigInteger, PrimeField};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};
+use ark_std::{
+    borrow::Borrow,
+    hash::{Hash, Hasher},
+    vec::Vec,
+};
 
-/// A gadget for representing non-native (`TargetField`) field elements over the constraint field (`BaseField`).
+/// A gadget for representing non-native (`TargetField`) field elements over the
+/// constraint field (`BaseField`).
 #[derive(Clone, Debug)]
 #[must_use]
 pub enum NonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
@@ -144,9 +146,6 @@ impl<TargetField: PrimeField, BaseField: PrimeField> FieldVar<TargetField, BaseF
     }
 }
 
-/****************************************************************************/
-/****************************************************************************/
-
 impl_bounded_ops!(
     NonNativeFieldVar<TargetField, BaseField>,
     TargetField,
@@ -213,8 +212,8 @@ impl_bounded_ops!(
     (TargetField: PrimeField, BaseField: PrimeField),
 );
 
-/****************************************************************************/
-/****************************************************************************/
+/// *************************************************************************
+/// *************************************************************************
 
 impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
     for NonNativeFieldVar<TargetField, BaseField>
@@ -313,7 +312,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_be().as_slice(),
+            )),
+
             Self::Var(v) => v.to_bytes(),
         }
     }
@@ -321,7 +323,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_be().as_slice(),
+            )),
             Self::Var(v) => v.to_non_unique_bytes(),
         }
     }
@@ -440,7 +444,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseField>>> {
         // Use one group element to represent the optimization type.
         //
-        // By default, the constant is converted in the weight-optimized type, because it results in fewer elements.
+        // By default, the constant is converted in the weight-optimized type, because
+        // it results in fewer elements.
         match self {
             Self::Constant(c) => Ok(AllocatedNonNativeFieldVar::get_limbs_representations(
                 c,

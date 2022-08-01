@@ -1,6 +1,9 @@
 use ark_ff::PrimeField;
-use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
-use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar};
+use ark_r1cs_std::{
+    alloc::AllocVar,
+    eq::EqGadget,
+    fields::{nonnative::NonNativeFieldVar, FieldVar},
+};
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},

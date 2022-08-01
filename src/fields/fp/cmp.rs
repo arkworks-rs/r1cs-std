@@ -153,8 +153,7 @@ impl<F: PrimeField> FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use ark_std::cmp::Ordering;
-    use ark_std::rand::Rng;
+    use ark_std::{cmp::Ordering, rand::Rng};
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
     use ark_ff::{PrimeField, UniformRand};

@@ -1,12 +1,11 @@
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
+use crate::fields::{fp::FpVar, FieldVar};
 use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 use ark_std::ops::Sub;
 
-/// Struct describing vanishing polynomial for a multiplicative coset H where |H| is a power of 2.
-/// As H is a coset, every element can be described as h*g^i and therefore
-/// has vanishing polynomial Z_H(x) = x^|H| - h^|H|
+/// Struct describing vanishing polynomial for a multiplicative coset H where
+/// |H| is a power of 2. As H is a coset, every element can be described as
+/// h*g^i and therefore has vanishing polynomial Z_H(x) = x^|H| - h^|H|
 #[derive(Clone)]
 pub struct VanishingPolynomial<F: Field> {
     /// h^|H|
@@ -37,7 +36,8 @@ impl<F: PrimeField> VanishingPolynomial<F> {
     }
 
     /// Evaluates the constraints and just gives you the gadget for the result.
-    /// Caution for use in holographic lincheck: The output has 2 entries in one matrix
+    /// Caution for use in holographic lincheck: The output has 2 entries in one
+    /// matrix
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         if self.dim_h == 1 {
             let result = x.sub(x);
@@ -55,10 +55,10 @@ impl<F: PrimeField> VanishingPolynomial<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::AllocVar;
-    use crate::fields::fp::FpVar;
-    use crate::poly::domain::vanishing_poly::VanishingPolynomial;
-    use crate::R1CSVar;
+    use crate::{
+        alloc::AllocVar, fields::fp::FpVar, poly::domain::vanishing_poly::VanishingPolynomial,
+        R1CSVar,
+    };
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{test_rng, UniformRand};
     use ark_test_curves::bls12_381::Fr;
