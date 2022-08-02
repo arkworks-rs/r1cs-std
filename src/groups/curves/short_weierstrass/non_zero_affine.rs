@@ -55,8 +55,9 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = y2 - y1;
             let denominator = x2 - x1;
-            // It's okay to use `unchecked` here, because the precondition of `add_unchecked` is that
-            // self != ±other, which means that `numerator` and `denominator` are both non-zero.
+            // It's okay to use `unchecked` here, because the precondition of
+            // `add_unchecked` is that self != ±other, which means that
+            // `numerator` and `denominator` are both non-zero.
             let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1 - x2;
             let y3 = lambda * &(x1 - &x3) - y1;
@@ -82,8 +83,8 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
             let denominator = y1.double()?;
-            // It's okay to use `unchecked` here, because the precondition of `double` is that
-            // self != zero.
+            // It's okay to use `unchecked` here, because the precondition of `double` is
+            // that self != zero.
             let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1.double()?;
             let y3 = lambda * &(x1 - &x3) - y1;
@@ -91,8 +92,9 @@ where
         }
     }
 
-    /// Computes `(self + other) + self`. This method requires only 5 constraints,
-    /// less than the 7 required when computing via `self.double() + other`.
+    /// Computes `(self + other) + self`. This method requires only 5
+    /// constraints, less than the 7 required when computing via
+    /// `self.double() + other`.
     ///
     /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
     #[tracing::instrument(target = "r1cs", skip(self))]
@@ -100,7 +102,8 @@ where
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
-            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e. same logic as in `add_unchecked`)
+            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e.
+            // same logic as in `add_unchecked`)
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
 
@@ -145,7 +148,7 @@ where
     }
 
     fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
-        Ok(SWAffine::new(self.x.value()?, self.y.value()?, false))
+        Ok(SWAffine::new(self.x.value()?, self.y.value()?))
     }
 }
 
@@ -223,14 +226,17 @@ where
 
 #[cfg(test)]
 mod test_non_zero_affine {
-    use crate::alloc::AllocVar;
-    use crate::eq::EqGadget;
-    use crate::fields::fp::{AllocatedFp, FpVar};
-    use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
-    use crate::groups::curves::short_weierstrass::ProjectiveVar;
-    use crate::groups::CurveVar;
-    use crate::R1CSVar;
-    use ark_ec::{ProjectiveCurve, SWModelParameters};
+    use crate::{
+        alloc::AllocVar,
+        eq::EqGadget,
+        fields::fp::{AllocatedFp, FpVar},
+        groups::{
+            curves::short_weierstrass::{non_zero_affine::NonZeroAffineVar, ProjectiveVar},
+            CurveVar,
+        },
+        R1CSVar,
+    };
+    use ark_ec::{models::short_weierstrass::SWCurveConfig, ProjectiveCurve};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
     use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
@@ -240,16 +246,10 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
         );
 
         // The following code uses `double` and `add` (`add_unchecked`) to compute
@@ -307,16 +307,10 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
         );
 
         // The following code tests `double_and_add`.
@@ -359,16 +353,10 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
         );
 
         let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);

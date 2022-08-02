@@ -1,7 +1,9 @@
 use crate::fields::{fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
-use ark_ff::fields::{fp12_2over3over2::*, Field};
-use ark_ff::fp6_3over2::Fp6Config;
-use ark_ff::QuadExtConfig;
+use ark_ff::{
+    fields::{fp12_2over3over2::*, Field},
+    fp6_3over2::Fp6Config,
+    QuadExtConfig,
+};
 use ark_relations::r1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a

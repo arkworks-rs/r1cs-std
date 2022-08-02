@@ -1,6 +1,8 @@
 use crate::fields::{cubic_extension::*, fp2::*};
-use ark_ff::fields::{fp6_3over2::*, Fp2};
-use ark_ff::CubicExtConfig;
+use ark_ff::{
+    fields::{fp6_3over2::*, Fp2},
+    CubicExtConfig,
+};
 use ark_relations::r1cs::SynthesisError;
 use ark_std::ops::MulAssign;
 

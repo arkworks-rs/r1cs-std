@@ -6,8 +6,15 @@ use ark_mnt4_753::MNT4_753;
 use ark_mnt6_298::MNT6_298;
 use ark_mnt6_753::MNT6_753;
 
-use ark_r1cs_std::fields::nonnative::{AllocatedNonNativeFieldVar, NonNativeFieldVar};
-use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
+use ark_r1cs_std::{
+    alloc::AllocVar,
+    eq::EqGadget,
+    fields::{
+        nonnative::{AllocatedNonNativeFieldVar, NonNativeFieldVar},
+        FieldVar,
+    },
+    R1CSVar,
+};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use ark_std::rand::RngCore;
 
@@ -464,7 +471,8 @@ fn double_stress_test_1<TargetField: PrimeField, BaseField: PrimeField, R: RngCo
         || Ok(num_native),
     )
     .unwrap();
-    // Add to at least BaseField::size_in_bits() to ensure that we teat the overflowing
+    // Add to at least BaseField::size_in_bits() to ensure that we teat the
+    // overflowing
     for _ in 0..TEST_COUNT + BaseField::MODULUS_BIT_SIZE as usize {
         // double
         num_native = num_native + &num_native;

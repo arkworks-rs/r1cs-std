@@ -1,7 +1,8 @@
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
+use crate::{
+    boolean::Boolean,
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
@@ -9,11 +10,11 @@ use ark_std::vec::Vec;
 pub mod vanishing_poly;
 
 #[derive(Clone, Debug)]
-/// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
+/// Defines an evaluation domain over a prime field. The domain is a coset of
+/// size `1<<dim`.
 ///
-/// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
-/// subgroup for now.
-///
+/// Native code corresponds to `ark-poly::univariate::domain::radix2`, but
+/// `ark-poly` only supports subgroup for now.
 // TODO: support cosets in `ark-poly`.
 pub struct Radix2DomainVar<F: PrimeField> {
     /// generator of subgroup g
@@ -72,12 +73,14 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         1 << self.dim
     }
 
-    /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
-    /// returns all points of `h*g^{position}<g^{2^{n-coset_dim}}>`. The result is the query coset at index `query_pos`
-    /// for the FRI protocol.
+    /// For domain `h<g>` with dimension `n`, `position` represented by
+    /// `query_pos` in big endian form, returns all points of
+    /// `h*g^{position}<g^{2^{n-coset_dim}}>`. The result is the query coset at
+    /// index `query_pos` for the FRI protocol.
     ///
     /// # Panics
-    /// This function panics when `query_pos.len() != coset_dim` or `query_pos.len() != self.dim`.  
+    /// This function panics when `query_pos.len() != coset_dim` or
+    /// `query_pos.len() != self.dim`.
     pub fn query_position_to_coset_elements(
         &self,
         query_pos: &[Boolean<F>],
@@ -88,8 +91,9 @@ impl<F: PrimeField> Radix2DomainVar<F> {
             .elements())
     }
 
-    /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
-    /// returns all points of `h*g^{position}<g^{n-query_pos.len()}>`
+    /// For domain `h<g>` with dimension `n`, `position` represented by
+    /// `query_pos` in big endian form, returns all points of
+    /// `h*g^{position}<g^{n-query_pos.len()}>`
     ///
     /// # Panics
     /// This function panics when `query_pos.len() < log2_num_cosets`.

@@ -1,13 +1,15 @@
-use super::params::{get_params, OptimizationType};
-use super::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
-use super::AllocatedNonNativeFieldVar;
-use crate::fields::fp::FpVar;
-use crate::prelude::*;
+use super::{
+    params::{get_params, OptimizationType},
+    reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
+    AllocatedNonNativeFieldVar,
+};
+use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
-use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
-use ark_relations::{ns, r1cs::ConstraintSystemRef};
-use ark_std::marker::PhantomData;
-use ark_std::vec::Vec;
+use ark_relations::{
+    ns,
+    r1cs::{ConstraintSystemRef, OptimizationGoal, Result as R1CSResult},
+};
+use ark_std::{marker::PhantomData, vec::Vec};
 use num_bigint::BigUint;
 
 /// The allocated form of `NonNativeFieldMulResultVar` (introduced below)
@@ -84,7 +86,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         Ok(res)
     }
 
-    /// Constraints for reducing the result of a multiplication mod p, to get an original representation.
+    /// Constraints for reducing the result of a multiplication mod p, to get an
+    /// original representation.
     pub fn reduce(&self) -> R1CSResult<AllocatedNonNativeFieldVar<TargetField, BaseField>> {
         let params = get_params(
             TargetField::MODULUS_BIT_SIZE as usize,

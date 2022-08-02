@@ -1,6 +1,8 @@
-use ark_r1cs_std::alloc::AllocVar;
-use ark_r1cs_std::fields::nonnative::{NonNativeFieldMulResultVar, NonNativeFieldVar};
-use ark_r1cs_std::R1CSVar;
+use ark_r1cs_std::{
+    alloc::AllocVar,
+    fields::nonnative::{NonNativeFieldMulResultVar, NonNativeFieldVar},
+    R1CSVar,
+};
 use ark_relations::r1cs::ConstraintSystem;
 use ark_std::UniformRand;
 

@@ -2,8 +2,11 @@ use ark_ff::{Field, PrimeField, ToConstraintField};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::fields::fp::{AllocatedFp, FpVar};
-use crate::{prelude::*, Assignment, ToConstraintFieldGadget, Vec};
+use crate::{
+    fields::fp::{AllocatedFp, FpVar},
+    prelude::*,
+    Assignment, ToConstraintFieldGadget, Vec,
+};
 use core::{borrow::Borrow, convert::TryFrom};
 
 /// Represents an interpretation of 8 `Boolean` objects as an
@@ -335,9 +338,9 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::MODULUS_BIT_SIZE - 1` chunks and
-/// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
-/// representation.
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized
+/// `ConstraintF::MODULUS_BIT_SIZE - 1` chunks and converts each chunk, which is
+/// assumed to be little-endian, to its `FpVar<ConstraintF>` representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
 /// [ToConstraintField](ark_ff::ToConstraintField).
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
@@ -360,13 +363,17 @@ impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8
 #[cfg(test)]
 mod test {
     use super::UInt8;
-    use crate::fields::fp::FpVar;
-    use crate::prelude::AllocationMode::{Constant, Input, Witness};
-    use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+    use crate::{
+        fields::fp::FpVar,
+        prelude::{
+            AllocationMode::{Constant, Input, Witness},
+            *,
+        },
+        ToConstraintFieldGadget, Vec,
+    };
     use ark_ff::{PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-    use ark_std::rand::distributions::Uniform;
-    use ark_std::rand::Rng;
+    use ark_std::rand::{distributions::Uniform, Rng};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

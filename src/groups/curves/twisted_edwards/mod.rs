@@ -1,6 +1,9 @@
 use ark_ec::{
-    twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
-    AffineCurve, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
+    twisted_edwards::{
+        Affine as TEAffine, MontCurveConfig as MontgomeryModelParameter,
+        Projective as TEProjective, TECurveConfig as TEModelParameters,
+    },
+    AffineCurve, ProjectiveCurve,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 
@@ -36,7 +39,7 @@ pub struct MontgomeryAffineVar<
 
 mod montgomery_affine_impl {
     use super::*;
-    use ark_ec::twisted_edwards_extended::GroupAffine;
+    use ark_ec::twisted_edwards::Affine as GroupAffine;
     use ark_ff::Field;
     use core::ops::Add;
 
@@ -173,8 +176,8 @@ mod montgomery_affine_impl {
                 AllocationMode::Witness
             };
 
-            let coeff_b = P::MontgomeryModelParameters::COEFF_B;
-            let coeff_a = P::MontgomeryModelParameters::COEFF_A;
+            let coeff_b = P::MontCurveConfig::COEFF_B;
+            let coeff_a = P::MontCurveConfig::COEFF_A;
 
             let lambda = F::new_variable(
                 ark_relations::ns!(cs, "lambda"),
