@@ -6,7 +6,7 @@ use ark_ec::{
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use core::{borrow::Borrow, marker::PhantomData};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
