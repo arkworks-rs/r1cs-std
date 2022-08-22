@@ -12,7 +12,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use crate::{prelude::*, ToConstraintFieldGadget, Vec};
 
 use crate::fields::fp::FpVar;
-use core::{borrow::Borrow, marker::PhantomData};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 
 /// An implementation of arithmetic for Montgomery curves that relies on
 /// incomplete addition formulae for the affine model, as outlined in the
