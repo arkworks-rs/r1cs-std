@@ -105,7 +105,7 @@ impl<P: MNT4Parameters> PairingVar<P> {
         // code below gets executed for all bits (EXCEPT the MSB itself) of
         // mnt6_param_p (skipping leading zeros) in MSB to LSB order
         let y_over_twist_neg = &q.y_over_twist.negate()?;
-        for (dbl_idx, bit) in P::ATE_LOOP_COUNT_2.iter().skip(1).enumerate() {
+        for (dbl_idx, bit) in P::ATE_LOOP_COUNT.iter().skip(1).enumerate() {
             let dc = &q.double_coefficients[dbl_idx];
 
             let g_rr_at_p = Fp4G::<P>::new(

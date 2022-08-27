@@ -291,7 +291,7 @@ impl<P: MNT6Parameters> G2PreparedVar<P> {
             t: Fp3G::<P>::one(),
         };
 
-        for bit in P::ATE_LOOP_COUNT_2.iter().skip(1) {
+        for bit in P::ATE_LOOP_COUNT.iter().skip(1) {
             let (r2, coeff) = PairingVar::<P>::doubling_step_for_flipped_miller_loop(&r)?;
             g2p.double_coefficients.push(coeff);
             r = r2;
