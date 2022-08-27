@@ -12,12 +12,6 @@ include = ["Cargo.toml", "src", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 license = "MIT/Apache-2.0"
 edition = "2018"
 
-[profile.release]
-panic = 'abort'
-
-[profile.dev]
-panic = 'abort'
-
 [dependencies]
 ark-ff = { version = "^0.3.0", default-features = false }
 ark-ec = { version = "^0.3.0", default-features = false }
@@ -51,6 +45,31 @@ parallel = [ "std", "ark-ff/parallel", "ark-std/parallel"]
 name = "nonnative-bench"
 path = "benches/bench.rs"
 harness = false
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+incremental = true
+panic = 'abort'
+
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = "thin"
+incremental = true
+debug-assertions = false
+
+[profile.dev]
+opt-level = 0
+panic = 'abort'
+
+[profile.test]
+opt-level = 3
+lto = "thin"
+incremental = true
+debug-assertions = true
+debug = true
 
 # To be removed in the new release.
 [patch.crates-io]
