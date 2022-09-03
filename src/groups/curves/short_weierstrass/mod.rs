@@ -2,7 +2,7 @@ use ark_ec::{
     short_weierstrass::{
         Affine as SWAffine, Projective as SWProjective, SWCurveConfig as SWModelParameters,
     },
-    AffineCurve, ProjectiveCurve,
+    AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
@@ -94,7 +94,7 @@ where
     /// constraint system.
     pub fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
         Ok(match self.infinity.value()? {
-            true => SWAffine::zero(),
+            true => SWAffine::identity(),
             false => SWAffine::new(self.x.value()?, self.y.value()?),
         })
     }
@@ -137,7 +137,7 @@ where
         let result = if let Some(z_inv) = z.inverse() {
             SWAffine::new(x * &z_inv, y * &z_inv)
         } else {
-            SWAffine::zero()
+            SWAffine::identity()
         };
         Ok(result.into())
     }
@@ -209,7 +209,7 @@ where
         let (x, y, z) = match f() {
             Ok(ge) => {
                 let ge = ge.into_affine();
-                if ge.is_zero() {
+                if ge.is_identity() {
                     (
                         Ok(P::BaseField::zero()),
                         Ok(P::BaseField::one()),
@@ -782,7 +782,11 @@ where
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
+        Self::new_variable(
+            cs,
+            || f().map(|b| SWProjective::from((*b.borrow()).clone())),
+            mode,
+        )
     }
 }
 

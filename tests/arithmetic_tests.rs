@@ -1,5 +1,5 @@
 use ark_bls12_381::Bls12_381;
-use ark_ec::PairingEngine;
+use ark_ec::{pairing::Pairing, CurveGroup};
 use ark_ff::{BigInteger, PrimeField};
 use ark_mnt4_298::MNT4_298;
 use ark_mnt4_753::MNT4_753;
@@ -673,48 +673,48 @@ macro_rules! nonnative_test {
 
 nonnative_test!(
     MNT46Small,
-    <MNT4_298 as PairingEngine>::Fr,
-    <MNT6_298 as PairingEngine>::Fr
+    <MNT4_298 as Pairing>::ScalarField,
+    <MNT6_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT64Small,
-    <MNT6_298 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <MNT6_298 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT46Big,
-    <MNT4_753 as PairingEngine>::Fr,
-    <MNT6_753 as PairingEngine>::Fr
+    <MNT4_753 as Pairing>::ScalarField,
+    <MNT6_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT64Big,
-    <MNT6_753 as PairingEngine>::Fr,
-    <MNT4_753 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField,
+    <MNT4_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     BLS12MNT4Small,
-    <Bls12_381 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <Bls12_381 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     BLS12,
-    <Bls12_381 as PairingEngine>::Fq,
-    <Bls12_381 as PairingEngine>::Fr
+    <<Bls12_381 as Pairing>::G1 as CurveGroup>::BaseField,
+    <Bls12_381 as Pairing>::ScalarField
 );
 #[cfg(not(ci))]
 nonnative_test!(
     MNT6BigMNT4Small,
-    <MNT6_753 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     PallasFrMNT6Fr,
     ark_pallas::Fr,
-    <MNT6_753 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT6FrPallasFr,
-    <MNT6_753 as PairingEngine>::Fr,
+    <MNT6_753 as Pairing>::ScalarField,
     ark_pallas::Fr
 );
 nonnative_test!(PallasFqFr, ark_pallas::Fq, ark_pallas::Fr);

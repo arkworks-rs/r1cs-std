@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use ark_ec::PairingEngine;
+use ark_ec::pairing::Pairing;
+use ark_ec::CurveGroup;
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
@@ -13,22 +14,23 @@ pub mod mnt6;
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: PairingEngine, ConstraintF: Field = <E as PairingEngine>::Fq> {
+pub trait PairingVar<E: Pairing, ConstraintF: Field = <<E as Pairing>::G1 as CurveGroup>::BaseField>
+{
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1Projective, ConstraintF>
-        + AllocVar<E::G1Projective, ConstraintF>
+    type G1Var: CurveVar<E::G1, ConstraintF>
+        + AllocVar<E::G1, ConstraintF>
         + AllocVar<E::G1Affine, ConstraintF>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2Projective, ConstraintF>
-        + AllocVar<E::G2Projective, ConstraintF>
+    type G2Var: CurveVar<E::G2, ConstraintF>
+        + AllocVar<E::G2, ConstraintF>
         + AllocVar<E::G2Affine, ConstraintF>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::Fqk, ConstraintF>;
+    type GTVar: FieldVar<E::TargetField, ConstraintF>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of

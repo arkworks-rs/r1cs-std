@@ -1,9 +1,9 @@
 use crate::prelude::*;
-use ark_ec::ProjectiveCurve;
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
+use ark_ec::CurveGroup;
 use core::{borrow::Borrow, fmt::Debug};
 
 /// This module contains implementations of arithmetic for various curve models.
@@ -25,7 +25,7 @@ pub trait GroupOpsBounds<'a, F, T: 'a>:
 
 /// A variable that represents a curve point for
 /// the curve `C`.
-pub trait CurveVar<C: ProjectiveCurve, ConstraintF: Field>:
+pub trait CurveVar<C: CurveGroup, ConstraintF: Field>:
     'static
     + Sized
     + Clone

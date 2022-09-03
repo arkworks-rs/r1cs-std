@@ -3,10 +3,9 @@ use ark_ec::{
         Affine as TEAffine, MontCurveConfig as MontgomeryModelParameter,
         Projective as TEProjective, TECurveConfig as TEModelParameters,
     },
-    AffineCurve, ProjectiveCurve,
+    AffineRepr, CurveGroup, Group,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
-
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{prelude::*, ToConstraintFieldGadget, Vec};
@@ -85,7 +84,7 @@ mod montgomery_affine_impl {
             p: &TEAffine<P>,
         ) -> Result<(P::BaseField, P::BaseField), SynthesisError> {
             let montgomery_point: GroupAffine<P> = if p.y == P::BaseField::one() {
-                GroupAffine::zero()
+                GroupAffine::identity()
             } else if p.x == P::BaseField::zero() {
                 GroupAffine::new(P::BaseField::zero(), P::BaseField::zero())
             } else {
@@ -543,7 +542,7 @@ where
             if bits.len() == 2 {
                 let mut table = [multiples[0], multiples[1], multiples[0] + multiples[1]];
 
-                TEProjective::batch_normalization(&mut table);
+                TEProjective::normalize_batch(&mut table);
                 let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
                 let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
@@ -675,7 +674,11 @@ where
         f: impl FnOnce() -> Result<Point, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
+        Self::new_variable(
+            cs,
+            || f().map(|b| TEProjective::<P>::from((*b.borrow()).clone())),
+            mode,
+        )
     }
 }
 
