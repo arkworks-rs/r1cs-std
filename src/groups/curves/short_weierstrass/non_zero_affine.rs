@@ -1,4 +1,6 @@
 use super::*;
+use ark_ec::Group;
+use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
@@ -43,8 +45,7 @@ where
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
-            let result =
-                (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
+            let result = self.value()?.add(other.value()?).into_affine();
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
             let (x1, y1) = (&self.x, &self.y);
@@ -70,9 +71,11 @@ where
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
-            let result = self.value()?.into_projective().double().into_affine();
+            let result = SWProjective::<P>::from(self.value()?)
+                .double()
+                .into_affine();
             // Panic if the result is zero.
-            assert!(!result.is_zero());
+            assert!(!result.is_identity());
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
             let (x1, y1) = (&self.x, &self.y);
@@ -236,7 +239,7 @@ mod test_non_zero_affine {
         },
         R1CSVar,
     };
-    use ark_ec::{models::short_weierstrass::SWCurveConfig, ProjectiveCurve};
+    use ark_ec::{models::short_weierstrass::SWCurveConfig, CurveGroup};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
     use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
