@@ -187,6 +187,7 @@ jobs:
             echo "ark-ff = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-poly = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-serialize = { git = 'https://github.com/arkworks-rs/algebra' }"
+            echo "ark-algebra-bench-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-algebra-test-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-r1cs-std = { path = 'r1cs-std' }"
           } >> Cargo.toml
