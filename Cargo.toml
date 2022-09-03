@@ -77,6 +77,7 @@ ark-std = { git = "https://github.com/arkworks-rs/std" }
 ark-ec = { git = "https://github.com/arkworks-rs/algebra" }
 ark-ff = { git = "https://github.com/arkworks-rs/algebra" }
 ark-poly = { git = "https://github.com/arkworks-rs/algebra" }
+ark-algebra-bench-templates = { git = "https://github.com/arkworks-rs/algebra" }
 ark-test-curves = { git = "https://github.com/arkworks-rs/algebra" }
 ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves" }
 ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves" }
