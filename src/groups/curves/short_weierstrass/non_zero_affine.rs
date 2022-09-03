@@ -1,6 +1,6 @@
 use super::*;
 use ark_ec::Group;
-use std::ops::Add;
+use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
