@@ -186,6 +186,7 @@ jobs:
             echo "ark-ec = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-ff = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-poly = { git = 'https://github.com/arkworks-rs/algebra' }"
+            echo "ark-relations = { git = 'https://github.com/arkworks-rs/snark' }"
             echo "ark-serialize = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-algebra-bench-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-algebra-test-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
