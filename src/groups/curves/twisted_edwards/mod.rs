@@ -540,9 +540,9 @@ where
         let zero: TEAffine<P> = TEProjective::zero().into_affine();
         for (bits, multiples) in bits.chunks(2).zip(multiples.chunks(2)) {
             if bits.len() == 2 {
-                let mut table = [multiples[0], multiples[1], multiples[0] + multiples[1]];
+                let table_projective = [multiples[0], multiples[1], multiples[0] + multiples[1]];
 
-                table = TEProjective::normalize_batch(&table);
+                let table = TEProjective::normalize_batch(&table_projective);
                 let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
                 let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
