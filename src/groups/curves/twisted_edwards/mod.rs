@@ -542,7 +542,7 @@ where
             if bits.len() == 2 {
                 let mut table = [multiples[0], multiples[1], multiples[0] + multiples[1]];
 
-                TEProjective::normalize_batch(&mut table);
+                table = TEProjective::normalize_batch(table);
                 let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
                 let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
