@@ -38,7 +38,7 @@ pub struct MontgomeryAffineVar<
 
 mod montgomery_affine_impl {
     use super::*;
-    use ark_ec::twisted_edwards::Affine as GroupAffine;
+    use ark_ec::twisted_edwards::MontgomeryAffine as GroupAffine;
     use ark_ff::Field;
     use core::ops::Add;
 
@@ -83,8 +83,8 @@ mod montgomery_affine_impl {
         pub fn from_edwards_to_coords(
             p: &TEAffine<P>,
         ) -> Result<(P::BaseField, P::BaseField), SynthesisError> {
-            let montgomery_point: GroupAffine<P> = if p.y == P::BaseField::one() {
-                GroupAffine::identity()
+            let montgomery_point: GroupAffine<P::MontCurveConfig> = if p.y == P::BaseField::one() {
+                return Err(SynthesisError::UnexpectedIdentity);
             } else if p.x == P::BaseField::zero() {
                 GroupAffine::new(P::BaseField::zero(), P::BaseField::zero())
             } else {
