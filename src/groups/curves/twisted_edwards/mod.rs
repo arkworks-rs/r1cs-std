@@ -98,6 +98,7 @@ mod montgomery_affine_impl {
                 println!("{}", v);
                 GroupAffine::new(u, v)
             };
+            println!("-----");
 
             Ok((montgomery_point.x, montgomery_point.y))
         }
