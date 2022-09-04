@@ -91,9 +91,9 @@ mod montgomery_affine_impl {
                 let u =
                     (P::BaseField::one() + &p.y) * &(P::BaseField::one() - &p.y).inverse().unwrap();
                 let v = u * &p.x.inverse().unwrap();
-
                 GroupAffine::new(u, v)
             };
+
             Ok((montgomery_point.x, montgomery_point.y))
         }
 
