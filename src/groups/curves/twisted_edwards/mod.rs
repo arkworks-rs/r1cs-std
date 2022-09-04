@@ -423,7 +423,7 @@ where
     }
 
     fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
-        self.x.is_zero()?.and(&self.x.is_one()?)
+        self.x.is_zero()?.and(&self.y.is_one()?)
     }
 
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
