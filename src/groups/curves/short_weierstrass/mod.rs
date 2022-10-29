@@ -209,7 +209,7 @@ where
         let (x, y, z) = match f() {
             Ok(ge) => {
                 let ge = ge.into_affine();
-                if ge.is_zero() {
+                if ge.is_identity() {
                     (
                         Ok(P::BaseField::zero()),
                         Ok(P::BaseField::one()),

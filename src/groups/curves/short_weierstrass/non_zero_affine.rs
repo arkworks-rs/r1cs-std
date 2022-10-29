@@ -75,7 +75,7 @@ where
                 .double()
                 .into_affine();
             // Panic if the result is zero.
-            assert!(!result.is_zero());
+            assert!(!result.is_identity());
             Ok(Self::new(F::constant(result.x), F::constant(result.y)))
         } else {
             let (x1, y1) = (&self.x, &self.y);
