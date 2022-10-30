@@ -920,7 +920,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
-                c.into_bigint().to_bytes_be().as_slice(),
+                c.into_bigint().to_bytes_le().as_slice(),
             )),
             Self::Var(v) => v.to_bytes(),
         }
@@ -930,7 +930,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
-                c.into_bigint().to_bytes_be().as_slice(),
+                c.into_bigint().to_bytes_le().as_slice(),
             )),
             Self::Var(v) => v.to_non_unique_bytes(),
         }
