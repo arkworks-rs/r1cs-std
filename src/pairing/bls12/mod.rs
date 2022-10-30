@@ -8,7 +8,7 @@ use crate::{
 };
 use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
 use ark_ff::BitIteratorBE;
-use core::marker::PhantomData;
+use ark_std::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
 pub struct PairingVar<P: Bls12Parameters>(PhantomData<P>);
