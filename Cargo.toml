@@ -1,6 +1,6 @@
 [package]
 name = "ark-r1cs-std"
-version = "0.4.0-alpha.0"
+version = "0.4.0-alpha.1"
 authors = [ "arkworks contributors" ]
 description = "A standard library for constraint system gadgets"
 homepage = "https://arkworks.rs"
