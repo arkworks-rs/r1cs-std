@@ -14,7 +14,10 @@ pub mod mnt6;
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: Pairing, ConstraintF: Field = <<E as Pairing>::G1 as CurveGroup>::BaseField>
+pub trait PairingVar<
+    E: Pairing,
+    ConstraintF: Field = <<<E as Pairing>::G1 as CurveGroup>::BaseField as Field>::BasePrimeField,
+>
 {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
