@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use ark_ec::pairing::Pairing;
-use ark_ec::CurveGroup;
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
@@ -16,7 +15,7 @@ pub mod mnt6;
 /// `E`.
 pub trait PairingVar<
     E: Pairing,
-    ConstraintF: Field = <<<E as Pairing>::G1 as CurveGroup>::BaseField as Field>::BasePrimeField,
+    ConstraintF: Field = <<E as Pairing>::BaseField as Field>::BasePrimeField,
 >
 {
     /// An variable representing an element of `G1`.
