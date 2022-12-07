@@ -11,7 +11,7 @@ pub mod mnt4;
 /// This module implements pairings for MNT6 bilinear groups.
 pub mod mnt6;
 
-/// Specifies the constraints for computing a pairing in the yybilinear group
+/// Specifies the constraints for computing a pairing in the bilinear group
 /// `E`.
 pub trait PairingVar<
     E: Pairing,
