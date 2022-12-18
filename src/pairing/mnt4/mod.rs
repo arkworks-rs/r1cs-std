@@ -9,19 +9,19 @@ use crate::{
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use ark_ec::mnt4::{MNT4Parameters, MNT4};
+use ark_ec::mnt4::{MNT4Config, MNT4};
 
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT4 bilinear group.
-pub struct PairingVar<P: MNT4Parameters>(PhantomData<P>);
+pub struct PairingVar<P: MNT4Config>(PhantomData<P>);
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
-type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Config>;
+type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
+type Fp4G<P> = Fp4Var<<P as MNT4Config>::Fp4Config>;
 /// A variable corresponding to `ark_ec::mnt4::GT`.
 pub type GTVar<P> = Fp4G<P>;
 
-impl<P: MNT4Parameters> PairingVar<P> {
+impl<P: MNT4Config> PairingVar<P> {
     #[tracing::instrument(target = "r1cs", skip(r))]
     pub(crate) fn doubling_step_for_flipped_miller_loop(
         r: &G2ProjectiveExtendedVar<P>,
@@ -196,7 +196,7 @@ impl<P: MNT4Parameters> PairingVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> PG<MNT4<P>, P::Fp> for PairingVar<P> {
+impl<P: MNT4Config> PG<MNT4<P>, P::Fp> for PairingVar<P> {
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;

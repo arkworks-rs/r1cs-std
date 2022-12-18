@@ -1,6 +1,6 @@
 use ark_ec::mnt4::{
     g2::{AteAdditionCoefficients, AteDoubleCoefficients},
-    G1Prepared, G2Prepared, MNT4Parameters,
+    G1Prepared, G2Prepared, MNT4Config,
 };
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
@@ -15,17 +15,16 @@ use crate::{
 use core::borrow::Borrow;
 
 /// Represents a projective point in G1.
-pub type G1Var<P> =
-    ProjectiveVar<<P as MNT4Parameters>::G1Parameters, FpVar<<P as MNT4Parameters>::Fp>>;
+pub type G1Var<P> = ProjectiveVar<<P as MNT4Config>::G1Config, FpVar<<P as MNT4Config>::Fp>>;
 
 /// Represents a projective point in G2.
-pub type G2Var<P> = ProjectiveVar<<P as MNT4Parameters>::G2Parameters, Fp2G<P>>;
+pub type G2Var<P> = ProjectiveVar<<P as MNT4Config>::G2Config, Fp2G<P>>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Parameters"), Debug(bound = "P: MNT4Parameters"))]
-pub struct G1PreparedVar<P: MNT4Parameters> {
+#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+pub struct G1PreparedVar<P: MNT4Config> {
     #[doc(hidden)]
     pub x: FpVar<P::Fp>,
     #[doc(hidden)]
@@ -36,7 +35,7 @@ pub struct G1PreparedVar<P: MNT4Parameters> {
     pub y_twist: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
+impl<P: MNT4Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<T: Borrow<G1Prepared<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
@@ -69,7 +68,7 @@ impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> G1PreparedVar<P> {
+impl<P: MNT4Config> G1PreparedVar<P> {
     /// Returns the value assigned to `self` in the underlying constraint
     /// system.
     pub fn value(&self) -> Result<G1Prepared<P>, SynthesisError> {
@@ -102,7 +101,7 @@ impl<P: MNT4Parameters> G1PreparedVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -131,13 +130,13 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
+type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Parameters"), Debug(bound = "P: MNT4Parameters"))]
-pub struct G2PreparedVar<P: MNT4Parameters> {
+#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+pub struct G2PreparedVar<P: MNT4Config> {
     #[doc(hidden)]
     pub x: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
@@ -152,7 +151,7 @@ pub struct G2PreparedVar<P: MNT4Parameters> {
     pub addition_coefficients: Vec<AteAdditionCoefficientsVar<P>>,
 }
 
-impl<P: MNT4Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
+impl<P: MNT4Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<T: Borrow<G2Prepared<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
@@ -198,7 +197,7 @@ impl<P: MNT4Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -241,7 +240,7 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> G2PreparedVar<P> {
+impl<P: MNT4Config> G2PreparedVar<P> {
     /// Returns the value assigned to `self` in the underlying constraint
     /// system.
     pub fn value(&self) -> Result<G2Prepared<P>, SynthesisError> {
@@ -341,15 +340,15 @@ impl<P: MNT4Parameters> G2PreparedVar<P> {
 
 #[doc(hidden)]
 #[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Parameters"), Debug(bound = "P: MNT4Parameters"))]
-pub struct AteDoubleCoefficientsVar<P: MNT4Parameters> {
+#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+pub struct AteDoubleCoefficientsVar<P: MNT4Config> {
     pub c_h: Fp2Var<P::Fp2Config>,
     pub c_4c: Fp2Var<P::Fp2Config>,
     pub c_j: Fp2Var<P::Fp2Config>,
     pub c_l: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P> {
+impl<P: MNT4Config> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P> {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<T: Borrow<AteDoubleCoefficients<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
@@ -376,7 +375,7 @@ impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleC
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -405,7 +404,7 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> AteDoubleCoefficientsVar<P> {
+impl<P: MNT4Config> AteDoubleCoefficientsVar<P> {
     /// Returns the value assigned to `self` in the underlying constraint
     /// system.
     pub fn value(&self) -> Result<AteDoubleCoefficients<P>, SynthesisError> {
@@ -426,15 +425,13 @@ impl<P: MNT4Parameters> AteDoubleCoefficientsVar<P> {
 
 #[doc(hidden)]
 #[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Parameters"), Debug(bound = "P: MNT4Parameters"))]
-pub struct AteAdditionCoefficientsVar<P: MNT4Parameters> {
+#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+pub struct AteAdditionCoefficientsVar<P: MNT4Config> {
     pub c_l1: Fp2Var<P::Fp2Config>,
     pub c_rz: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
-    for AteAdditionCoefficientsVar<P>
-{
+impl<P: MNT4Config> AllocVar<AteAdditionCoefficients<P>, P::Fp> for AteAdditionCoefficientsVar<P> {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<T: Borrow<AteAdditionCoefficients<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
@@ -455,7 +452,7 @@ impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> {
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -476,7 +473,7 @@ impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> AteAdditionCoefficientsVar<P> {
+impl<P: MNT4Config> AteAdditionCoefficientsVar<P> {
     /// Returns the value assigned to `self` in the underlying constraint
     /// system.
     pub fn value(&self) -> Result<AteAdditionCoefficients<P>, SynthesisError> {
@@ -486,7 +483,7 @@ impl<P: MNT4Parameters> AteAdditionCoefficientsVar<P> {
 }
 
 #[doc(hidden)]
-pub struct G2ProjectiveExtendedVar<P: MNT4Parameters> {
+pub struct G2ProjectiveExtendedVar<P: MNT4Config> {
     pub x: Fp2Var<P::Fp2Config>,
     pub y: Fp2Var<P::Fp2Config>,
     pub z: Fp2Var<P::Fp2Config>,
