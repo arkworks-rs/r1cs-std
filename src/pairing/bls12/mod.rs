@@ -38,7 +38,7 @@ where
                 c1.c1 *= &p.x;
                 *f = f.mul_by_014(&c0, &c1, &c2)?;
                 Ok(())
-            }
+            },
             TwistType::D => {
                 let c0 = Fp2V::<P>::new(p.y.clone(), zero);
                 let mut c1 = coeffs.0.clone();
@@ -48,7 +48,7 @@ where
                 c1.c1 *= &p.x;
                 *f = f.mul_by_034(&c0, &c1, &c2)?;
                 Ok(())
-            }
+            },
         }
     }
 

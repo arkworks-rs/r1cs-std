@@ -1,5 +1,5 @@
 use ark_ff::{
-    fields::{Field, QuadExtField, QuadExtConfig},
+    fields::{Field, QuadExtConfig, QuadExtField},
     Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};

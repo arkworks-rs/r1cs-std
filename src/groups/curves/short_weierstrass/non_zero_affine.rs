@@ -3,10 +3,7 @@ use super::*;
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
-#[derivative(
-    Debug(bound = "P: SWModelConfig"),
-    Clone(bound = "P: SWModelConfig")
-)]
+#[derivative(Debug(bound = "P: SWModelConfig"), Clone(bound = "P: SWModelConfig"))]
 #[must_use]
 pub struct NonZeroAffineVar<P: SWModelConfig>
 where
@@ -200,27 +197,20 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Config::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.0))
+                .unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Config::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.1))
+                .unwrap(),
         );
 
         // The following code uses `double` and `add` (`add_unchecked`) to compute
         // (1 + 2 + ... + 2^9) G
 
         let sum_a = {
-            let mut a = ProjectiveVar::<G1Config>::new(
-                x.clone(),
-                y.clone(),
-                FpVar::Constant(Fq::one()),
-            );
+            let mut a =
+                ProjectiveVar::<G1Config>::new(x.clone(), y.clone(), FpVar::Constant(Fq::one()));
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -267,25 +257,18 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Config::AFFINE_GENERATOR_COEFFS.0)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.0))
+                .unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Config::AFFINE_GENERATOR_COEFFS.1)
-            })
-            .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.1))
+                .unwrap(),
         );
 
         // The following code tests `double_and_add`.
         let sum_a = {
-            let a = ProjectiveVar::<G1Config>::new(
-                x.clone(),
-                y.clone(),
-                FpVar::Constant(Fq::one()),
-            );
+            let a =
+                ProjectiveVar::<G1Config>::new(x.clone(), y.clone(), FpVar::Constant(Fq::one()));
 
             let mut cur = a.clone();
             cur.double_in_place().unwrap();

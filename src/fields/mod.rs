@@ -195,7 +195,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
                 })?;
                 result.mul_equals(d, self)?;
                 Ok(result)
-            }
+            },
         }
     }
 

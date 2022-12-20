@@ -186,12 +186,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                }
+                },
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                }
-                _ => {}
+                },
+                _ => {},
             }
 
             if i == 0 {
@@ -212,12 +212,12 @@ mod test {
                 Ordering::Less => {
                     a_var.enforce_cmp(&b_var, Ordering::Less, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Less, true).unwrap();
-                }
+                },
                 Ordering::Greater => {
                     a_var.enforce_cmp(&b_var, Ordering::Greater, false).unwrap();
                     a_var.enforce_cmp(&b_var, Ordering::Greater, true).unwrap();
-                }
-                _ => {}
+                },
+                _ => {},
             }
 
             assert!(!cs.is_satisfied().unwrap());

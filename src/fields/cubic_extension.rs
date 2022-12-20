@@ -1,5 +1,5 @@
 use ark_ff::{
-    fields::{CubicExtField, CubicExtConfig, Field},
+    fields::{CubicExtConfig, CubicExtField, Field},
     Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};

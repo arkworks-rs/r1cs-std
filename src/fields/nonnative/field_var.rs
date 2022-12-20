@@ -267,12 +267,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
                     should_enforce.enforce_equal(&Boolean::FALSE)?;
                 }
                 Ok(())
-            }
+            },
             (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
                 let cs = v.cs();
                 let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
                 c.conditional_enforce_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_equal(v2, should_enforce),
         }
     }
@@ -289,12 +289,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
                     should_enforce.enforce_equal(&Boolean::FALSE)?;
                 }
                 Ok(())
-            }
+            },
             (Self::Constant(c), Self::Var(v)) | (Self::Var(v), Self::Constant(c)) => {
                 let cs = v.cs();
                 let c = AllocatedNonNativeFieldVar::new_constant(cs, c)?;
                 c.conditional_enforce_not_equal(v, should_enforce)
-            }
+            },
             (Self::Var(v1), Self::Var(v2)) => v1.conditional_enforce_not_equal(v2, should_enforce),
         }
     }
@@ -369,7 +369,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
                     Self::Var(v) => v.clone(),
                 };
                 cond.select(&true_value, &false_value).map(Self::Var)
-            }
+            },
         }
     }
 }
@@ -483,7 +483,7 @@ impl<'a, TargetField: PrimeField, BaseField: PrimeField> Sum<&'a Self>
                 Self::Constant(c) => {
                     sum_constants += c;
                     None
-                }
+                },
                 Self::Var(v) => Some(v),
             })
             .collect::<Vec<_>>();
@@ -507,7 +507,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Sum<Self>
                 Self::Constant(c) => {
                     sum_constants += c;
                     None
-                }
+                },
                 Self::Var(v) => Some(v),
             })
             .collect::<Vec<_>>();
@@ -540,7 +540,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
                     Ok(NonNativeFieldMulResultVar::Var(
                         other_v.mul_without_reduce(&self_v)?,
                     ))
-                }
+                },
             },
             Self::Var(v) => {
                 let other_v = match other {
@@ -549,13 +549,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
                             self.cs(),
                             other_c,
                         )?
-                    }
+                    },
                     Self::Var(other_v) => other_v.clone(),
                 };
                 Ok(NonNativeFieldMulResultVar::Var(
                     v.mul_without_reduce(&other_v)?,
                 ))
-            }
+            },
         }
     }
 }

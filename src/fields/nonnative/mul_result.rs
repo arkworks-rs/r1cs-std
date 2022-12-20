@@ -53,7 +53,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
                     TargetField,
                     BaseField,
                 >::from(v))
-            }
+            },
         }
     }
 }

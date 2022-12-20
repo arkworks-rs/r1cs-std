@@ -103,17 +103,17 @@ macro_rules! make_uint {
                         match *b {
                             Boolean::Constant(b) => {
                                 value.as_mut().map(|v| *v |= $native::from(b));
-                            }
+                            },
                             Boolean::Is(ref b) => match b.value() {
                                 Ok(b) => {
                                     value.as_mut().map(|v| *v |= $native::from(b));
-                                }
+                                },
                                 Err(_) => value = None,
                             },
                             Boolean::Not(ref b) => match b.value() {
                                 Ok(b) => {
                                     value.as_mut().map(|v| *v |= $native::from(!b));
-                                }
+                                },
                                 Err(_) => value = None,
                             },
                         }
@@ -202,13 +202,13 @@ macro_rules! make_uint {
                         match op.value {
                             Some(val) => {
                                 result_value.as_mut().map(|v| *v += BigUint::from(val));
-                            }
+                            },
 
                             None => {
                                 // If any of our operands have unknown value, we won't
                                 // know the value of the result
                                 result_value = None;
-                            }
+                            },
                         }
 
                         // Iterate over each bit_gadget of the operand and add the operand to
@@ -221,18 +221,18 @@ macro_rules! make_uint {
 
                                     // Add coeff * bit_gadget
                                     lc += (coeff, bit.variable());
-                                }
+                                },
                                 Boolean::Not(ref bit) => {
                                     all_constants = false;
 
                                     // Add coeff * (1 - bit_gadget) = coeff * ONE - coeff * bit_gadget
                                     lc = lc + (coeff, Variable::One) - (coeff, bit.variable());
-                                }
+                                },
                                 Boolean::Constant(bit) => {
                                     if bit {
                                         lc += (coeff, Variable::One);
                                     }
-                                }
+                                },
                             }
 
                             coeff.double_in_place();
@@ -407,7 +407,7 @@ macro_rules! make_uint {
                             match bit {
                                 &Boolean::Constant(bit) => {
                                     assert_eq!(bit, ((b.value()? >> i) & 1 == 1));
-                                }
+                                },
                                 _ => unreachable!(),
                             }
                         }
@@ -416,8 +416,8 @@ macro_rules! make_uint {
 
                         for x in v.iter().zip(expected_to_be_same.iter()) {
                             match x {
-                                (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
-                                (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
+                                (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
+                                (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
                                 _ => unreachable!(),
                             }
                         }

@@ -37,10 +37,7 @@ type BFVar<P> = <BF<P> as FieldWithVar>::Var;
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](<https://eprint.iacr.org/2015/1060>).
 #[derive(Derivative)]
-#[derivative(
-    Debug(bound = "P: SWModelConfig"),
-    Clone(bound = "P: SWModelConfig")
-)]
+#[derivative(Debug(bound = "P: SWModelConfig"), Clone(bound = "P: SWModelConfig"))]
 #[must_use]
 pub struct ProjectiveVar<P: SWModelConfig>
 where
@@ -218,7 +215,7 @@ where
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
-            }
+            },
             _ => (
                 Err(SynthesisError::AssignmentMissing),
                 Err(SynthesisError::AssignmentMissing),
@@ -881,7 +878,7 @@ where
                     ge.enforce_equal(&ge)?;
                     Ok(ge)
                 }
-            }
+            },
         }
     }
 }
