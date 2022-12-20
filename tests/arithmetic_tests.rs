@@ -1,13 +1,20 @@
 use ark_bls12_381::Bls12_381;
-use ark_ec::PairingEngine;
+use ark_ec::{pairing::Pairing, CurveGroup};
 use ark_ff::{BigInteger, PrimeField};
 use ark_mnt4_298::MNT4_298;
 use ark_mnt4_753::MNT4_753;
 use ark_mnt6_298::MNT6_298;
 use ark_mnt6_753::MNT6_753;
 
-use ark_r1cs_std::fields::nonnative::{AllocatedNonNativeFieldVar, NonNativeFieldVar};
-use ark_r1cs_std::{alloc::AllocVar, eq::EqGadget, fields::FieldVar, R1CSVar};
+use ark_r1cs_std::{
+    alloc::AllocVar,
+    eq::EqGadget,
+    fields::{
+        nonnative::{AllocatedNonNativeFieldVar, NonNativeFieldVar},
+        FieldVar,
+    },
+    R1CSVar,
+};
 use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
 use ark_std::rand::RngCore;
 
@@ -47,8 +54,8 @@ fn allocation_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
         .unwrap();
 
     let a_bits_actual: Vec<bool> = a_bits.into_iter().map(|b| b.value().unwrap()).collect();
-    let mut a_bits_expected = a_native.into_repr().to_bits_le();
-    a_bits_expected.truncate(TargetField::size_in_bits());
+    let mut a_bits_expected = a_native.into_bigint().to_bits_le();
+    a_bits_expected.truncate(TargetField::MODULUS_BIT_SIZE as usize);
     assert_eq!(
         a_bits_actual, a_bits_expected,
         "allocated bits does not equal the expected bits"
@@ -107,8 +114,8 @@ fn multiplication_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCor
         a_times_b_actual.eq(&a_times_b_expected),
         "a_times_b = {:?}, a_times_b_actual = {:?}, a_times_b_expected = {:?}",
         a_times_b,
-        a_times_b_actual.into_repr().as_ref(),
-        a_times_b_expected.into_repr().as_ref()
+        a_times_b_actual.into_bigint().as_ref(),
+        a_times_b_expected.into_bigint().as_ref()
     );
 }
 
@@ -181,50 +188,50 @@ fn edge_cases_test<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     assert!(
         a_plus_zero_native.eq(&a_native),
         "a_plus_zero = {:?}, a = {:?}",
-        a_plus_zero_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_plus_zero_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         a_minus_zero_native.eq(&a_native),
         "a_minus_zero = {:?}, a = {:?}",
-        a_minus_zero_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_minus_zero_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         zero_minus_a_native.eq(&minus_a_native),
         "zero_minus_a = {:?}, minus_a = {:?}",
-        zero_minus_a_native.into_repr().as_ref(),
-        minus_a_native.into_repr().as_ref()
+        zero_minus_a_native.into_bigint().as_ref(),
+        minus_a_native.into_bigint().as_ref()
     );
     assert!(
         a_times_zero_native.eq(&zero_native),
         "a_times_zero = {:?}, zero = {:?}",
-        a_times_zero_native.into_repr().as_ref(),
-        zero_native.into_repr().as_ref()
+        a_times_zero_native.into_bigint().as_ref(),
+        zero_native.into_bigint().as_ref()
     );
     assert!(
         zero_plus_a_native.eq(&a_native),
         "zero_plus_a = {:?}, a = {:?}",
-        zero_plus_a_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        zero_plus_a_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         zero_times_a_native.eq(&zero_native),
         "zero_times_a = {:?}, zero = {:?}",
-        zero_times_a_native.into_repr().as_ref(),
-        zero_native.into_repr().as_ref()
+        zero_times_a_native.into_bigint().as_ref(),
+        zero_native.into_bigint().as_ref()
     );
     assert!(
         a_times_one_native.eq(&a_native),
         "a_times_one = {:?}, a = {:?}",
-        a_times_one_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        a_times_one_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
     assert!(
         one_times_a_native.eq(&a_native),
         "one_times_a = {:?}, a = {:?}",
-        one_times_a_native.into_repr().as_ref(),
-        a_native.into_repr().as_ref()
+        one_times_a_native.into_bigint().as_ref(),
+        a_native.into_bigint().as_ref()
     );
 }
 
@@ -464,8 +471,9 @@ fn double_stress_test_1<TargetField: PrimeField, BaseField: PrimeField, R: RngCo
         || Ok(num_native),
     )
     .unwrap();
-    // Add to at least BaseField::size_in_bits() to ensure that we teat the overflowing
-    for _ in 0..TEST_COUNT + BaseField::size_in_bits() {
+    // Add to at least BaseField::size_in_bits() to ensure that we teat the
+    // overflowing
+    for _ in 0..TEST_COUNT + BaseField::MODULUS_BIT_SIZE as usize {
         // double
         num_native = num_native + &num_native;
         num = &num + &num;
@@ -665,48 +673,48 @@ macro_rules! nonnative_test {
 
 nonnative_test!(
     MNT46Small,
-    <MNT4_298 as PairingEngine>::Fr,
-    <MNT6_298 as PairingEngine>::Fr
+    <MNT4_298 as Pairing>::ScalarField,
+    <MNT6_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT64Small,
-    <MNT6_298 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <MNT6_298 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT46Big,
-    <MNT4_753 as PairingEngine>::Fr,
-    <MNT6_753 as PairingEngine>::Fr
+    <MNT4_753 as Pairing>::ScalarField,
+    <MNT6_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT64Big,
-    <MNT6_753 as PairingEngine>::Fr,
-    <MNT4_753 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField,
+    <MNT4_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     BLS12MNT4Small,
-    <Bls12_381 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <Bls12_381 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     BLS12,
-    <Bls12_381 as PairingEngine>::Fq,
-    <Bls12_381 as PairingEngine>::Fr
+    <<Bls12_381 as Pairing>::G1 as CurveGroup>::BaseField,
+    <Bls12_381 as Pairing>::ScalarField
 );
 #[cfg(not(ci))]
 nonnative_test!(
     MNT6BigMNT4Small,
-    <MNT6_753 as PairingEngine>::Fr,
-    <MNT4_298 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField,
+    <MNT4_298 as Pairing>::ScalarField
 );
 nonnative_test!(
     PallasFrMNT6Fr,
     ark_pallas::Fr,
-    <MNT6_753 as PairingEngine>::Fr
+    <MNT6_753 as Pairing>::ScalarField
 );
 nonnative_test!(
     MNT6FrPallasFr,
-    <MNT6_753 as PairingEngine>::Fr,
+    <MNT6_753 as Pairing>::ScalarField,
     ark_pallas::Fr
 );
 nonnative_test!(PallasFqFr, ark_pallas::Fq, ark_pallas::Fr);

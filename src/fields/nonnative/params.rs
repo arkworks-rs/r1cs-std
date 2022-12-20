@@ -1,6 +1,7 @@
 use super::NonNativeFieldConfig;
 
-/// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
+/// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new
+/// one
 #[must_use]
 pub const fn get_params(
     target_field_size: usize,
@@ -64,7 +65,7 @@ pub const fn find_parameters(
             OptimizationType::Constraints => {
                 this_cost += target_field_prime_bit_length; // allocation of k
                 this_cost += target_field_prime_bit_length + num_of_limbs; // allocation of r
-                                                                           //this_cost += 2 * num_of_limbs - 1; // compute kp
+                                                                           // this_cost += 2 * num_of_limbs - 1; // compute kp
                 this_cost += num_of_groups + (num_of_groups - 1) * (limb_size * 2 + surfeit) + 1;
                 // equality check
             },

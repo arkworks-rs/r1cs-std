@@ -1,6 +1,6 @@
 use ark_ec::mnt4::{
     g2::{AteAdditionCoefficients, AteDoubleCoefficients},
-    G1Prepared, G2Prepared, MNT4Parameters,
+    G1Prepared, G2Prepared, MNT4Config,
 };
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
@@ -15,19 +15,19 @@ use crate::{
 use core::borrow::Borrow;
 
 /// Represents a projective point in G1.
-pub type G1Var<P> = ProjectiveVar<<P as MNT4Parameters>::G1Parameters>;
+pub type G1Var<P> = ProjectiveVar<<P as MNT4Config>::G1Config>;
 
 /// Represents a projective point in G2.
-pub type G2Var<P> = ProjectiveVar<<P as MNT4Parameters>::G2Parameters>;
+pub type G2Var<P> = ProjectiveVar<<P as MNT4Config>::G2Config>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
-    Debug(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
+    Clone(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
+    Debug(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
 )]
-pub struct G1PreparedVar<P: MNT4Parameters>
+pub struct G1PreparedVar<P: MNT4Config>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -41,7 +41,7 @@ where
     pub y_twist: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
+impl<P: MNT4Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> G1PreparedVar<P>
+impl<P: MNT4Config> G1PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -121,7 +121,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P>
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for G1PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -153,16 +153,16 @@ where
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
+type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
-    Debug(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
+    Clone(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
+    Debug(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
 )]
-pub struct G2PreparedVar<P: MNT4Parameters>
+pub struct G2PreparedVar<P: MNT4Config>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -180,7 +180,7 @@ where
     pub addition_coefficients: Vec<AteAdditionCoefficientsVar<P>>,
 }
 
-impl<P: MNT4Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P>
+impl<P: MNT4Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -229,7 +229,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P>
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for G2PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -275,7 +275,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> G2PreparedVar<P>
+impl<P: MNT4Config> G2PreparedVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -328,33 +328,32 @@ where
             t: Fp2G::<P>::one(),
         };
 
-        for (idx, value) in P::ATE_LOOP_COUNT.iter().rev().enumerate() {
-            let mut tmp = *value;
-            let skip_extraneous_bits = 64 - value.leading_zeros();
-            let mut v = Vec::with_capacity(16);
-            for i in 0..64 {
-                if idx == 0 && (i == 0 || i >= skip_extraneous_bits) {
-                    continue;
-                }
-                v.push(tmp & 1 == 1);
-                tmp >>= 1;
+        for bit in P::ATE_LOOP_COUNT.iter().skip(1) {
+            let (r2, coeff) = MNT4Gadget::<P>::doubling_step_for_flipped_miller_loop(&r)?;
+            g2p.double_coefficients.push(coeff);
+            r = r2;
+
+            let add_coeff;
+            let r_temp;
+            match bit {
+                1 => {
+                    (r_temp, add_coeff) =
+                        MNT4Gadget::<P>::mixed_addition_step_for_flipped_miller_loop(
+                            &q.x, &q.y, &r,
+                        )?;
+                },
+                -1 => {
+                    (r_temp, add_coeff) =
+                        MNT4Gadget::<P>::mixed_addition_step_for_flipped_miller_loop(
+                            &q.x,
+                            &q.y.negate()?,
+                            &r,
+                        )?;
+                },
+                _ => continue,
             }
-
-            for bit in v.iter().rev() {
-                let (r2, coeff) = MNT4Gadget::<P>::doubling_step_for_flipped_miller_loop(&r)?;
-                g2p.double_coefficients.push(coeff);
-                r = r2;
-
-                if *bit {
-                    let (r2, coeff) = MNT4Gadget::<P>::mixed_addition_step_for_flipped_miller_loop(
-                        &q.x, &q.y, &r,
-                    )?;
-                    g2p.addition_coefficients.push(coeff);
-                    r = r2;
-                }
-
-                tmp >>= 1;
-            }
+            g2p.addition_coefficients.push(add_coeff);
+            r = r_temp;
         }
 
         if P::ATE_IS_LOOP_COUNT_NEG {
@@ -380,10 +379,10 @@ where
 #[doc(hidden)]
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
-    Debug(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
+    Clone(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
+    Debug(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
 )]
-pub struct AteDoubleCoefficientsVar<P: MNT4Parameters>
+pub struct AteDoubleCoefficientsVar<P: MNT4Config>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -393,7 +392,7 @@ where
     pub c_l: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P>
+impl<P: MNT4Config> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -423,7 +422,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P>
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -455,7 +454,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> AteDoubleCoefficientsVar<P>
+impl<P: MNT4Config> AteDoubleCoefficientsVar<P> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -480,10 +479,10 @@ where
 #[doc(hidden)]
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
-    Debug(bound = "P: MNT4Parameters, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
+    Clone(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>"),
+    Debug(bound = "P: MNT4Config, P::Fp: FieldWithVar<Var = FpVar<P::Fp>>")
 )]
-pub struct AteAdditionCoefficientsVar<P: MNT4Parameters>
+pub struct AteAdditionCoefficientsVar<P: MNT4Config>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -491,7 +490,7 @@ where
     pub c_rz: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
+impl<P: MNT4Config> AllocVar<AteAdditionCoefficients<P>, P::Fp>
     for AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
@@ -516,7 +515,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P>
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -540,7 +539,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> AteAdditionCoefficientsVar<P>
+impl<P: MNT4Config> AteAdditionCoefficientsVar<P> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -553,7 +552,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct G2ProjectiveExtendedVar<P: MNT4Parameters>
+pub struct G2ProjectiveExtendedVar<P: MNT4Config> 
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {

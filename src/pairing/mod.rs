@@ -1,5 +1,5 @@
 use crate::{fields::fp::FpVar, prelude::*};
-use ark_ec::PairingEngine;
+use ark_ec::pairing::Pairing;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
 
@@ -12,42 +12,41 @@ pub mod mnt6;
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingGadget: PairingEngine
+pub trait PairingGadget: Pairing
 where
-    Self::Fq: FieldWithVar<Var = FpVar<Self::Fq>>,
-    Self::Fqe: FieldWithVar,
-    Self::Fqk: FieldWithVar<Var = Self::GTVar>,
-    Self::G1Projective: CurveWithVar<Self::Fq, Var = Self::G1Var>,
-    Self::G2Projective: CurveWithVar<Self::Fq, Var = Self::G2Var>,
+    Self::BaseField: FieldWithVar<Var = FpVar<Self::BaseField>>,
+    Self::TargetField: FieldWithVar<Var = Self::GTVar>,
+    Self::G1: CurveWithVar<Self::BaseField, Var = Self::G1Var>,
+    Self::G2: CurveWithVar<Self::BaseField, Var = Self::G2Var>,
 {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<Self::G1Projective, Self::Fq>
-        + AllocVar<Self::G1Projective, Self::Fq>
-        + AllocVar<Self::G1Affine, Self::Fq>;
+    type G1Var: CurveVar<Self::G1, Self::BaseField>
+        + AllocVar<Self::G1, Self::BaseField>
+        + AllocVar<Self::G1Affine, Self::BaseField>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<Self::G2Projective, Self::Fq>
-        + AllocVar<Self::G2Projective, Self::Fq>
-        + AllocVar<Self::G2Affine, Self::Fq>;
+    type G2Var: CurveVar<Self::G2, Self::BaseField>
+        + AllocVar<Self::G2, Self::BaseField>
+        + AllocVar<Self::G2Affine, Self::BaseField>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<Self::Fqk, Self::Fq>;
+    type GTVar: FieldVar<Self::TargetField, Self::BaseField>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G1Prepared`.
-    type G1PreparedVar: ToBytesGadget<Self::Fq>
-        + AllocVar<Self::G1Prepared, Self::Fq>
+    type G1PreparedVar: ToBytesGadget<Self::BaseField>
+        + AllocVar<Self::G1Prepared, Self::BaseField>
         + Clone
         + Debug;
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G2Prepared`.
-    type G2PreparedVar: ToBytesGadget<Self::Fq>
-        + AllocVar<Self::G2Prepared, Self::Fq>
+    type G2PreparedVar: ToBytesGadget<Self::BaseField>
+        + AllocVar<Self::G2Prepared, Self::BaseField>
         + Clone
         + Debug;
 

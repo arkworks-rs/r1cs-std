@@ -108,7 +108,7 @@ where
         let self_inverse = self.unitary_inverse()?;
 
         let mut found_nonzero = false;
-        let naf = ark_ff::biginteger::arithmetic::find_wnaf(exponent.as_ref());
+        let naf = ark_ff::biginteger::arithmetic::find_naf(exponent.as_ref());
 
         for &value in naf.iter().rev() {
             if found_nonzero {

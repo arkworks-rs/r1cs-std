@@ -1,9 +1,11 @@
-use ark_ff::{Field, FpConfig, PrimeField, ToConstraintField};
-
+use ark_ff::{Field, PrimeField, ToConstraintField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::fields::fp::{AllocatedFp, FpVar};
-use crate::{prelude::*, Assignment, ToConstraintFieldGadget, Vec};
+use crate::{
+    fields::fp::{AllocatedFp, FpVar},
+    prelude::*,
+    Assignment, ToConstraintFieldGadget, Vec,
+};
 use core::{borrow::Borrow, convert::TryFrom};
 
 /// Represents an interpretation of 8 `Boolean` objects as an
@@ -152,7 +154,7 @@ impl<F: Field> UInt8<F> {
         let values_len = values.len();
         let field_elements: Vec<F> = ToConstraintField::<F>::to_field_elements(values).unwrap();
 
-        let max_size = 8 * (F::Params::CAPACITY / 8) as usize;
+        let max_size = 8 * ((F::MODULUS_BIT_SIZE - 1) / 8) as usize;
         let mut allocated_bits = Vec::new();
         for field_element in field_elements.into_iter() {
             let fe = AllocatedFp::new_input(cs.clone(), || Ok(field_element))?;
@@ -335,15 +337,15 @@ impl<ConstraintF: Field> AllocVar<u8, ConstraintF> for UInt8<ConstraintF> {
     }
 }
 
-/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized `ConstraintF::Params::CAPACITY` chunks and
-/// converts each chunk, which is assumed to be little-endian, to its `FpVar<ConstraintF>`
-/// representation.
+/// Parses the `Vec<UInt8<ConstraintF>>` in fixed-sized
+/// `ConstraintF::MODULUS_BIT_SIZE - 1` chunks and converts each chunk, which is
+/// assumed to be little-endian, to its `FpVar<ConstraintF>` representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
 /// [ToConstraintField](ark_ff::ToConstraintField).
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
-        let max_size = (ConstraintF::Params::CAPACITY / 8) as usize;
+        let max_size = ((ConstraintF::MODULUS_BIT_SIZE - 1) / 8) as usize;
         self.chunks(max_size)
             .map(|chunk| Boolean::le_bits_to_fp_var(chunk.to_bits_le()?.as_slice()))
             .collect::<Result<Vec<_>, SynthesisError>>()
@@ -363,10 +365,9 @@ mod test {
     use crate::fields::fp::FpVar;
     use crate::prelude::AllocationMode::{Constant, Input, Witness};
     use crate::{prelude::*, ToConstraintFieldGadget, Vec};
-    use ark_ff::{FpConfig, PrimeField, ToConstraintField};
+    use ark_ff::{PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-    use ark_std::rand::distributions::Uniform;
-    use ark_std::rand::Rng;
+    use ark_std::rand::{distributions::Uniform, Rng};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
@@ -475,7 +476,7 @@ mod test {
     #[test]
     fn test_uint8_to_constraint_field() -> Result<(), SynthesisError> {
         let mut rng = ark_std::test_rng();
-        let max_size = (<Fr as PrimeField>::Params::CAPACITY / 8) as usize;
+        let max_size = ((<Fr as PrimeField>::MODULUS_BIT_SIZE - 1) / 8) as usize;
 
         let modes = [Input, Witness, Constant];
         for mode in &modes {

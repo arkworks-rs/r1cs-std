@@ -1,10 +1,12 @@
 use ark_ec::{
-    short_weierstrass_jacobian::{GroupAffine as SWAffine, GroupProjective as SWProjective},
-    AffineCurve, ModelConfig, ProjectiveCurve, SWModelConfig,
+    short_weierstrass::{
+        Affine, Projective, SWCurveConfig,
+    },
+    AffineRepr, CurveGroup, CurveConfig,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use core::{borrow::Borrow, marker::PhantomData};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
 use crate::{
@@ -27,9 +29,17 @@ pub mod mnt4;
 ///  family of bilinear groups.
 pub mod mnt6;
 
-mod non_zero_affine;
+/// This module provides a generic implementation of elliptic curve operations
+/// for points on short-weierstrass curves in affine coordinates that **are
+/// not** equal to zero.
+///
+/// Note: this module is **unsafe** in general: it can synthesize unsatisfiable
+/// or underconstrained constraint systems when a represented point _is_ equal
+/// to zero. The [ProjectiveVar] gadget is the recommended way of working with
+/// elliptic curve points.
+pub mod non_zero_affine;
 
-type BF<P> = <P as ModelConfig>::BaseField;
+type BF<P> = <P as CurveConfig>::BaseField;
 type CF<P> = <BF<P> as Field>::BasePrimeField;
 type BFVar<P> = <BF<P> as FieldWithVar>::Var;
 
@@ -37,9 +47,9 @@ type BFVar<P> = <BF<P> as FieldWithVar>::Var;
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](<https://eprint.iacr.org/2015/1060>).
 #[derive(Derivative)]
-#[derivative(Debug(bound = "P: SWModelConfig"), Clone(bound = "P: SWModelConfig"))]
+#[derivative(Debug(bound = "P: SWCurveConfig"), Clone(bound = "P: SWCurveConfig"))]
 #[must_use]
-pub struct ProjectiveVar<P: SWModelConfig>
+pub struct ProjectiveVar<P: SWCurveConfig>
 where
     BF<P>: FieldWithVar,
 {
@@ -56,11 +66,11 @@ where
 /// An affine representation of a curve point.
 #[derive(Derivative)]
 #[derivative(
-    Debug(bound = "P: SWModelConfig, BF<P>: FieldWithVar"),
-    Clone(bound = "P: SWModelConfig, BF<P>: FieldWithVar")
+    Debug(bound = "P: SWCurveConfig, BF<P>: FieldWithVar"),
+    Clone(bound = "P: SWCurveConfig, BF<P>: FieldWithVar")
 )]
 #[must_use]
-pub struct AffineVar<P: SWModelConfig>
+pub struct AffineVar<P: SWCurveConfig>
 where
     BF<P>: FieldWithVar,
 {
@@ -74,7 +84,7 @@ where
     _params: PhantomData<P>,
 }
 
-impl<P: SWModelConfig> AffineVar<P>
+impl<P: SWCurveConfig> AffineVar<P>
 where
     BF<P>: FieldWithVar,
 {
@@ -89,19 +99,18 @@ where
 
     /// Returns the value assigned to `self` in the underlying
     /// constraint system.
-    pub fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
-        Ok(SWAffine::new(
-            self.x.value()?,
-            self.y.value()?,
-            self.infinity.value()?,
-        ))
+    pub fn value(&self) -> Result<Affine<P>, SynthesisError> {
+        Ok(match self.infinity.value()? {
+            true => Affine::identity(),
+            false => Affine::new(self.x.value()?, self.y.value()?),
+        })
     }
 }
 
 impl<P> ToConstraintFieldGadget<CF<P>> for AffineVar<P>
 where
     BF<P>: FieldWithVar,
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
 {
     fn to_constraint_field(&self) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
@@ -117,10 +126,10 @@ where
 
 impl<P> R1CSVar<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
 {
-    type Value = SWProjective<P>;
+    type Value = Projective<P>;
 
     fn cs(&self) -> ConstraintSystemRef<CF<P>> {
         self.x.cs().or(self.y.cs()).or(self.z.cs())
@@ -129,15 +138,15 @@ where
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let (x, y, z) = (self.x.value()?, self.y.value()?, self.z.value()?);
         let result = if let Some(z_inv) = z.inverse() {
-            SWAffine::new(x * &z_inv, y * &z_inv, false)
+            Affine::new(x * &z_inv, y * &z_inv)
         } else {
-            SWAffine::zero()
+            Affine::identity()
         };
         Ok(result.into())
     }
 }
 
-impl<P: SWModelConfig> ProjectiveVar<P>
+impl<P: SWCurveConfig> ProjectiveVar<P>
 where
     BF<P>: FieldWithVar,
 {
@@ -169,8 +178,8 @@ where
             let infinity = self.is_zero()?;
             let zero_x = BFVar::<P>::zero();
             let zero_y = BFVar::<P>::one();
-            // Allocate a variable whose value is either `self.z.inverse()` if the inverse exists,
-            // and is zero otherwise.
+            // Allocate a variable whose value is either `self.z.inverse()` if the inverse
+            // exists, and is zero otherwise.
             let z_inv = BFVar::<P>::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
                 Ok(self.z.value()?.inverse().unwrap_or_else(P::BaseField::zero))
             })?;
@@ -197,7 +206,7 @@ where
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     pub fn new_variable_omit_on_curve_check(
         cs: impl Into<Namespace<CF<P>>>,
-        f: impl FnOnce() -> Result<SWProjective<P>, SynthesisError>,
+        f: impl FnOnce() -> Result<Projective<P>, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
@@ -231,12 +240,13 @@ where
     }
 }
 
-impl<P: SWModelConfig> ProjectiveVar<P>
+impl<P: SWCurveConfig> ProjectiveVar<P>
 where
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have z = 1.
+    /// Mixed addition, which is useful when `other = (x2, y2)` is known to have
+    /// z = 1.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub(crate) fn add_mixed(&self, other: &NonZeroAffineVar<P>) -> Result<Self, SynthesisError> {
         // Complete mixed addition formula from Renes-Costello-Batina 2015
@@ -277,7 +287,8 @@ where
         Ok(ProjectiveVar::new(x, y, z))
     }
 
-    /// Computes a scalar multiplication with a little-endian scalar of size `P::ScalarField::MODULUS_BITS`.
+    /// Computes a scalar multiplication with a little-endian scalar of size
+    /// `P::ScalarField::MODULUS_BITS`.
     #[tracing::instrument(
         target = "r1cs",
         skip(self, mul_result, multiple_of_power_of_two, bits)
@@ -288,7 +299,7 @@ where
         multiple_of_power_of_two: &mut NonZeroAffineVar<P>,
         bits: &[&Boolean<CF<P>>],
     ) -> Result<(), SynthesisError> {
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE as usize;
 
         assert!(scalar_modulus_bits >= bits.len());
         let split_len = ark_std::cmp::min(scalar_modulus_bits - 2, bits.len());
@@ -299,27 +310,30 @@ where
         // We rely on *incomplete* affine formulae for partially computing this.
         // However, we avoid exceptional edge cases because we partition the scalar
         // into two chunks: one guaranteed to be less than p - 2, and the rest.
-        // We only use incomplete formulae for the first chunk, which means we avoid exceptions:
+        // We only use incomplete formulae for the first chunk, which means we avoid
+        // exceptions:
         //
         // `add_unchecked(a, b)` is incomplete when either `b.is_zero()`, or when
         // `b = ±a`. During scalar multiplication, we don't hit either case:
-        // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`.
-        //   This implies that `k != p ± 1`, and so `b != (p ± 1) * a`.
-        //   Because the group is finite, this in turn means that `b != ±a`, as required.
-        // * `a` or `b` is zero: for `a`, we handle the zero case after the loop; for `b`, notice
-        //    that it is monotonically increasing, and furthermore, equals `k * a`, where
-        //    `k != p = 0 mod p`.
+        // * `b = ±a`: `b = accumulator = k * a`, where `2 <= k < p - 1`. This implies
+        //   that `k != p ± 1`, and so `b != (p ± 1) * a`. Because the group is finite,
+        //   this in turn means that `b != ±a`, as required.
+        // * `a` or `b` is zero: for `a`, we handle the zero case after the loop; for
+        //   `b`, notice that it is monotonically increasing, and furthermore, equals `k
+        //   * a`, where `k != p = 0 mod p`.
 
-        // Unlike normal double-and-add, here we start off with a non-zero `accumulator`,
-        // because `NonZeroAffineVar::add_unchecked` doesn't support addition with `zero`.
-        // In more detail, we initialize `accumulator` to be the initial value of
-        // `multiple_of_power_of_two`. This ensures that all unchecked additions of `accumulator`
-        // with later values of `multiple_of_power_of_two` are safe.
-        // However, to do this correctly, we need to perform two steps:
-        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we will
-        //   conditionally subtract the initial value of `accumulator`:
-        //     if LSB == 0: subtract initial_acc_value; else, subtract 0.
-        // * Because we are assuming the first bit, we must double `multiple_of_power_of_two`.
+        // Unlike normal double-and-add, here we start off with a non-zero
+        // `accumulator`, because `NonZeroAffineVar::add_unchecked` doesn't
+        // support addition with `zero`. In more detail, we initialize
+        // `accumulator` to be the initial value of `multiple_of_power_of_two`.
+        // This ensures that all unchecked additions of `accumulator` with later
+        // values of `multiple_of_power_of_two` are safe. However, to do this
+        // correctly, we need to perform two steps:
+        // * We must skip the LSB, and instead proceed assuming that it was 1. Later, we
+        //   will conditionally subtract the initial value of `accumulator`: if LSB ==
+        //   0: subtract initial_acc_value; else, subtract 0.
+        // * Because we are assuming the first bit, we must double
+        //   `multiple_of_power_of_two`.
 
         let mut accumulator = multiple_of_power_of_two.clone();
         let initial_acc_value = accumulator.into_projective();
@@ -327,7 +341,8 @@ where
         // The powers start at 2 (instead of 1) because we're skipping the first bit.
         multiple_of_power_of_two.double_in_place()?;
 
-        // As mentioned, we will skip the LSB, and will later handle it via a conditional subtraction.
+        // As mentioned, we will skip the LSB, and will later handle it via a
+        // conditional subtraction.
         for bit in affine_bits.iter().skip(1) {
             if bit.is_constant() {
                 if *bit == &Boolean::TRUE {
@@ -341,8 +356,9 @@ where
         }
         // Perform conditional subtraction:
 
-        // We can convert to projective safely because the result is guaranteed to be non-zero
-        // by the condition on `affine_bits.len()`, and by the fact that `accumulator` is non-zero
+        // We can convert to projective safely because the result is guaranteed to be
+        // non-zero by the condition on `affine_bits.len()`, and by the fact
+        // that `accumulator` is non-zero
         let result = accumulator.into_projective();
         // If bits[0] is 0, then we have to subtract `self`; else, we subtract zero.
         let subtrahend = bits[0].select(&Self::zero(), &initial_acc_value)?;
@@ -364,7 +380,7 @@ where
     }
 }
 
-impl<P: SWModelConfig> CurveWithVar<CF<P>> for SWProjective<P>
+impl<P: SWCurveConfig> CurveWithVar<CF<P>> for Projective<P>
 where
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -372,13 +388,13 @@ where
     type Var = ProjectiveVar<P>;
 }
 
-impl<P> CurveVar<SWProjective<P>, CF<P>> for ProjectiveVar<P>
+impl<P> CurveVar<Projective<P>, CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    fn constant(g: SWProjective<P>) -> Self {
+    fn constant(g: Projective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
         Self::new_variable_omit_on_curve_check(cs, || Ok(g), AllocationMode::Constant).unwrap()
     }
@@ -394,7 +410,7 @@ where
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable_omit_prime_order_check(
         cs: impl Into<Namespace<CF<P>>>,
-        f: impl FnOnce() -> Result<SWProjective<P>, SynthesisError>,
+        f: impl FnOnce() -> Result<Projective<P>, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
@@ -437,7 +453,7 @@ where
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
         unimplemented!("cannot enforce prime order");
-        // let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        // let r_minus_1 = (-P::ScalarField::one()).into_bigint();
 
         // let mut result = Self::zero();
         // for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
@@ -532,11 +548,11 @@ where
         // little-endian.
         bits.reverse();
 
-        let scalar_modulus_bits = <P::ScalarField as PrimeField>::size_in_bits();
+        let scalar_modulus_bits = <P::ScalarField as PrimeField>::MODULUS_BIT_SIZE;
         let mut mul_result = Self::zero();
         let mut power_of_two_times_self = non_zero_self;
         // We chunk up `bits` into `p`-sized chunks.
-        for bits in bits.chunks(scalar_modulus_bits) {
+        for bits in bits.chunks(scalar_modulus_bits as usize) {
             self.fixed_scalar_mul_le(&mut mul_result, &mut power_of_two_times_self, bits)?;
         }
 
@@ -554,7 +570,7 @@ where
         scalar_bits_with_bases: I,
     ) -> Result<(), SynthesisError>
     where
-        I: Iterator<Item = (B, &'a SWProjective<P>)>,
+        I: Iterator<Item = (B, &'a Projective<P>)>,
         B: Borrow<Boolean<CF<P>>>,
     {
         // We just ignore the provided bases and use the faster scalar multiplication.
@@ -569,7 +585,7 @@ where
 
 impl<P> ToConstraintFieldGadget<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -579,7 +595,7 @@ where
     }
 }
 
-fn mul_by_coeff_a<P: SWModelConfig>(f: &BFVar<P>) -> BFVar<P>
+fn mul_by_coeff_a<P: SWCurveConfig>(f: &BFVar<P>) -> BFVar<P>
 where
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
@@ -593,7 +609,7 @@ where
 
 impl_bounded_ops!(
     ProjectiveVar<P>,
-    SWProjective<P>,
+    Projective<P>,
     Add,
     add,
     AddAssign,
@@ -663,39 +679,39 @@ impl_bounded_ops!(
         }
 
     },
-    |this: &mut ProjectiveVar<P>, other: SWProjective<P>| {
+    |this: &mut ProjectiveVar<P>, other: Projective<P>| {
         *this = &*this + ProjectiveVar::constant(other)
     },
-    (P: SWModelConfig),
+    (P: SWCurveConfig),
     for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
 );
 
 impl_bounded_ops!(
     ProjectiveVar<P>,
-    SWProjective<P>,
+    Projective<P>,
     Sub,
     sub,
     SubAssign,
     sub_assign,
     |this: &mut ProjectiveVar<P>, other: &'a ProjectiveVar<P>| *this += other.negate().unwrap(),
-    |this: &mut ProjectiveVar<P>, other: SWProjective<P>| *this = &*this - ProjectiveVar::constant(other),
-    (P: SWModelConfig),
+    |this: &mut ProjectiveVar<P>, other: Projective<P>| *this = &*this - ProjectiveVar::constant(other),
+    (P: SWCurveConfig),
     for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
 );
 
-impl<'a, P> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P>> for ProjectiveVar<P>
+impl<'a, P> GroupOpsBounds<'a, Projective<P>, ProjectiveVar<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
-impl<'a, P> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P>> for &'a ProjectiveVar<P>
+impl<'a, P> GroupOpsBounds<'a, Projective<P>, ProjectiveVar<P>> for &'a ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
@@ -703,7 +719,7 @@ where
 
 impl<P> CondSelectGadget<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
@@ -724,7 +740,7 @@ where
 
 impl<P> EqGadget<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
@@ -768,28 +784,32 @@ where
     }
 }
 
-impl<P> AllocVar<SWAffine<P>, CF<P>> for ProjectiveVar<P>
+impl<P> AllocVar<Affine<P>, CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    fn new_variable<T: Borrow<SWAffine<P>>>(
+    fn new_variable<T: Borrow<Affine<P>>>(
         cs: impl Into<Namespace<CF<P>>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
+        Self::new_variable(
+            cs,
+            || f().map(|b| Projective::from((*b.borrow()).clone())),
+            mode,
+        )
     }
 }
 
-impl<P> AllocVar<SWProjective<P>, CF<P>> for ProjectiveVar<P>
+impl<P> AllocVar<Projective<P>, CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
-    fn new_variable<T: Borrow<SWProjective<P>>>(
+    fn new_variable<T: Borrow<Projective<P>>>(
         cs: impl Into<Namespace<CF<P>>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
@@ -815,7 +835,7 @@ where
                 let cofactor_weight = BitIteratorBE::new(cofactor.as_slice())
                     .filter(|b| *b)
                     .count();
-                let modulus_minus_1 = (-P::ScalarField::one()).into_repr(); // r - 1
+                let modulus_minus_1 = (-P::ScalarField::one()).into_bigint(); // r - 1
                 let modulus_minus_1_weight =
                     BitIteratorBE::new(modulus_minus_1).filter(|b| *b).count();
 
@@ -843,9 +863,9 @@ where
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
-                                let mut power_of_two = P::ScalarField::one().into_repr();
+                                let mut power_of_two = P::ScalarField::one().into_bigint();
                                 power_of_two.muln(power_of_2);
-                                let power_of_two_inv = P::ScalarField::from_repr(power_of_two)
+                                let power_of_two_inv = P::ScalarField::from_bigint(power_of_two)
                                     .and_then(|n| n.inverse())
                                     .unwrap();
                                 g.mul(power_of_two_inv)
@@ -896,7 +916,7 @@ fn div2(limbs: &mut [u64]) {
 
 impl<P> ToBitsGadget<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
@@ -923,7 +943,7 @@ where
 
 impl<P> ToBytesGadget<CF<P>> for ProjectiveVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {

@@ -6,23 +6,23 @@ use crate::{
     fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar, FieldWithVar},
     groups::bls12::{G1AffineVar, G1PreparedVar, G1Var, G2PreparedVar, G2Var},
 };
-use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
-use ark_ff::fields::BitIteratorBE;
-use core::marker::PhantomData;
+use ark_ec::bls12::{Bls12, Bls12Config, TwistType};
+use ark_ff::BitIteratorBE;
+use ark_std::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
-pub struct Bls12Gadget<P: Bls12Parameters>(PhantomData<P>);
+pub struct Bls12Gadget<P: Bls12Config>(PhantomData<P>);
 
-type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Params>;
+type Fp2V<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 
-impl<P: Bls12Parameters> Bls12Gadget<P>
+impl<P: Bls12Config> Bls12Gadget<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
     // Evaluate the line function at point p.
     #[tracing::instrument(target = "r1cs")]
     fn ell(
-        f: &mut Fp12Var<P::Fp12Params>,
+        f: &mut Fp12Var<P::Fp12Config>,
         coeffs: &(Fp2V<P>, Fp2V<P>),
         p: &G1AffineVar<P>,
     ) -> Result<(), SynthesisError> {
@@ -53,7 +53,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn exp_by_x(f: &Fp12Var<P::Fp12Params>) -> Result<Fp12Var<P::Fp12Params>, SynthesisError> {
+    fn exp_by_x(f: &Fp12Var<P::Fp12Config>) -> Result<Fp12Var<P::Fp12Config>, SynthesisError> {
         let mut result = f.optimized_cyclotomic_exp(P::X)?;
         if P::X_IS_NEGATIVE {
             result = result.unitary_inverse()?;
@@ -62,7 +62,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> PG for Bls12<P>
+impl<P: Bls12Config> PG for Bls12<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -70,7 +70,7 @@ where
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
     type G2PreparedVar = G2PreparedVar<P>;
-    type GTVar = Fp12Var<P::Fp12Params>;
+    type GTVar = Fp12Var<P::Fp12Config>;
 
     #[tracing::instrument(target = "r1cs")]
     fn miller_loop_gadget(

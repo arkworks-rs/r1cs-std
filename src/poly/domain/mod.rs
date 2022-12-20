@@ -1,7 +1,8 @@
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
+use crate::{
+    boolean::Boolean,
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
@@ -9,18 +10,18 @@ use ark_std::vec::Vec;
 pub mod vanishing_poly;
 
 #[derive(Clone, Debug)]
-/// Defines an evaluation domain over a prime field. The domain is a coset of size `1<<dim`.
+/// Defines an evaluation domain over a prime field. The domain is a coset of
+/// size `1<<dim`.
 ///
-/// Native code corresponds to `ark-poly::univariate::domain::radix2`, but `ark-poly` only supports
-/// subgroup for now.
-///
+/// Native code corresponds to `ark-poly::univariate::domain::radix2`, but
+/// `ark-poly` only supports subgroup for now.
 // TODO: support cosets in `ark-poly`.
 pub struct Radix2DomainVar<F: PrimeField> {
     /// generator of subgroup g
     pub gen: F,
     /// index of the quotient group (i.e. the `offset`)
     offset: FpVar<F>,
-    /// dimension of evaluation domain
+    /// dimension of evaluation domain, which is log2(size of coset)
     pub dim: u64,
 }
 impl<F: PrimeField> Radix2DomainVar<F> {
@@ -56,13 +57,13 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         1 << self.dim
     }
 
-    /// Returns g, g^2, ..., g^{dim}
-    fn powers_of_gen(&self, dim: usize) -> Vec<F> {
+    /// Returns offset, offset*g, offset*g^2, ..., offset*g^{coset_size}
+    pub fn elements(&self) -> Vec<FpVar<F>> {
         let mut result = Vec::new();
-        let mut cur = self.gen;
-        for _ in 0..dim {
-            result.push(cur);
-            cur = cur * cur;
+        result.push(self.offset.clone());
+        for _ in 1..(1 << self.dim) {
+            let new_element = result.last().unwrap() * self.gen;
+            result.push(new_element);
         }
         result
     }
@@ -72,38 +73,114 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         1 << self.dim
     }
 
-    /// For domain `h<g>` with dimension `n`, `position` represented by `query_pos` in big endian form,
-    /// returns `h*g^{position}<g^{n-query_pos.len()}>`
-    pub fn query_position_to_coset(
+    /// For domain `h<g>` with dimension `n`, `position` represented by
+    /// `query_pos` in big endian form, returns all points of
+    /// `h*g^{position}<g^{2^{n-coset_dim}}>`. The result is the query coset at
+    /// index `query_pos` for the FRI protocol.
+    ///
+    /// # Panics
+    /// This function panics when `query_pos.len() != coset_dim` or
+    /// `query_pos.len() != self.dim`.
+    pub fn query_position_to_coset_elements(
         &self,
         query_pos: &[Boolean<F>],
         coset_dim: u64,
     ) -> Result<Vec<FpVar<F>>, SynthesisError> {
-        let mut coset_index = query_pos;
-        assert!(
-            query_pos.len() == self.dim as usize
-                || query_pos.len() == (self.dim - coset_dim) as usize
-        );
-        if query_pos.len() == self.dim as usize {
-            coset_index = &coset_index[0..(coset_index.len() - coset_dim as usize)];
-        }
-        let mut coset = Vec::new();
-        let powers_of_g = &self.powers_of_gen(self.dim as usize)[(coset_dim as usize)..];
+        Ok(self
+            .query_position_to_coset(query_pos, coset_dim)?
+            .elements())
+    }
 
-        let mut first_point_in_coset: FpVar<F> = FpVar::zero();
-        for i in 0..coset_index.len() {
-            let term = coset_index[i].select(&FpVar::constant(powers_of_g[i]), &FpVar::zero())?;
-            first_point_in_coset += &term;
-        }
+    /// For domain `h<g>` with dimension `n`, `position` represented by
+    /// `query_pos` in big endian form, returns all points of
+    /// `h*g^{position}<g^{n-query_pos.len()}>`
+    ///
+    /// # Panics
+    /// This function panics when `query_pos.len() < log2_num_cosets`.
+    pub fn query_position_to_coset(
+        &self,
+        query_pos: &[Boolean<F>],
+        coset_dim: u64,
+    ) -> Result<Self, SynthesisError> {
+        let coset_index = truncate_to_coset_index(query_pos, self.dim, coset_dim);
+        let offset_var = &self.offset * FpVar::Constant(self.gen).pow_le(&coset_index)?;
+        Ok(Self {
+            gen: self.gen.pow(&[1 << (self.dim - coset_dim)]), // distance between coset
+            offset: offset_var,
+            dim: coset_dim,
+        })
+    }
+}
 
-        first_point_in_coset *= &self.offset;
+fn truncate_to_coset_index<F: PrimeField>(
+    query_pos: &[Boolean<F>],
+    codeword_dim: u64,
+    coset_dim: u64,
+) -> Vec<Boolean<F>> {
+    let log2_num_cosets = (codeword_dim - coset_dim) as usize;
+    assert!(query_pos.len() >= log2_num_cosets);
+    query_pos[0..log2_num_cosets].to_vec()
+}
 
-        coset.push(first_point_in_coset);
-        for i in 1..(1 << (coset_dim as usize)) {
-            let new_elem = &coset[i - 1] * &FpVar::Constant(self.gen);
-            coset.push(new_elem);
-        }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use ark_ff::PrimeField;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::{rand::Rng, test_rng};
 
-        Ok(coset)
+    use crate::{alloc::AllocVar, fields::fp::FpVar, poly::domain::Radix2DomainVar, R1CSVar};
+
+    fn test_query_coset_template<F: PrimeField>() {
+        const COSET_DIM: u64 = 7;
+        const COSET_SIZE: u64 = 1 << COSET_DIM;
+        const LOCALIZATION: u64 = 3;
+        let cs = ConstraintSystem::new_ref();
+        let mut rng = test_rng();
+        let gen = F::get_root_of_unity(COSET_SIZE).unwrap();
+        let offset = F::rand(&mut rng);
+        let offset_var = FpVar::new_witness(cs.clone(), || Ok(offset)).unwrap();
+        let domain = Radix2DomainVar::new(gen, COSET_DIM, offset_var).unwrap();
+
+        let num_cosets = 1 << (COSET_DIM - LOCALIZATION);
+
+        let coset_index = rng.gen_range(0..num_cosets);
+        let coset_index_var = UInt32::new_witness(cs.clone(), || Ok(coset_index))
+            .unwrap()
+            .to_bits_le()
+            .into_iter()
+            .take(COSET_DIM as usize)
+            .collect::<Vec<_>>();
+
+        let elements_actual = domain
+            .query_position_to_coset(&coset_index_var, LOCALIZATION)
+            .unwrap()
+            .elements();
+
+        let elements_expected = domain
+            .elements()
+            .into_iter()
+            .skip(coset_index as usize)
+            .step_by(1 << (COSET_DIM - LOCALIZATION))
+            .collect::<Vec<_>>();
+
+        assert_eq!(elements_expected.len(), elements_actual.len());
+
+        elements_expected
+            .into_iter()
+            .zip(elements_actual.into_iter())
+            .for_each(|(left, right)| {
+                assert_eq!(left.value().unwrap(), right.value().unwrap());
+            });
+    }
+
+    #[test]
+    fn test_on_bls12_381() {
+        test_query_coset_template::<ark_bls12_381::Fr>();
+    }
+
+    #[test]
+    fn test_on_bls12_377() {
+        test_query_coset_template::<ark_bls12_377::Fr>();
     }
 }

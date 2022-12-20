@@ -1,4 +1,4 @@
-use ark_ff::{BigInteger, FpConfig, PrimeField};
+use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
@@ -49,19 +49,9 @@ pub enum FpVar<F: PrimeField> {
     Var(AllocatedFp<F>),
 }
 
-macro_rules! impl_field_ext {
-    ($Fp:ident, $FpConfig:ident) => {
-        impl<P: ark_ff::models::$FpConfig> FieldWithVar for ark_ff::models::$Fp<P> {
-            type Var = FpVar<Self>;
-        }
-    };
+impl<P: ark_ff::models::FpConfig<N>, const N: usize> FieldWithVar for ark_ff::models::Fp<P, N> {
+    type Var = FpVar<Self>;
 }
-
-impl_field_ext!(Fp256, Fp256Config);
-impl_field_ext!(Fp320, Fp320Config);
-impl_field_ext!(Fp384, Fp384Config);
-impl_field_ext!(Fp768, Fp768Config);
-impl_field_ext!(Fp832, Fp832Config);
 
 impl<F: PrimeField> R1CSVar<F> for FpVar<F> {
     type Value = F;
@@ -482,15 +472,15 @@ impl<F: PrimeField> ToBitsGadget<F> for AllocatedFp<F> {
         use ark_ff::BitIteratorBE;
         let mut bits = if let Some(value) = self.value {
             let field_char = BitIteratorBE::new(F::characteristic());
-            let bits: Vec<_> = BitIteratorBE::new(value.into_repr())
+            let bits: Vec<_> = BitIteratorBE::new(value.into_bigint())
                 .zip(field_char)
                 .skip_while(|(_, c)| !c)
                 .map(|(b, _)| Some(b))
                 .collect();
-            assert_eq!(bits.len(), F::Config::MODULUS_BITS as usize);
+            assert_eq!(bits.len(), F::MODULUS_BIT_SIZE as usize);
             bits
         } else {
-            vec![None; F::Config::MODULUS_BITS as usize]
+            vec![None; F::MODULUS_BIT_SIZE as usize]
         };
 
         // Convert to little-endian
@@ -920,8 +910,8 @@ impl<F: PrimeField> ToBitsGadget<F> for FpVar<F> {
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
         use ark_ff::BitIteratorLE;
         match self {
-            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
-                .take((F::Config::MODULUS_BITS) as usize)
+            Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_bigint())
+                .take((F::MODULUS_BIT_SIZE) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),
@@ -935,7 +925,9 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_le().as_slice(),
+            )),
             Self::Var(v) => v.to_bytes(),
         }
     }
@@ -943,7 +935,9 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     #[tracing::instrument(target = "r1cs")]
     fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
-            Self::Constant(c) => Ok(UInt8::constant_vec(&ark_ff::to_bytes![c].unwrap())),
+            Self::Constant(c) => Ok(UInt8::constant_vec(
+                c.into_bigint().to_bytes_le().as_slice(),
+            )),
             Self::Var(v) => v.to_non_unique_bytes(),
         }
     }
@@ -1096,10 +1090,12 @@ impl<F: PrimeField> Sum<FpVar<F>> for FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use crate::alloc::{AllocVar, AllocationMode};
-    use crate::eq::EqGadget;
-    use crate::fields::fp::FpVar;
-    use crate::R1CSVar;
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        eq::EqGadget,
+        fields::fp::FpVar,
+        R1CSVar,
+    };
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{UniformRand, Zero};
     use ark_test_curves::bls12_381::Fr;

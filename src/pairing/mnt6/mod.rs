@@ -9,19 +9,18 @@ use crate::{
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use ark_ec::mnt6::{MNT6Parameters, MNT6};
-use ark_ff::fields::BitIteratorBE;
+use ark_ec::mnt6::{MNT6Config, MNT6};
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT6 bilinear group.
-pub struct MNT6Gadget<P: MNT6Parameters>(PhantomData<P>);
+pub struct MNT6Gadget<P: MNT6Config>(PhantomData<P>);
 
-type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Config>;
-type Fp6G<P> = Fp6Var<<P as MNT6Parameters>::Fp6Config>;
+type Fp3G<P> = Fp3Var<<P as MNT6Config>::Fp3Config>;
+type Fp6G<P> = Fp6Var<<P as MNT6Config>::Fp6Config>;
 /// A variable corresponding to `ark_ec::mnt6::GT`.
 pub type GTVar<P> = Fp6G<P>;
 
-impl<P: MNT6Parameters> MNT6Gadget<P>
+impl<P: MNT6Config> MNT6Gadget<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -103,29 +102,40 @@ where
 
         // code below gets executed for all bits (EXCEPT the MSB itself) of
         // mnt6_param_p (skipping leading zeros) in MSB to LSB order
-        for (dbl_idx, bit) in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT)
-            .skip(1)
-            .enumerate()
-        {
+        let y_over_twist_neg = &q.y_over_twist.negate()?;
+        for (dbl_idx, bit) in P::ATE_LOOP_COUNT.iter().skip(1).enumerate() {
             let dc = &q.double_coefficients[dbl_idx];
 
-            let g_rr_at_p = Fp6Var::new(
+            let g_rr_at_p = Fp6G::<P>::new(
                 &dc.c_l - &dc.c_4c - &dc.c_j * &p.x_twist,
                 &dc.c_h * &p.y_twist,
             );
 
             f = f.square()? * &g_rr_at_p;
 
-            if bit {
+            let g_rq_at_p;
+            // Compute l_{R,Q}(P) if bit == 1, and l_{R,-Q}(P) if bit == -1
+            if *bit == 1 {
                 let ac = &q.addition_coefficients[add_idx];
                 add_idx += 1;
 
-                let g_rq_at_p = Fp6Var::new(
+                g_rq_at_p = Fp6G::<P>::new(
                     &ac.c_rz * &p.y_twist,
-                    (&q.y_over_twist * &ac.c_rz + &(&l1_coeff * &ac.c_l1)).negate()?,
+                    (&q.y_over_twist * &ac.c_rz + &l1_coeff * &ac.c_l1).negate()?,
                 );
-                f *= &g_rq_at_p;
+            } else if *bit == -1 {
+                let ac = &q.addition_coefficients[add_idx];
+                add_idx += 1;
+
+                g_rq_at_p = Fp6G::<P>::new(
+                    &ac.c_rz * &p.y_twist,
+                    (y_over_twist_neg * &ac.c_rz + &l1_coeff * &ac.c_l1).negate()?,
+                );
+            } else {
+                continue;
             }
+
+            f *= &g_rq_at_p;
         }
 
         if P::ATE_IS_LOOP_COUNT_NEG {
@@ -184,7 +194,7 @@ where
     }
 }
 
-impl<P: MNT6Parameters> PG for MNT6<P>
+impl<P: MNT6Config> PG for MNT6<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {

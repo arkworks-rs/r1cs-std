@@ -9,20 +9,19 @@ use crate::{
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use ark_ec::mnt4::{MNT4Parameters, MNT4};
-use ark_ff::BitIteratorBE;
+use ark_ec::mnt4::{MNT4Config, MNT4};
 
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT4 bilinear group.
-pub struct MNT4Gadget<P: MNT4Parameters>(PhantomData<P>);
+pub struct MNT4Gadget<P: MNT4Config>(PhantomData<P>);
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
-type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Config>;
+type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
+type Fp4G<P> = Fp4Var<<P as MNT4Config>::Fp4Config>;
 /// A variable corresponding to `ark_ec::mnt4::GT`.
 pub type GTVar<P> = Fp4G<P>;
 
-impl<P: MNT4Parameters> MNT4Gadget<P>
+impl<P: MNT4Config> MNT4Gadget<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -108,10 +107,8 @@ where
 
         // code below gets executed for all bits (EXCEPT the MSB itself) of
         // mnt6_param_p (skipping leading zeros) in MSB to LSB order
-        for (dbl_idx, bit) in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT)
-            .skip(1)
-            .enumerate()
-        {
+        let y_over_twist_neg = &q.y_over_twist.negate()?;
+        for (dbl_idx, bit) in P::ATE_LOOP_COUNT.iter().skip(1).enumerate() {
             let dc = &q.double_coefficients[dbl_idx];
 
             let g_rr_at_p = Fp4G::<P>::new(
@@ -121,16 +118,29 @@ where
 
             f = f.square()? * &g_rr_at_p;
 
-            if bit {
+            let g_rq_at_p;
+            // Compute l_{R,Q}(P) if bit == 1, and l_{R,-Q}(P) if bit == -1
+            if *bit == 1 {
                 let ac = &q.addition_coefficients[add_idx];
                 add_idx += 1;
 
-                let g_rq_at_p = Fp4G::<P>::new(
+                g_rq_at_p = Fp4G::<P>::new(
                     &ac.c_rz * &p.y_twist,
                     (&q.y_over_twist * &ac.c_rz + &l1_coeff * &ac.c_l1).negate()?,
                 );
-                f *= &g_rq_at_p;
+            } else if *bit == -1 {
+                let ac = &q.addition_coefficients[add_idx];
+                add_idx += 1;
+
+                g_rq_at_p = Fp4G::<P>::new(
+                    &ac.c_rz * &p.y_twist,
+                    (y_over_twist_neg * &ac.c_rz + &l1_coeff * &ac.c_l1).negate()?,
+                );
+            } else {
+                continue;
             }
+
+            f *= &g_rq_at_p;
         }
 
         if P::ATE_IS_LOOP_COUNT_NEG {
@@ -189,7 +199,7 @@ where
     }
 }
 
-impl<P: MNT4Parameters> PG for MNT4<P>
+impl<P: MNT4Config> PG for MNT4<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {

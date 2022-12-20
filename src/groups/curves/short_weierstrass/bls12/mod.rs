@@ -1,6 +1,6 @@
 use ark_ec::{
-    bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
-    short_weierstrass_jacobian::GroupAffine,
+    bls12::{Bls12Config, G1Prepared, G2Prepared, TwistType},
+    short_weierstrass::Affine as GroupAffine,
 };
 use ark_ff::{BitIteratorBE, Field, One};
 use ark_relations::r1cs::{Namespace, SynthesisError};
@@ -11,35 +11,35 @@ use crate::{
     Vec,
 };
 
-type FpVar<P> = <<P as Bls12Parameters>::Fp as FieldWithVar>::Var;
+type FpVar<P> = <<P as Bls12Config>::Fp as FieldWithVar>::Var;
 
 /// Represents a projective point in G1.
-pub type G1Var<P> = ProjectiveVar<<P as Bls12Parameters>::G1Config>;
+pub type G1Var<P> = ProjectiveVar<<P as Bls12Config>::G1Config>;
 
 /// Represents an affine point on G1. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G1AffineVar<P> = AffineVar<<P as Bls12Parameters>::G1Config>;
+pub type G1AffineVar<P> = AffineVar<<P as Bls12Config>::G1Config>;
 
 /// Represents a projective point in G2.
-pub type G2Var<P> = ProjectiveVar<<P as Bls12Parameters>::G2Config>;
+pub type G2Var<P> = ProjectiveVar<<P as Bls12Config>::G2Config>;
 /// Represents an affine point on G2. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Config>;
+pub type G2AffineVar<P> = AffineVar<<P as Bls12Config>::G2Config>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "P: Bls12Parameters, P::Fp: FieldWithVar"),
-    Debug(bound = "P: Bls12Parameters, P::Fp: FieldWithVar")
+    Clone(bound = "P: Bls12Config, P::Fp: FieldWithVar"),
+    Debug(bound = "P: Bls12Config, P::Fp: FieldWithVar")
 )]
-pub struct G1PreparedVar<P: Bls12Parameters>(pub G1AffineVar<P>)
+pub struct G1PreparedVar<P: Bls12Config>(pub G1AffineVar<P>)
 where
     P::Fp: FieldWithVar;
 
-impl<P: Bls12Parameters> G1PreparedVar<P>
+impl<P: Bls12Config> G1PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {
@@ -49,8 +49,11 @@ where
         let x = self.0.x.value()?;
         let y = self.0.y.value()?;
         let infinity = self.0.infinity.value()?;
-        let g = GroupAffine::new(x, y, infinity);
-        Ok(g.into())
+        let g = infinity
+            .then_some(GroupAffine::identity())
+            .unwrap_or(GroupAffine::new(x, y))
+            .into();
+        Ok(g)
     }
 
     /// Constructs `Self` from a `G1Var`.
@@ -60,7 +63,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
+impl<P: Bls12Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {
@@ -87,7 +90,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P>
+impl<P: Bls12Config> ToBytesGadget<P::Fp> for G1PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {
@@ -113,7 +116,7 @@ where
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
+type Fp2G<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
@@ -122,7 +125,7 @@ type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
     Clone(bound = "P::Fp: FieldWithVar"),
     Debug(bound = "P::Fp: FieldWithVar")
 )]
-pub struct G2PreparedVar<P: Bls12Parameters>
+pub struct G2PreparedVar<P: Bls12Config>
 where
     P::Fp: FieldWithVar,
 {
@@ -130,7 +133,7 @@ where
     pub ell_coeffs: Vec<LCoeff<P>>,
 }
 
-impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P>
+impl<P: Bls12Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {
@@ -160,7 +163,7 @@ where
                 TwistType::D => {
                     let mut z_s = projective_coeffs
                         .iter()
-                        .map(|(z, _, _)| *z)
+                        .map(|(z, ..)| *z)
                         .collect::<Vec<_>>();
                     ark_ff::fields::batch_inversion(&mut z_s);
                     projective_coeffs
@@ -191,7 +194,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P>
+impl<P: Bls12Config> ToBytesGadget<P::Fp> for G2PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {
@@ -217,7 +220,7 @@ where
     }
 }
 
-impl<P: Bls12Parameters> G2PreparedVar<P>
+impl<P: Bls12Config> G2PreparedVar<P>
 where
     P::Fp: FieldWithVar,
 {

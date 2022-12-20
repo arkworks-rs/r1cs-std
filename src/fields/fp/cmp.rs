@@ -106,7 +106,7 @@ impl<F: PrimeField> FpVar<F> {
         // self <= (p-1)/2, which implies self < p.
         let _ = Boolean::enforce_smaller_or_equal_than_le(
             &self.to_non_unique_bits_le()?,
-            F::modulus_minus_one_div_two(),
+            F::MODULUS_MINUS_ONE_DIV_TWO,
         )?;
         Ok(())
     }
@@ -153,8 +153,7 @@ impl<F: PrimeField> FpVar<F> {
 
 #[cfg(test)]
 mod test {
-    use ark_std::cmp::Ordering;
-    use ark_std::rand::Rng;
+    use ark_std::{cmp::Ordering, rand::Rng};
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
     use ark_ff::{PrimeField, UniformRand};
@@ -165,7 +164,7 @@ mod test {
     fn test_cmp() {
         let mut rng = ark_std::test_rng();
         fn rand_in_range<R: Rng>(rng: &mut R) -> Fr {
-            let pminusonedivtwo: Fr = Fr::modulus_minus_one_div_two().into();
+            let pminusonedivtwo: Fr = Fr::MODULUS_MINUS_ONE_DIV_TWO.into();
             let mut r;
             loop {
                 r = Fr::rand(rng);

@@ -1,11 +1,12 @@
-use super::params::get_params;
-use super::AllocatedNonNativeFieldVar;
-use super::{overhead, params::OptimizationType};
-use crate::eq::EqGadget;
-use crate::fields::fp::FpVar;
-use crate::fields::FieldVar;
-use crate::{alloc::AllocVar, boolean::Boolean, R1CSVar};
-use ark_ff::{biginteger::BigInteger, fields::FpConfig, BitIteratorBE, One, PrimeField, Zero};
+use super::{overhead, params::{get_params, OptimizationType}, AllocatedNonNativeFieldVar};
+use crate::{
+    alloc::AllocVar,
+    boolean::Boolean,
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+    R1CSVar,
+};
+use ark_ff::{biginteger::BigInteger, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystemRef, Result as R1CSResult},
@@ -22,7 +23,7 @@ pub fn limbs_to_bigint<BaseField: PrimeField>(
     let mut big_cur = BigUint::one();
     let two = BigUint::from(2u32);
     for limb in limbs.iter().rev() {
-        let limb_repr = limb.into_repr().to_bits_le();
+        let limb_repr = limb.into_bigint().to_bits_le();
         let mut small_cur = big_cur.clone();
         for limb_bit in limb_repr.iter() {
             if *limb_bit {
@@ -41,7 +42,8 @@ pub fn bigint_to_basefield<BaseField: PrimeField>(bigint: &BigUint) -> BaseField
     let mut cur = BaseField::one();
     let bytes = bigint.to_bytes_be();
 
-    let basefield_256 = BaseField::from_repr(<BaseField as PrimeField>::BigInt::from(256)).unwrap();
+    let basefield_256 =
+        BaseField::from_bigint(<BaseField as PrimeField>::BigInt::from(256u64)).unwrap();
 
     for byte in bytes.iter().rev() {
         let bytes_basefield = BaseField::from(*byte as u128);
@@ -60,9 +62,10 @@ pub struct Reducer<TargetField: PrimeField, BaseField: PrimeField> {
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseField> {
-    /// convert limbs to bits (take at most `BaseField::size_in_bits() - 1` bits)
-    /// This implementation would be more efficient than the original `to_bits`
-    /// or `to_non_unique_bits` since we enforce that some bits are always zero.
+    /// convert limbs to bits (take at most `BaseField::MODULUS_BIT_SIZE as
+    /// usize - 1` bits) This implementation would be more efficient than
+    /// the original `to_bits` or `to_non_unique_bits` since we enforce that
+    /// some bits are always zero.
     #[tracing::instrument(target = "r1cs")]
     pub fn limb_to_bits(
         limb: &FpVar<BaseField>,
@@ -70,14 +73,16 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     ) -> R1CSResult<Vec<Boolean<BaseField>>> {
         let cs = limb.cs();
 
-        let num_bits = min(BaseField::size_in_bits() - 1, num_bits);
+        let num_bits = min(BaseField::MODULUS_BIT_SIZE as usize - 1, num_bits);
         let mut bits_considered = Vec::with_capacity(num_bits);
         let limb_value = limb.value().unwrap_or_default();
 
-        for b in BitIteratorBE::new(limb_value.into_repr()).skip(
-            <<BaseField as PrimeField>::Config as FpConfig>::REPR_SHAVE_BITS as usize
-                + (BaseField::size_in_bits() - num_bits),
-        ) {
+        let num_bits_to_shave =
+            BaseField::BigInt::NUM_LIMBS * 64 - (BaseField::MODULUS_BIT_SIZE as usize);
+
+        for b in BitIteratorBE::new(limb_value.into_bigint())
+            .skip(num_bits_to_shave + (BaseField::MODULUS_BIT_SIZE as usize - num_bits))
+        {
             bits_considered.push(b);
         }
 
@@ -129,14 +134,11 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         num_of_additions_over_normal_form: BaseField,
         optimization_type: OptimizationType,
     ) -> bool {
-        let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
-            optimization_type,
-        );
+        let target_size = TargetField::MODULUS_BIT_SIZE as usize;
+        let base_size = BaseField::MODULUS_BIT_SIZE as usize;
+        let params = get_params(target_size, base_size, optimization_type);
         let surfeit = overhead!(num_of_additions_over_normal_form + BaseField::one()) + 1;
-
-        BaseField::size_in_bits() <= (2 * params.bits_per_limb + surfeit + 1)
+        base_size <= (2 * params.bits_per_limb + surfeit + 1)
     }
 
     /// Reduction to be enforced after additions
@@ -144,17 +146,22 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     pub fn post_add_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
     ) -> R1CSResult<()> {
-        if Self::should_reduce_post_addition(
-            elem.num_of_additions_over_normal_form,
+        let params = get_params(
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             elem.get_optimization_type(),
-        ) {
-            Self::reduce(elem)
-        } else {
+        );
+        let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
+
+        if BaseField::MODULUS_BIT_SIZE as usize > 2 * params.bits_per_limb + surfeit + 1 {
             Ok(())
+        } else {
+            Self::reduce(elem)
         }
     }
 
-    /// Reduction used before multiplication to reduce the representations in a way that allows efficient multiplication
+    /// Reduction used before multiplication to reduce the representations in a
+    /// way that allows efficient multiplication
     #[tracing::instrument(target = "r1cs")]
     pub fn pre_mul_reduce(
         elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
@@ -166,13 +173,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         );
 
         let params = get_params(
-            TargetField::size_in_bits(),
-            BaseField::size_in_bits(),
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
             elem.get_optimization_type(),
         );
 
         if 2 * params.bits_per_limb + ark_std::log2(params.num_limbs) as usize
-            > BaseField::size_in_bits() - 1
+            > BaseField::MODULUS_BIT_SIZE as usize - 1
         {
             panic!("The current limb parameters do not support multiplication.");
         }
@@ -182,14 +189,14 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                 + BaseField::one())
                 * (elem_other.num_of_additions_over_normal_form + BaseField::one());
             let overhead_limb = overhead!(prod_of_num_of_additions.mul(
-                &BaseField::from_repr(<BaseField as PrimeField>::BigInt::from(
+                &BaseField::from_bigint(<BaseField as PrimeField>::BigInt::from(
                     (params.num_limbs) as u64
                 ))
                 .unwrap()
             ));
             let bits_per_mulresult_limb = 2 * (params.bits_per_limb + 1) + overhead_limb;
 
-            if bits_per_mulresult_limb < BaseField::size_in_bits() {
+            if bits_per_mulresult_limb < BaseField::MODULUS_BIT_SIZE as usize {
                 break;
             }
 
@@ -230,7 +237,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         let zero = FpVar::<BaseField>::zero();
 
         let mut limb_pairs = Vec::<(FpVar<BaseField>, FpVar<BaseField>)>::new();
-        let num_limb_in_a_group = (BaseField::size_in_bits()
+        let num_limb_in_a_group = (BaseField::MODULUS_BIT_SIZE as usize
             - 1
             - surfeit
             - 1
@@ -241,9 +248,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
 
         let shift_array = {
             let mut array = Vec::new();
-            let mut cur = BaseField::one().into_repr();
+            let mut cur = BaseField::one().into_bigint();
             for _ in 0..num_limb_in_a_group {
-                array.push(BaseField::from_repr(cur).unwrap());
+                array.push(BaseField::from_bigint(cur).unwrap());
                 cur.muln(shift_per_limb as u32);
             }
 
@@ -251,7 +258,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         };
 
         for (left_limb, right_limb) in left.iter().zip(right.iter()).rev() {
-            // note: the `rev` operation is here, so that the first limb (and the first groupped limb) will be the least significant limb.
+            // note: the `rev` operation is here, so that the first limb (and the first
+            // groupped limb) will be the least significant limb.
             limb_pairs.push((left_limb.clone(), right_limb.clone()));
         }
 
@@ -283,7 +291,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         for (group_id, (left_total_limb, right_total_limb, num_limb_in_this_group)) in
             groupped_limb_pairs.iter().enumerate()
         {
-            let mut pad_limb_repr: <BaseField as PrimeField>::BigInt = BaseField::one().into_repr();
+            let mut pad_limb_repr: <BaseField as PrimeField>::BigInt =
+                BaseField::one().into_bigint();
 
             pad_limb_repr.muln(
                 (surfeit
@@ -292,7 +301,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                     + 1
                     + 1) as u32,
             );
-            let pad_limb = BaseField::from_repr(pad_limb_repr).unwrap();
+            let pad_limb = BaseField::from_bigint(pad_limb_repr).unwrap();
 
             let left_total_limb_value = left_total_limb.value().unwrap_or_default();
             let right_total_limb_value = right_total_limb.value().unwrap_or_default();
@@ -300,10 +309,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             let mut carry_value =
                 left_total_limb_value + carry_in_value + pad_limb - right_total_limb_value;
 
-            let mut carry_repr = carry_value.into_repr();
+            let mut carry_repr = carry_value.into_bigint();
             carry_repr.divn((shift_per_limb * num_limb_in_this_group) as u32);
 
-            carry_value = BaseField::from_repr(carry_repr).unwrap();
+            carry_value = BaseField::from_bigint(carry_repr).unwrap();
 
             let carry = FpVar::<BaseField>::new_witness(cs.clone(), || Ok(carry_value))?;
 

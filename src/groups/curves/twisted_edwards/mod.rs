@@ -1,17 +1,19 @@
 use ark_ec::{
-    twisted_edwards_extended::{GroupAffine as TEAffine, GroupProjective as TEProjective},
-    AffineCurve, ModelParameters, MontgomeryModelParameters, ProjectiveCurve, TEModelParameters,
+    twisted_edwards::{
+        Affine as TEAffine, MontCurveConfig,
+        Projective as TEProjective, TECurveConfig as TECurveConfig,
+    },
+    AffineRepr, CurveGroup, Group, CurveConfig,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
-
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{fields::FieldWithVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 use crate::fields::fp::FpVar;
-use core::{borrow::Borrow, marker::PhantomData};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 
-type BFVar<P> = <<P as ModelParameters>::BaseField as FieldWithVar>::Var;
+type BFVar<P> = <<P as CurveConfig>::BaseField as FieldWithVar>::Var;
 
 /// An implementation of arithmetic for Montgomery curves that relies on
 /// incomplete addition formulae for the affine model, as outlined in the
@@ -21,11 +23,11 @@ type BFVar<P> = <<P as ModelParameters>::BaseField as FieldWithVar>::Var;
 /// multi-scalar-multiplication in the Bowe-Hopwood-Pedersen hash.
 #[derive(Derivative)]
 #[derivative(
-    Debug(bound = "P: TEModelParameters, P::BaseField: FieldWithVar"),
-    Clone(bound = "P: TEModelParameters, P::BaseField: FieldWithVar")
+    Debug(bound = "P: TECurveConfig, P::BaseField: FieldWithVar"),
+    Clone(bound = "P: TECurveConfig, P::BaseField: FieldWithVar")
 )]
 #[must_use]
-pub struct MontgomeryAffineVar<P: TEModelParameters>
+pub struct MontgomeryAffineVar<P: TECurveConfig>
 where
     P::BaseField: FieldWithVar,
 {
@@ -39,14 +41,14 @@ where
 
 mod montgomery_affine_impl {
     use super::*;
-    use ark_ec::twisted_edwards_extended::GroupAffine;
+    use ark_ec::twisted_edwards::MontgomeryAffine as GroupAffine;
     use ark_ff::Field;
     use core::ops::Add;
 
     impl<P> R1CSVar<CF<P>> for MontgomeryAffineVar<P>
     where
         P::BaseField: FieldWithVar,
-        P: TEModelParameters,
+        P: TECurveConfig,
     {
         type Value = (P::BaseField, P::BaseField);
 
@@ -61,7 +63,7 @@ mod montgomery_affine_impl {
         }
     }
 
-    impl<P: TEModelParameters> MontgomeryAffineVar<P>
+    impl<P: TECurveConfig> MontgomeryAffineVar<P>
     where
         P::BaseField: FieldWithVar,
     {
@@ -80,8 +82,8 @@ mod montgomery_affine_impl {
         pub fn from_edwards_to_coords(
             p: &TEAffine<P>,
         ) -> Result<(P::BaseField, P::BaseField), SynthesisError> {
-            let montgomery_point: GroupAffine<P> = if p.y == P::BaseField::one() {
-                GroupAffine::zero()
+            let montgomery_point: GroupAffine<P::MontCurveConfig> = if p.y == P::BaseField::one() {
+                return Err(SynthesisError::UnexpectedIdentity);
             } else if p.x == P::BaseField::zero() {
                 GroupAffine::new(P::BaseField::zero(), P::BaseField::zero())
             } else {
@@ -110,7 +112,7 @@ mod montgomery_affine_impl {
         }
     }
 
-    impl<P: TEModelParameters> MontgomeryAffineVar<P>
+    impl<P: TECurveConfig> MontgomeryAffineVar<P>
     where
         P::BaseField: FieldWithVar,
         for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
@@ -165,7 +167,7 @@ mod montgomery_affine_impl {
 
     impl<'a, P> Add<&'a MontgomeryAffineVar<P>> for MontgomeryAffineVar<P>
     where
-        P: TEModelParameters,
+        P: TECurveConfig,
         P::BaseField: FieldWithVar,
         for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     {
@@ -180,8 +182,8 @@ mod montgomery_affine_impl {
                 AllocationMode::Witness
             };
 
-            let coeff_b = P::MontgomeryModelParameters::COEFF_B;
-            let coeff_a = P::MontgomeryModelParameters::COEFF_A;
+            let coeff_b = P::MontCurveConfig::COEFF_B;
+            let coeff_a = P::MontCurveConfig::COEFF_A;
 
             let lambda = BFVar::<P>::new_variable(
                 ark_relations::ns!(cs, "lambda"),
@@ -238,11 +240,11 @@ mod montgomery_affine_impl {
 /// [EFD](https://www.hyperelliptic.org/EFD/g1p/auto-twisted.html).
 #[derive(Derivative)]
 #[derivative(
-    Debug(bound = "P: TEModelParameters, P::BaseField: FieldWithVar"),
-    Clone(bound = "P: TEModelParameters, P::BaseField: FieldWithVar")
+    Debug(bound = "P: TECurveConfig, P::BaseField: FieldWithVar"),
+    Clone(bound = "P: TECurveConfig, P::BaseField: FieldWithVar")
 )]
 #[must_use]
-pub struct AffineVar<P: TEModelParameters>
+pub struct AffineVar<P: TECurveConfig>
 where
     P::BaseField: FieldWithVar,
 {
@@ -254,7 +256,7 @@ where
     _params: PhantomData<P>,
 }
 
-impl<P: TEModelParameters> AffineVar<P>
+impl<P: TECurveConfig> AffineVar<P>
 where
     P::BaseField: FieldWithVar,
 {
@@ -297,9 +299,9 @@ where
     }
 }
 
-impl<P: TEModelParameters> AffineVar<P>
+impl<P: TECurveConfig> AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>
         + ThreeBitCondNegLookupGadget<CF<P>, TableConstant = P::BaseField>,
@@ -389,7 +391,7 @@ where
 
 impl<P> R1CSVar<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
 {
     type Value = TEProjective<P>;
@@ -406,9 +408,9 @@ where
     }
 }
 
-type CF<P> = <<P as ModelParameters>::BaseField as Field>::BasePrimeField;
+type CF<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 
-impl<P: TEModelParameters> CurveWithVar<CF<P>> for TEProjective<P>
+impl<P: TECurveConfig> CurveWithVar<CF<P>> for TEProjective<P>
 where
     P::BaseField: FieldWithVar,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -420,7 +422,7 @@ where
 
 impl<P> CurveVar<TEProjective<P>, CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -472,7 +474,7 @@ where
     /// is unchanged.
     #[tracing::instrument(target = "r1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
-        let r_minus_1 = (-P::ScalarField::one()).into_repr();
+        let r_minus_1 = (-P::ScalarField::one()).into_bigint();
 
         let mut result = Self::zero();
         for b in BitIteratorBE::without_leading_zeros(r_minus_1) {
@@ -552,9 +554,9 @@ where
         let zero: TEAffine<P> = TEProjective::zero().into_affine();
         for (bits, multiples) in bits.chunks(2).zip(multiples.chunks(2)) {
             if bits.len() == 2 {
-                let mut table = [multiples[0], multiples[1], multiples[0] + multiples[1]];
+                let table_projective = [multiples[0], multiples[1], multiples[0] + multiples[1]];
 
-                TEProjective::batch_normalization(&mut table);
+                let table = TEProjective::normalize_batch(&table_projective);
                 let x_s = [zero.x, table[0].x, table[1].x, table[2].x];
                 let y_s = [zero.y, table[0].y, table[1].y, table[2].y];
 
@@ -574,7 +576,7 @@ where
 
 impl<P> AllocVar<TEProjective<P>, CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -606,7 +608,7 @@ where
                 let cofactor_weight = BitIteratorBE::new(cofactor.as_slice())
                     .filter(|b| *b)
                     .count();
-                let modulus_minus_1 = (-P::ScalarField::one()).into_repr(); // r - 1
+                let modulus_minus_1 = (-P::ScalarField::one()).into_bigint(); // r - 1
                 let modulus_minus_1_weight =
                     BitIteratorBE::new(modulus_minus_1).filter(|b| *b).count();
 
@@ -634,9 +636,9 @@ where
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
-                                let mut power_of_two = P::ScalarField::one().into_repr();
+                                let mut power_of_two = P::ScalarField::one().into_bigint();
                                 power_of_two.muln(power_of_2);
-                                let power_of_two_inv = P::ScalarField::from_repr(power_of_two)
+                                let power_of_two_inv = P::ScalarField::from_bigint(power_of_two)
                                     .and_then(|n| n.inverse())
                                     .unwrap();
                                 g.mul(power_of_two_inv)
@@ -675,7 +677,7 @@ where
 
 impl<P> AllocVar<TEAffine<P>, CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -686,13 +688,17 @@ where
         f: impl FnOnce() -> Result<Point, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
-        Self::new_variable(cs, || f().map(|b| b.borrow().into_projective()), mode)
+        Self::new_variable(
+            cs,
+            || f().map(|b| TEProjective::<P>::from((*b.borrow()).clone())),
+            mode,
+        )
     }
 }
 
 impl<P> ToConstraintFieldGadget<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
 {
@@ -777,7 +783,7 @@ impl_bounded_ops!(
     },
     |this: &mut AffineVar<P>, other: TEProjective<P>| *this = &*this + AffineVar::constant(other),
     (
-        P: TEModelParameters,
+        P: TECurveConfig,
     ),
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
@@ -794,7 +800,7 @@ impl_bounded_ops!(
     |this: &mut AffineVar<P>, other: &'a AffineVar<P>| *this += other.negate().unwrap(),
     |this: &mut AffineVar<P>, other: TEProjective<P>| *this = &*this - AffineVar::constant(other),
     (
-        P: TEModelParameters,
+        P: TECurveConfig,
     ),
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
@@ -803,7 +809,7 @@ impl_bounded_ops!(
 
 impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
@@ -812,7 +818,7 @@ where
 
 impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for &'a AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
     for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
@@ -821,7 +827,7 @@ where
 
 impl<P> CondSelectGadget<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
 {
     #[inline]
@@ -840,7 +846,7 @@ where
 
 impl<P> EqGadget<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -877,7 +883,7 @@ where
 
 impl<P> ToBitsGadget<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -900,7 +906,7 @@ where
 
 impl<P> ToBytesGadget<CF<P>> for AffineVar<P>
 where
-    P: TEModelParameters,
+    P: TECurveConfig,
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]

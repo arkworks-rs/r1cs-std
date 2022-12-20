@@ -151,12 +151,12 @@ where
         &self,
         exponent: impl AsRef<[u64]>,
     ) -> Result<Self, SynthesisError> {
-        use ark_ff::biginteger::arithmetic::find_wnaf;
+        use ark_ff::biginteger::arithmetic::find_naf;
         let mut res = Self::one();
         let self_inverse = self.unitary_inverse()?;
 
         let mut found_nonzero = false;
-        let naf = find_wnaf(exponent.as_ref());
+        let naf = find_naf(exponent.as_ref());
 
         for &value in naf.iter().rev() {
             if found_nonzero {

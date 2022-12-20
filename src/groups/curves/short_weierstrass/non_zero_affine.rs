@@ -1,11 +1,13 @@
 use super::*;
+use ark_ec::{Group, models::short_weierstrass::SWCurveConfig};
+use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
-#[derivative(Debug(bound = "P: SWModelConfig"), Clone(bound = "P: SWModelConfig"))]
+#[derivative(Debug(bound = "P: SWCurveConfig"), Clone(bound = "P: SWCurveConfig"))]
 #[must_use]
-pub struct NonZeroAffineVar<P: SWModelConfig>
+pub struct NonZeroAffineVar<P: SWCurveConfig>
 where
     BF<P>: FieldWithVar,
 {
@@ -19,11 +21,10 @@ where
 
 impl<P> NonZeroAffineVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    BFVar<P>: FieldVar<P::BaseField, CF<P>>,
 {
-    pub(crate) fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
+    pub fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
         Self {
             x,
             y,
@@ -33,24 +34,23 @@ where
 
     /// Converts self into a non-zero projective point.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn into_projective(&self) -> ProjectiveVar<P> {
+    pub fn into_projective(&self) -> ProjectiveVar<P> {
         ProjectiveVar::new(self.x.clone(), self.y.clone(), BFVar::<P>::one())
     }
 }
 
 impl<P> NonZeroAffineVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: FieldVar<P::BaseField, CF<P>>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
-    pub(crate) fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
-            let result =
-                (self.value()?.into_projective() + other.value()?.into_projective()).into_affine();
+            let result = self.value()?.add(other.value()?).into_affine();
             Ok(Self::new(
                 BFVar::<P>::constant(result.x),
                 BFVar::<P>::constant(result.y),
@@ -64,8 +64,9 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = y2 - y1;
             let denominator = x2 - x1;
-            // It's okay to use `unchecked` here, because the precondition of `add_unchecked` is that
-            // self != ±other, which means that `numerator` and `denominator` are both non-zero.
+            // It's okay to use `unchecked` here, because the precondition of
+            // `add_unchecked` is that self != ±other, which means that
+            // `numerator` and `denominator` are both non-zero.
             let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1 - x2;
             let y3 = lambda * &(x1 - &x3) - y1;
@@ -76,9 +77,11 @@ where
     /// Doubles `self`. As this is a prime order curve point,
     /// the output is guaranteed to not be the point at infinity.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double(&self) -> Result<Self, SynthesisError> {
+    pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
-            let result = self.value()?.into_projective().double().into_affine();
+            let result = Projective::<P>::from(self.value()?)
+                .double()
+                .into_affine();
             // Panic if the result is zero.
             assert!(!result.is_zero());
             Ok(Self::new(
@@ -94,8 +97,8 @@ where
             // y3 = lambda * (x1 - x3) - y1
             let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
             let denominator = y1.double()?;
-            // It's okay to use `unchecked` here, because the precondition of `double` is that
-            // self != zero.
+            // It's okay to use `unchecked` here, because the precondition of `double` is
+            // that self != zero.
             let lambda = numerator.mul_by_inverse_unchecked(&denominator)?;
             let x3 = lambda.square()? - x1.double()?;
             let y3 = lambda * &(x1 - &x3) - y1;
@@ -103,16 +106,18 @@ where
         }
     }
 
-    /// Computes `(self + other) + self`. This method requires only 5 constraints,
-    /// less than the 7 required when computing via `self.double() + other`.
+    /// Computes `(self + other) + self`. This method requires only 5
+    /// constraints, less than the 7 required when computing via
+    /// `self.double() + other`.
     ///
     /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
+    pub fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self].is_constant() || other.is_constant() {
             self.double()?.add_unchecked(other)
         } else {
-            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e. same logic as in `add_unchecked`)
+            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e.
+            // same logic as in `add_unchecked`)
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
 
@@ -138,7 +143,7 @@ where
 
     /// Doubles `self` in place.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub(crate) fn double_in_place(&mut self) -> Result<(), SynthesisError> {
+    pub fn double_in_place(&mut self) -> Result<(), SynthesisError> {
         *self = self.double()?;
         Ok(())
     }
@@ -146,23 +151,23 @@ where
 
 impl<P> R1CSVar<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
 {
-    type Value = SWAffine<P>;
+    type Value = Affine<P>;
 
     fn cs(&self) -> ConstraintSystemRef<CF<P>> {
         self.x.cs().or(self.y.cs())
     }
 
-    fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
-        Ok(SWAffine::new(self.x.value()?, self.y.value()?, false))
+    fn value(&self) -> Result<Affine<P>, SynthesisError> {
+        Ok(Affine::new(self.x.value()?, self.y.value()?))
     }
 }
 
 impl<P> CondSelectGadget<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelConfig,
+    P: SWCurveConfig,
     BF<P>: FieldWithVar,
 {
     #[inline]
@@ -179,15 +184,70 @@ where
     }
 }
 
+impl<P> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P>
+where
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
+{
+    #[tracing::instrument(target = "r1cs")]
+    fn is_eq(
+        &self,
+        other: &Self,
+    ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        x_equal.and(&y_equal)
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let x_equal = self.x.is_eq(&other.x)?;
+        let y_equal = self.y.is_eq(&other.y)?;
+        let coordinates_equal = x_equal.and(&y_equal)?;
+        coordinates_equal.conditional_enforce_equal(&Boolean::Constant(true), condition)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
+        self.x.enforce_equal(&other.x)?;
+        self.y.enforce_equal(&other.y)?;
+        Ok(())
+    }
+
+    #[inline]
+    #[tracing::instrument(target = "r1cs")]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<(), SynthesisError> {
+        let is_equal = self.is_eq(other)?;
+        is_equal
+            .and(condition)?
+            .enforce_equal(&Boolean::Constant(false))
+    }
+}
+
 #[cfg(test)]
 mod test_non_zero_affine {
-    use crate::alloc::AllocVar;
-    use crate::fields::fp::{AllocatedFp, FpVar};
-    use crate::groups::curves::short_weierstrass::non_zero_affine::NonZeroAffineVar;
-    use crate::groups::curves::short_weierstrass::ProjectiveVar;
-    use crate::groups::CurveVar;
-    use crate::R1CSVar;
-    use ark_ec::{ProjectiveCurve, SWModelConfig};
+    use crate::{
+        alloc::AllocVar,
+        eq::EqGadget,
+        fields::fp::{AllocatedFp, FpVar},
+        groups::{
+            curves::short_weierstrass::{non_zero_affine::NonZeroAffineVar, ProjectiveVar},
+            CurveVar,
+        },
+        R1CSVar,
+    };
+    use ark_ec::{models::short_weierstrass::SWCurveConfig, CurveGroup};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
     use ark_test_curves::bls12_381::{g1::Config as G1Config, Fq};
@@ -197,12 +257,10 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.0))
-                .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.1))
-                .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
         );
 
         // The following code uses `double` and `add` (`add_unchecked`) to compute
@@ -257,12 +315,10 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.0))
-                .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::AFFINE_GENERATOR_COEFFS.1))
-                .unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
         );
 
         // The following code tests `double_and_add`.
@@ -295,5 +351,45 @@ mod test_non_zero_affine {
         assert!(cs.is_satisfied().unwrap());
         assert_eq!(sum_a.0, sum_b.0);
         assert_eq!(sum_a.1, sum_b.1);
+    }
+
+    #[test]
+    fn correctness_test_eq() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
+        );
+
+        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+
+        let n = 10;
+
+        let a_multiples: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> =
+            std::iter::successors(Some(a.clone()), |acc| Some(acc.add_unchecked(&a).unwrap()))
+                .take(n)
+                .collect();
+
+        let all_equal: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> = (0..n / 2)
+            .map(|i| {
+                a_multiples[i]
+                    .add_unchecked(&a_multiples[n - i - 1])
+                    .unwrap()
+            })
+            .collect();
+
+        for i in 0..n - 1 {
+            a_multiples[i]
+                .enforce_not_equal(&a_multiples[i + 1])
+                .unwrap();
+        }
+        for i in 0..all_equal.len() - 1 {
+            all_equal[i].enforce_equal(&all_equal[i + 1]).unwrap();
+        }
+
+        assert!(cs.is_satisfied().unwrap());
     }
 }

@@ -1,6 +1,6 @@
-use ark_ff::{BitIteratorBE, Field, FpConfig, PrimeField};
-
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
+
+use ark_ff::{BitIteratorBE, Field, PrimeField};
 use ark_relations::r1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
@@ -608,7 +608,8 @@ impl<F: Field> Boolean<F> {
         }
     }
 
-    /// Convert a little-endian bitwise representation of a field element to `FpVar<F>`
+    /// Convert a little-endian bitwise representation of a field element to
+    /// `FpVar<F>`
     #[tracing::instrument(target = "r1cs", skip(bits))]
     pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError>
     where
@@ -651,7 +652,7 @@ impl<F: Field> Boolean<F> {
             // If the number of bits is less than the size of the field,
             // then we do not need to enforce that the element is less than
             // the modulus.
-            if bits.len() >= F::Params::MODULUS_BITS as usize {
+            if bits.len() >= F::MODULUS_BIT_SIZE as usize {
                 Self::enforce_in_field_le(bits)?;
             }
             Ok(crate::fields::fp::AllocatedFp::new(value, variable, cs.clone()).into())
@@ -761,7 +762,6 @@ impl<F: Field> Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    ///
     #[tracing::instrument(target = "r1cs", skip(first, second))]
     pub fn select<T: CondSelectGadget<F>>(
         &self,
@@ -1642,9 +1642,9 @@ mod test {
 
             let cs = ConstraintSystem::<Fr>::new_ref();
 
-            let native_bits: Vec<_> = BitIteratorLE::new(r.into_repr()).collect();
+            let native_bits: Vec<_> = BitIteratorLE::new(r.into_bigint()).collect();
             let bits = Vec::new_witness(cs.clone(), || Ok(native_bits))?;
-            Boolean::enforce_smaller_or_equal_than_le(&bits, s.into_repr())?;
+            Boolean::enforce_smaller_or_equal_than_le(&bits, s.into_bigint())?;
 
             assert!(cs.is_satisfied().unwrap());
         }
@@ -1658,11 +1658,11 @@ mod test {
             let s2 = r.double();
             let cs = ConstraintSystem::<Fr>::new_ref();
 
-            let native_bits: Vec<_> = BitIteratorLE::new(r.into_repr()).collect();
+            let native_bits: Vec<_> = BitIteratorLE::new(r.into_bigint()).collect();
             let bits = Vec::new_witness(cs.clone(), || Ok(native_bits))?;
-            Boolean::enforce_smaller_or_equal_than_le(&bits, s.into_repr())?;
+            Boolean::enforce_smaller_or_equal_than_le(&bits, s.into_bigint())?;
             if r < s2 {
-                Boolean::enforce_smaller_or_equal_than_le(&bits, s2.into_repr())?;
+                Boolean::enforce_smaller_or_equal_than_le(&bits, s2.into_bigint())?;
             }
 
             assert!(cs.is_satisfied().unwrap());
@@ -1693,7 +1693,7 @@ mod test {
             let cs = ConstraintSystem::<Fr>::new_ref();
 
             let mut bits = vec![];
-            for b in BitIteratorBE::new(r.into_repr()).skip(1) {
+            for b in BitIteratorBE::new(r.into_bigint()).skip(1) {
                 bits.push(Boolean::new_witness(cs.clone(), || Ok(b))?);
             }
             bits.reverse();
@@ -1796,7 +1796,7 @@ mod test {
         for &mode in modes.iter() {
             for _ in 0..1000 {
                 let f = Fr::rand(rng);
-                let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
+                let bits = BitIteratorLE::new(f.into_bigint()).collect::<Vec<_>>();
                 let bits: Vec<_> =
                     AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
@@ -1806,7 +1806,7 @@ mod test {
 
             for _ in 0..1000 {
                 let f = Fr::from(u64::rand(rng));
-                let bits = BitIteratorLE::new(f.into_repr()).collect::<Vec<_>>();
+                let bits = BitIteratorLE::new(f.into_bigint()).collect::<Vec<_>>();
                 let bits: Vec<_> =
                     AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;

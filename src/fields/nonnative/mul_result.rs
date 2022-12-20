@@ -2,8 +2,9 @@ use super::{AllocatedNonNativeFieldMulResultVar, NonNativeFieldVar};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::Result as R1CSResult;
 
-/// An intermediate representation especially for the result of a multiplication, containing more limbs.
-/// It is intended for advanced usage to improve the efficiency.
+/// An intermediate representation especially for the result of a
+/// multiplication, containing more limbs. It is intended for advanced usage to
+/// improve the efficiency.
 ///
 /// That is, instead of calling `mul`, one can call `mul_without_reduce` to
 /// obtain this intermediate representation, which can still be added.
