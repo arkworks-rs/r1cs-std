@@ -1,33 +1,30 @@
 use super::*;
-use ark_ec::Group;
+use ark_ec::{models::short_weierstrass::SWCurveConfig, Group};
 use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derivative(Debug(bound = "P: SWCurveConfig"), Clone(bound = "P: SWCurveConfig"))]
 #[must_use]
-pub struct NonZeroAffineVar<
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+pub struct NonZeroAffineVar<P: SWCurveConfig>
+where
+    BF<P>: FieldWithVar,
 {
     /// The x-coordinate.
-    pub x: F,
+    pub x: BFVar<P>,
     /// The y-coordinate.
-    pub y: F,
+    pub y: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
-impl<P, F> NonZeroAffineVar<P, F>
+impl<P> NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
 {
-    pub fn new(x: F, y: F) -> Self {
+    pub fn new(x: BFVar<P>, y: BFVar<P>) -> Self {
         Self {
             x,
             y,
@@ -37,16 +34,27 @@ where
 
     /// Converts self into a non-zero projective point.
     #[tracing::instrument(target = "r1cs", skip(self))]
-    pub fn into_projective(&self) -> ProjectiveVar<P, F> {
-        ProjectiveVar::new(self.x.clone(), self.y.clone(), F::one())
+    pub fn into_projective(&self) -> ProjectiveVar<P> {
+        ProjectiveVar::new(self.x.clone(), self.y.clone(), BFVar::<P>::one())
     }
+}
 
+impl<P> NonZeroAffineVar<P>
+where
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
+    BFVar<P>: FieldVar<P::BaseField, CF<P>>,
+    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
+{
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     pub fn add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self, other].is_constant() {
             let result = self.value()?.add(other.value()?).into_affine();
-            Ok(Self::new(F::constant(result.x), F::constant(result.y)))
+            Ok(Self::new(
+                BFVar::<P>::constant(result.x),
+                BFVar::<P>::constant(result.y),
+            ))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let (x2, y2) = (&other.x, &other.y);
@@ -71,12 +79,13 @@ where
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
-            let result = SWProjective::<P>::from(self.value()?)
-                .double()
-                .into_affine();
+            let result = Projective::<P>::from(self.value()?).double().into_affine();
             // Panic if the result is zero.
             assert!(!result.is_zero());
-            Ok(Self::new(F::constant(result.x), F::constant(result.y)))
+            Ok(Self::new(
+                BFVar::<P>::constant(result.x),
+                BFVar::<P>::constant(result.y),
+            ))
         } else {
             let (x1, y1) = (&self.x, &self.y);
             let x1_sqr = x1.square()?;
@@ -138,33 +147,31 @@ where
     }
 }
 
-impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+impl<P> R1CSVar<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
 {
-    type Value = SWAffine<P>;
+    type Value = Affine<P>;
 
-    fn cs(&self) -> ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField> {
+    fn cs(&self) -> ConstraintSystemRef<CF<P>> {
         self.x.cs().or(self.y.cs())
     }
 
-    fn value(&self) -> Result<SWAffine<P>, SynthesisError> {
-        Ok(SWAffine::new(self.x.value()?, self.y.value()?))
+    fn value(&self) -> Result<Affine<P>, SynthesisError> {
+        Ok(Affine::new(self.x.value()?, self.y.value()?))
     }
 }
 
-impl<P, F> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+impl<P> CondSelectGadget<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
-        cond: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        cond: &Boolean<CF<P>>,
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
@@ -175,11 +182,10 @@ where
     }
 }
 
-impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
+impl<P> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-    for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
+    P: SWCurveConfig,
+    BF<P>: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(
@@ -242,7 +248,7 @@ mod test_non_zero_affine {
     use ark_ec::{models::short_weierstrass::SWCurveConfig, CurveGroup};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
-    use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
+    use ark_test_curves::bls12_381::{g1::Config as G1Config, Fq};
 
     #[test]
     fn correctness_test_1() {
@@ -259,11 +265,8 @@ mod test_non_zero_affine {
         // (1 + 2 + ... + 2^9) G
 
         let sum_a = {
-            let mut a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
-                x.clone(),
-                y.clone(),
-                FpVar::Constant(Fq::one()),
-            );
+            let mut a =
+                ProjectiveVar::<G1Config>::new(x.clone(), y.clone(), FpVar::Constant(Fq::one()));
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -283,7 +286,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let mut a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let mut a = NonZeroAffineVar::<G1Config>::new(x, y);
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -318,11 +321,8 @@ mod test_non_zero_affine {
 
         // The following code tests `double_and_add`.
         let sum_a = {
-            let a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
-                x.clone(),
-                y.clone(),
-                FpVar::Constant(Fq::one()),
-            );
+            let a =
+                ProjectiveVar::<G1Config>::new(x.clone(), y.clone(), FpVar::Constant(Fq::one()));
 
             let mut cur = a.clone();
             cur.double_in_place().unwrap();
@@ -336,7 +336,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let a = NonZeroAffineVar::<G1Config>::new(x, y);
 
             let mut cur = a.double().unwrap();
             for _ in 1..10 {

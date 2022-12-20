@@ -1,26 +1,29 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::PairingVar as PG;
+use super::PairingGadget as PG;
 
 use crate::{
-    fields::{fp::FpVar, fp3::Fp3Var, fp6_2over3::Fp6Var, FieldVar},
+    fields::{fp::FpVar, fp3::Fp3Var, fp6_2over3::Fp6Var, FieldVar, FieldWithVar},
     groups::mnt6::{
         AteAdditionCoefficientsVar, AteDoubleCoefficientsVar, G1PreparedVar, G1Var, G2PreparedVar,
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use ark_ec::mnt6::{MNT6Parameters, MNT6};
+use ark_ec::mnt6::{MNT6Config, MNT6};
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT6 bilinear group.
-pub struct PairingVar<P: MNT6Parameters>(PhantomData<P>);
+pub struct MNT6Gadget<P: MNT6Config>(PhantomData<P>);
 
-type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Config>;
-type Fp6G<P> = Fp6Var<<P as MNT6Parameters>::Fp6Config>;
+type Fp3G<P> = Fp3Var<<P as MNT6Config>::Fp3Config>;
+type Fp6G<P> = Fp6Var<<P as MNT6Config>::Fp6Config>;
 /// A variable corresponding to `ark_ec::mnt6::GT`.
 pub type GTVar<P> = Fp6G<P>;
 
-impl<P: MNT6Parameters> PairingVar<P> {
+impl<P: MNT6Config> MNT6Gadget<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     #[tracing::instrument(target = "r1cs", skip(r))]
     pub(crate) fn doubling_step_for_flipped_miller_loop(
         r: &G2ProjectiveExtendedVar<P>,
@@ -191,7 +194,10 @@ impl<P: MNT6Parameters> PairingVar<P> {
     }
 }
 
-impl<P: MNT6Parameters> PG<MNT6<P>, P::Fp> for PairingVar<P> {
+impl<P: MNT6Config> PG for MNT6<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
@@ -199,21 +205,21 @@ impl<P: MNT6Parameters> PG<MNT6<P>, P::Fp> for PairingVar<P> {
     type GTVar = GTVar<P>;
 
     #[tracing::instrument(target = "r1cs")]
-    fn miller_loop(
+    fn miller_loop_gadget(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
         let mut result = Fp6G::<P>::one();
         for (p, q) in ps.iter().zip(qs) {
-            result *= Self::ate_miller_loop(p, q)?;
+            result *= MNT6Gadget::ate_miller_loop(p, q)?;
         }
 
         Ok(result)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn final_exponentiation(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
-        Self::final_exponentiation(r)
+    fn final_exponentiation_gadget(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
+        MNT6Gadget::<P>::final_exponentiation(r)
     }
 
     #[tracing::instrument(target = "r1cs")]

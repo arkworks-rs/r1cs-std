@@ -1,12 +1,13 @@
 use ark_ff::{
-    fields::{CubicExtField, Field},
-    CubicExtConfig, Zero,
+    fields::{CubicExtConfig, CubicExtField, Field},
+    Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_std::iter::Sum;
 use core::{borrow::Borrow, marker::PhantomData};
 
 use crate::{
-    fields::{fp::FpVar, FieldOpsBounds, FieldVar},
+    fields::{fp::FpVar, FieldOpsBounds, FieldVar, FieldWithVar},
     prelude::*,
     ToConstraintFieldGadget, Vec,
 };
@@ -14,42 +15,53 @@ use crate::{
 /// This struct is the `R1CS` equivalent of the cubic extension field type
 /// in `ark-ff`, i.e. `ark_ff::CubicExtField`.
 #[derive(Derivative)]
-#[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
+#[derivative(
+    Debug(bound = "P::BaseField: FieldWithVar"),
+    Clone(bound = "P::BaseField: FieldWithVar")
+)]
 #[must_use]
-pub struct CubicExtVar<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>>
+pub struct CubicExtVar<P: CubicExtVarConfig>
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
+    P::BaseField: FieldWithVar,
 {
     /// The zero-th coefficient of this field element.
-    pub c0: BF,
+    pub c0: BFVar<P>,
     /// The first coefficient of this field element.
-    pub c1: BF,
+    pub c1: BFVar<P>,
     /// The second coefficient of this field element.
-    pub c2: BF,
+    pub c2: BFVar<P>,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
 }
 
+type BFVar<P> = <<P as CubicExtConfig>::BaseField as FieldWithVar>::Var;
+
+impl<P: CubicExtVarConfig> FieldWithVar for CubicExtField<P>
+where
+    P::BaseField: FieldWithVar,
+{
+    type Var = CubicExtVar<P>;
+}
+
 /// This trait describes parameters that are used to implement arithmetic for
 /// `CubicExtVar`.
-pub trait CubicExtVarConfig<BF: FieldVar<Self::BaseField, Self::BasePrimeField>>:
-    CubicExtConfig
+pub trait CubicExtVarConfig: CubicExtConfig
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, Self::BaseField, BF>,
+    Self::BaseField: FieldWithVar,
 {
     /// Multiply the base field of the `CubicExtVar` by the appropriate
     /// Frobenius coefficient. This is equivalent to
     /// `Self::mul_base_field_by_frob_coeff(c1, c2, power)`.
-    fn mul_base_field_vars_by_frob_coeff(c1: &mut BF, c2: &mut BF, power: usize);
+    fn mul_base_field_vars_by_frob_coeff(c1: &mut BFVar<Self>, c2: &mut BFVar<Self>, power: usize);
 }
 
-impl<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>> CubicExtVar<BF, P>
+impl<P: CubicExtVarConfig> CubicExtVar<P>
 where
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
+    P::BaseField: FieldWithVar,
 {
     /// Constructs a `CubicExtVar` from the underlying coefficients.
     #[inline]
-    pub fn new(c0: BF, c1: BF, c2: BF) -> Self {
+    pub fn new(c0: BFVar<P>, c1: BFVar<P>, c2: BFVar<P>) -> Self {
         let _params = PhantomData;
         Self {
             c0,
@@ -62,17 +74,18 @@ where
     /// Multiplies a variable of the base field by the cubic nonresidue
     /// `P::NONRESIDUE` that is used to construct the extension field.
     #[inline]
-    pub fn mul_base_field_by_nonresidue(fe: &BF) -> Result<BF, SynthesisError> {
-        Ok(fe * P::NONRESIDUE)
+    pub fn mul_base_field_by_nonresidue(fe: &BFVar<P>) -> Result<BFVar<P>, SynthesisError> {
+        Ok(fe.clone() * P::NONRESIDUE)
     }
 
     /// Multiplies `self` by a constant from the base field.
     #[inline]
     pub fn mul_by_base_field_constant(&self, fe: P::BaseField) -> Self {
-        let c0 = &self.c0 * fe;
-        let c1 = &self.c1 * fe;
-        let c2 = &self.c2 * fe;
-        Self::new(c0, c1, c2)
+        let mut result = self.clone();
+        result.c0 *= fe;
+        result.c1 *= fe;
+        result.c2 *= fe;
+        result
     }
 
     /// Sets `self = self.mul_by_base_field_constant(fe)`.
@@ -82,11 +95,10 @@ where
     }
 }
 
-impl<BF, P> R1CSVar<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> R1CSVar<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     type Value = CubicExtField<P>;
 
@@ -103,79 +115,74 @@ where
     }
 }
 
-impl<BF, P> From<Boolean<P::BasePrimeField>> for CubicExtVar<BF, P>
+impl<P> From<Boolean<P::BasePrimeField>> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     fn from(other: Boolean<P::BasePrimeField>) -> Self {
-        let c0 = BF::from(other);
-        let c1 = BF::zero();
-        let c2 = BF::zero();
+        let c0 = BFVar::<P>::from(other);
+        let c1 = BFVar::<P>::zero();
+        let c2 = BFVar::<P>::zero();
         Self::new(c0, c1, c2)
     }
 }
 
-impl<'a, BF, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<BF, P>> for CubicExtVar<BF, P>
+impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
 }
-impl<'a, BF, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<BF, P>> for &'a CubicExtVar<BF, P>
+impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for &'a CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
 }
 
-impl<BF, P> FieldVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> FieldVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     fn constant(other: CubicExtField<P>) -> Self {
-        let c0 = BF::constant(other.c0);
-        let c1 = BF::constant(other.c1);
-        let c2 = BF::constant(other.c2);
+        let c0 = BFVar::<P>::constant(other.c0);
+        let c1 = BFVar::<P>::constant(other.c1);
+        let c2 = BFVar::<P>::constant(other.c2);
         Self::new(c0, c1, c2)
     }
 
     fn zero() -> Self {
-        let c0 = BF::zero();
-        let c1 = BF::zero();
-        let c2 = BF::zero();
+        let c0 = BFVar::<P>::zero();
+        let c1 = BFVar::<P>::zero();
+        let c2 = BFVar::<P>::zero();
         Self::new(c0, c1, c2)
     }
 
     fn one() -> Self {
-        let c0 = BF::one();
-        let c1 = BF::zero();
-        let c2 = BF::zero();
+        let c0 = BFVar::<P>::one();
+        let c1 = BFVar::<P>::zero();
+        let c2 = BFVar::<P>::zero();
         Self::new(c0, c1, c2)
     }
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn double(&self) -> Result<Self, SynthesisError> {
-        let c0 = self.c0.double()?;
-        let c1 = self.c1.double()?;
-        let c2 = self.c2.double()?;
-        Ok(Self::new(c0, c1, c2))
+    fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        self.c0.double_in_place()?;
+        self.c1.double_in_place()?;
+        self.c2.double_in_place()?;
+        Ok(self)
     }
 
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn negate(&self) -> Result<Self, SynthesisError> {
-        let mut result = self.clone();
-        result.c0.negate_in_place()?;
-        result.c1.negate_in_place()?;
-        result.c2.negate_in_place()?;
-        Ok(result)
+    fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
+        self.c0.negate_in_place()?;
+        self.c1.negate_in_place()?;
+        self.c2.negate_in_place()?;
+        Ok(self)
     }
 
     /// Use the Chung-Hasan asymmetric squaring formula.
@@ -185,23 +192,23 @@ where
     /// Fields.pdf; Section 4 (CH-SQR2))
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn square(&self) -> Result<Self, SynthesisError> {
+    fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
         let a = self.c0.clone();
         let b = self.c1.clone();
         let c = self.c2.clone();
 
         let s0 = a.square()?;
-        let ab = &a * &b;
+        let ab = a.clone() * &b;
         let s1 = ab.double()?;
-        let s2 = (&a - &b + &c).square()?;
-        let s3 = (&b * &c).double()?;
+        let s2 = (a - &b + &c).square()?;
+        let s3 = (b * &c).double()?;
         let s4 = c.square()?;
 
-        let c0 = Self::mul_base_field_by_nonresidue(&s3)? + &s0;
-        let c1 = Self::mul_base_field_by_nonresidue(&s4)? + &s1;
-        let c2 = s1 + &s2 + &s3 - &s0 - &s4;
+        self.c0 = Self::mul_base_field_by_nonresidue(&s3)? + &s0;
+        self.c1 = Self::mul_base_field_by_nonresidue(&s4)? + &s1;
+        self.c2 = s1 + &s2 + &s3 - &s0 - &s4;
 
-        Ok(Self::new(c0, c1, c2))
+        Ok(self)
     }
 
     #[tracing::instrument(target = "r1cs")]
@@ -228,28 +235,28 @@ where
         //
         // This implementation adapted from
         // https://github.com/ZencashOfficial/ginger-lib/blob/development/r1cs/gadgets/std/src/fields/fp3.rs
-        let v0 = &self.c0 * &other.c0;
-        let v1 = &self.c1 * &other.c1;
-        let v2 = &self.c2 * &other.c2;
+        let v0 = self.c0.clone() * &other.c0;
+        let v1 = self.c1.clone() * &other.c1;
+        let v2 = self.c2.clone() * &other.c2;
 
         // Check c0
-        let nr_a1_plus_a2 = (&self.c1 + &self.c2) * P::NONRESIDUE;
-        let b1_plus_b2 = &other.c1 + &other.c2;
-        let nr_v1 = &v1 * P::NONRESIDUE;
-        let nr_v2 = &v2 * P::NONRESIDUE;
-        let to_check = &result.c0 - &v0 + &nr_v1 + &nr_v2;
+        let nr_a1_plus_a2 = (self.c1.clone() + &self.c2) * P::NONRESIDUE;
+        let b1_plus_b2 = other.c1.clone() + &other.c2;
+        let nr_v1 = v1.clone() * P::NONRESIDUE;
+        let nr_v2 = v2.clone() * P::NONRESIDUE;
+        let to_check = result.c0.clone() - &v0 + &nr_v1 + &nr_v2;
         nr_a1_plus_a2.mul_equals(&b1_plus_b2, &to_check)?;
 
         // Check c1
-        let a0_plus_a1 = &self.c0 + &self.c1;
-        let b0_plus_b1 = &other.c0 + &other.c1;
-        let to_check = &result.c1 - &nr_v2 + &v0 + &v1;
+        let a0_plus_a1 = self.c0.clone() + &self.c1;
+        let b0_plus_b1 = other.c0.clone() + &other.c1;
+        let to_check = result.c1.clone() - &nr_v2 + &v0 + &v1;
         a0_plus_a1.mul_equals(&b0_plus_b1, &to_check)?;
 
         // Check c2
-        let a0_plus_a2 = &self.c0 + &self.c2;
-        let b0_plus_b2 = &other.c0 + &other.c2;
-        let to_check = &result.c2 + &v0 - &v1 + &v2;
+        let a0_plus_a2 = self.c0.clone() + &self.c2;
+        let b0_plus_b2 = other.c0.clone() + &other.c2;
+        let to_check = result.c2.clone() + &v0 - &v1 + &v2;
         a0_plus_a2.mul_equals(&b0_plus_b2, &to_check)?;
         Ok(())
     }
@@ -286,51 +293,49 @@ where
 }
 
 impl_bounded_ops!(
-    CubicExtVar<BF, P>,
+    CubicExtVar<P>,
     CubicExtField<P>,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a CubicExtVar<BF, P>, other: &'a CubicExtVar<BF, P>| {
-        let c0 = &this.c0 + &other.c0;
-        let c1 = &this.c1 + &other.c1;
-        let c2 = &this.c2 + &other.c2;
-        CubicExtVar::new(c0, c1, c2)
+    |this: &mut CubicExtVar<P>, other: &'a CubicExtVar<P>| {
+        this.c0 += &other.c0;
+        this.c1 += &other.c1;
+        this.c2 += &other.c2;
     },
-    |this: &'a CubicExtVar<BF, P>, other: CubicExtField<P>| {
-        this + CubicExtVar::constant(other)
+    |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
+        *this = &*this + CubicExtVar::constant(other)
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>),
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
+    (P: CubicExtVarConfig),
+    P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
-    CubicExtVar<BF, P>,
+    CubicExtVar<P>,
     CubicExtField<P>,
     Sub,
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a CubicExtVar<BF, P>, other: &'a CubicExtVar<BF, P>| {
-        let c0 = &this.c0 - &other.c0;
-        let c1 = &this.c1 - &other.c1;
-        let c2 = &this.c2 - &other.c2;
-        CubicExtVar::new(c0, c1, c2)
+    |this: &mut CubicExtVar<P>, other: &'a CubicExtVar<P>| {
+        this.c0 -= &other.c0;
+        this.c1 -= &other.c1;
+        this.c2 -= &other.c2;
     },
-    |this: &'a CubicExtVar<BF, P>, other: CubicExtField<P>| {
-        this - CubicExtVar::constant(other)
+    |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
+        *this = &*this - CubicExtVar::constant(other)
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>),
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
+    (P: CubicExtVarConfig),
+    P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
-    CubicExtVar<BF, P>,
+    CubicExtVar<P>,
     CubicExtField<P>,
     Mul,
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a CubicExtVar<BF, P>, other: &'a CubicExtVar<BF, P>| {
+    |this: &mut CubicExtVar<P>, other: &'a CubicExtVar<P>| {
         // Karatsuba multiplication for cubic extensions:
         //     v0 = A.c0 * B.c0
         //     v1 = A.c1 * B.c1
@@ -342,30 +347,31 @@ impl_bounded_ops!(
         // Reference:
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
-        let v0 = &this.c0 * &other.c0;
-        let v1 = &this.c1 * &other.c1;
-        let v2 = &this.c2 * &other.c2;
-        let c0 =
-            (((&this.c1 + &this.c2) * (&other.c1 + &other.c2) - &v1 - &v2) * P::NONRESIDUE) + &v0 ;
-        let c1 =
-            (&this.c0 + &this.c1) * (&other.c0 + &other.c1) - &v0 - &v1 + (&v2 * P::NONRESIDUE);
-        let c2 =
-            (&this.c0 + &this.c2) * (&other.c0 + &other.c2) - &v0 + &v1 - &v2;
-
-        CubicExtVar::new(c0, c1, c2)
+        let this_copy = this.clone();
+        let v0 = this_copy.c0 * &other.c0;
+        let v1 = this_copy.c1 * &other.c1;
+        let v2 = this_copy.c2 * &other.c2;
+        let c0 = (((this.c1.clone() + &this.c2) * (other.c1.clone() + &other.c2) - &v1 - &v2)
+            * P::NONRESIDUE)
+            + &v0;
+        let c1 = (this.c0.clone() + &this.c1) * (other.c0.clone() + &other.c1) - &v0 - &v1
+            + (v2.clone() * P::NONRESIDUE);
+        let c2 = (this.c0.clone() + &this.c2) * (other.c0.clone() + &other.c2) - &v0 + &v1 - &v2;
+        this.c0 = c0;
+        this.c1 = c1;
+        this.c2 = c2;
     },
-    |this: &'a CubicExtVar<BF, P>, other: CubicExtField<P>| {
-        this * CubicExtVar::constant(other)
+    |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
+        *this = CubicExtVar::constant(other) * &*this;
     },
-    (BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>),
-    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
+    (P: CubicExtVarConfig),
+    P::BaseField: FieldWithVar,
 );
 
-impl<BF, P> EqGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> EqGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<P::BasePrimeField>, SynthesisError> {
@@ -402,11 +408,10 @@ where
     }
 }
 
-impl<BF, P> ToBitsGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> ToBitsGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P::BaseField: FieldWithVar,
+    P: CubicExtVarConfig,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
@@ -429,11 +434,10 @@ where
     }
 }
 
-impl<BF, P> ToBytesGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> ToBytesGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
@@ -459,12 +463,11 @@ where
     }
 }
 
-impl<BF, P> ToConstraintFieldGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> ToConstraintFieldGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
-    BF: ToConstraintFieldGadget<P::BasePrimeField>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
+    BFVar<P>: ToConstraintFieldGadget<P::BasePrimeField>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<P::BasePrimeField>>, SynthesisError> {
@@ -478,11 +481,10 @@ where
     }
 }
 
-impl<BF, P> CondSelectGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> CondSelectGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
@@ -491,19 +493,18 @@ where
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
-        let c0 = BF::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
-        let c1 = BF::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
-        let c2 = BF::conditionally_select(cond, &true_value.c2, &false_value.c2)?;
+        let c0 = BFVar::<P>::conditionally_select(cond, &true_value.c0, &false_value.c0)?;
+        let c1 = BFVar::<P>::conditionally_select(cond, &true_value.c1, &false_value.c1)?;
+        let c2 = BFVar::<P>::conditionally_select(cond, &true_value.c2, &false_value.c2)?;
         Ok(Self::new(c0, c1, c2))
     }
 }
 
-impl<BF, P> TwoBitLookupGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> TwoBitLookupGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>
-        + TwoBitLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    BFVar<P>: TwoBitLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     type TableConstant = CubicExtField<P>;
 
@@ -515,19 +516,18 @@ where
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
         let c2s = c.iter().map(|f| f.c2).collect::<Vec<_>>();
-        let c0 = BF::two_bit_lookup(b, &c0s)?;
-        let c1 = BF::two_bit_lookup(b, &c1s)?;
-        let c2 = BF::two_bit_lookup(b, &c2s)?;
+        let c0 = BFVar::<P>::two_bit_lookup(b, &c0s)?;
+        let c1 = BFVar::<P>::two_bit_lookup(b, &c1s)?;
+        let c2 = BFVar::<P>::two_bit_lookup(b, &c2s)?;
         Ok(Self::new(c0, c1, c2))
     }
 }
 
-impl<BF, P> ThreeBitCondNegLookupGadget<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> ThreeBitCondNegLookupGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>
-        + ThreeBitCondNegLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    BFVar<P>: ThreeBitCondNegLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     type TableConstant = CubicExtField<P>;
 
@@ -540,18 +540,17 @@ where
         let c0s = c.iter().map(|f| f.c0).collect::<Vec<_>>();
         let c1s = c.iter().map(|f| f.c1).collect::<Vec<_>>();
         let c2s = c.iter().map(|f| f.c2).collect::<Vec<_>>();
-        let c0 = BF::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
-        let c1 = BF::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
-        let c2 = BF::three_bit_cond_neg_lookup(b, b0b1, &c2s)?;
+        let c0 = BFVar::<P>::three_bit_cond_neg_lookup(b, b0b1, &c0s)?;
+        let c1 = BFVar::<P>::three_bit_cond_neg_lookup(b, b0b1, &c1s)?;
+        let c2 = BFVar::<P>::three_bit_cond_neg_lookup(b, b0b1, &c2s)?;
         Ok(Self::new(c0, c1, c2))
     }
 }
 
-impl<BF, P> AllocVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<BF, P>
+impl<P> AllocVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<P>
 where
-    BF: FieldVar<P::BaseField, P::BasePrimeField>,
-    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
-    P: CubicExtVarConfig<BF>,
+    P: CubicExtVarConfig,
+    P::BaseField: FieldWithVar,
 {
     fn new_variable<T: Borrow<CubicExtField<P>>>(
         cs: impl Into<Namespace<P::BasePrimeField>>,
@@ -571,9 +570,35 @@ where
             ),
         };
 
-        let c0 = BF::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
-        let c1 = BF::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
-        let c2 = BF::new_variable(ark_relations::ns!(cs, "c2"), || c2, mode)?;
+        let c0 = BFVar::<P>::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
+        let c1 = BFVar::<P>::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
+        let c2 = BFVar::<P>::new_variable(ark_relations::ns!(cs, "c2"), || c2, mode)?;
         Ok(Self::new(c0, c1, c2))
+    }
+}
+
+impl<'a, P: CubicExtVarConfig> Sum<&'a CubicExtVar<P>> for CubicExtVar<P>
+where
+    P::BaseField: FieldWithVar,
+{
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        let elements = iter.collect::<Vec<_>>();
+        let c0 = elements.iter().map(|v| &v.c0).sum::<BFVar<P>>();
+        let c1 = elements.iter().map(|v| &v.c1).sum::<BFVar<P>>();
+        let c2 = elements.iter().map(|v| &v.c2).sum::<BFVar<P>>();
+        Self::new(c0, c1, c2)
+    }
+}
+
+impl<'a, P: CubicExtVarConfig> Sum<CubicExtVar<P>> for CubicExtVar<P>
+where
+    P::BaseField: FieldWithVar,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let elements = iter.collect::<Vec<_>>();
+        let c0 = elements.iter().map(|v| &v.c0).sum::<BFVar<P>>();
+        let c1 = elements.iter().map(|v| &v.c1).sum::<BFVar<P>>();
+        let c2 = elements.iter().map(|v| &v.c2).sum::<BFVar<P>>();
+        Self::new(c0, c1, c2)
     }
 }

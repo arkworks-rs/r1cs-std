@@ -1,19 +1,20 @@
-use crate::fields::{fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar};
-use ark_ff::{
-    fields::{fp12_2over3over2::*, Field},
-    fp6_3over2::Fp6Config,
-    QuadExtConfig,
+use crate::fields::{
+    fp2::Fp2Var, fp6_3over2::Fp6Var, quadratic_extension::*, FieldVar, FieldWithVar,
 };
+use ark_ff::fields::{fp12_2over3over2::*, fp6_3over2::Fp6Config, Field, QuadExtConfig};
 use ark_relations::r1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a
 /// quadratic extension over a cubic extension over a quadratic extension field.
 /// This is the R1CS equivalent of `ark_ff::fp12_2over3over2::Fp12<P>`.
-pub type Fp12Var<P> = QuadExtVar<Fp6Var<<P as Fp12Config>::Fp6Config>, Fp12ConfigWrapper<P>>;
+pub type Fp12Var<P> = QuadExtVar<Fp12ConfigWrapper<P>>;
 
 type Fp2Config<P> = <<P as Fp12Config>::Fp6Config as Fp6Config>::Fp2Config;
 
-impl<P: Fp12Config> QuadExtVarConfig<Fp6Var<P::Fp6Config>> for Fp12ConfigWrapper<P> {
+impl<P: Fp12Config> QuadExtVarConfig for Fp12ConfigWrapper<P>
+where
+    Self::BasePrimeField: FieldWithVar,
+{
     fn mul_base_field_var_by_frob_coeff(fe: &mut Fp6Var<P::Fp6Config>, power: usize) {
         fe.c0 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
         fe.c1 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
@@ -21,7 +22,10 @@ impl<P: Fp12Config> QuadExtVarConfig<Fp6Var<P::Fp6Config>> for Fp12ConfigWrapper
     }
 }
 
-impl<P: Fp12Config> Fp12Var<P> {
+impl<P: Fp12Config> Fp12Var<P>
+where
+    <Fp12<P> as Field>::BasePrimeField: FieldWithVar,
+{
     /// Multiplies by a sparse element of the form `(c0 = (c0, c1, 0), c1 = (0,
     /// d1, 0))`.
     #[inline]

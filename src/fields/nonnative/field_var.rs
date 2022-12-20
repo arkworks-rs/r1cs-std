@@ -10,6 +10,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, 
 use ark_std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
+    iter::Sum,
     vec::Vec,
 };
 
@@ -118,11 +119,30 @@ impl<TargetField: PrimeField, BaseField: PrimeField> FieldVar<TargetField, BaseF
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn negate(&self) -> R1CSResult<Self> {
-        match self {
-            Self::Constant(c) => Ok(Self::Constant(-*c)),
-            Self::Var(v) => Ok(Self::Var(v.negate()?)),
-        }
+    fn negate_in_place(&mut self) -> R1CSResult<&mut Self> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(-*c),
+            Self::Var(v) => Self::Var(v.negate()?),
+        };
+        Ok(self)
+    }
+
+    #[tracing::instrument(target = "r1cs")]
+    fn double_in_place(&mut self) -> R1CSResult<&mut Self> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(c.double()),
+            Self::Var(v) => Self::Var(v.add(&*v)?),
+        };
+        Ok(self)
+    }
+
+    #[tracing::instrument(target = "r1cs")]
+    fn square_in_place(&mut self) -> R1CSResult<&mut Self> {
+        *self = match self {
+            Self::Constant(c) => Self::Constant(c.square()),
+            Self::Var(v) => Self::Var(v.mul(&*v)?),
+        };
+        Ok(self)
     }
 
     #[tracing::instrument(target = "r1cs")]
@@ -153,15 +173,15 @@ impl_bounded_ops!(
     add,
     AddAssign,
     add_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
         use NonNativeFieldVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 + c2),
             (Constant(c), Var(v)) | (Var(v), Constant(c)) => Var(v.add_constant(c).unwrap()),
             (Var(v1), Var(v2)) => Var(v1.add(v2).unwrap()),
-        }
+        };
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| { this + &NonNativeFieldVar::Constant(other) },
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: TargetField| { *this = &*this + &NonNativeFieldVar::Constant(other) },
     (TargetField: PrimeField, BaseField: PrimeField),
 );
 
@@ -172,17 +192,17 @@ impl_bounded_ops!(
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
         use NonNativeFieldVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 - c2),
             (Var(v), Constant(c)) => Var(v.sub_constant(c).unwrap()),
             (Constant(c), Var(v)) => Var(v.sub_constant(c).unwrap().negate().unwrap()),
             (Var(v1), Var(v2)) => Var(v1.sub(v2).unwrap()),
-        }
+        };
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
-        this - &NonNativeFieldVar::Constant(other)
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
+        *this = &*this - &NonNativeFieldVar::Constant(other)
     },
     (TargetField: PrimeField, BaseField: PrimeField),
 );
@@ -194,20 +214,20 @@ impl_bounded_ops!(
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
         use NonNativeFieldVar::*;
-        match (this, other) {
+        *this = match (&*this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 * c2),
             (Constant(c), Var(v)) | (Var(v), Constant(c)) => Var(v.mul_constant(c).unwrap()),
             (Var(v1), Var(v2)) => Var(v1.mul(v2).unwrap()),
         }
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
-        if other.is_zero() {
+    |this: &mut NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
+        *this = if other.is_zero() {
             NonNativeFieldVar::zero()
         } else {
-            this * &NonNativeFieldVar::Constant(other)
-        }
+            &*this * &NonNativeFieldVar::Constant(other)
+        };
     },
     (TargetField: PrimeField, BaseField: PrimeField),
 );
@@ -456,6 +476,54 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
             .collect()),
             Self::Var(v) => v.to_constraint_field(),
         }
+    }
+}
+
+impl<'a, TargetField: PrimeField, BaseField: PrimeField> Sum<&'a Self>
+    for NonNativeFieldVar<TargetField, BaseField>
+{
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        let mut sum_constants = TargetField::zero();
+        let vars = iter
+            .filter_map(|x| match x {
+                Self::Constant(c) => {
+                    sum_constants += c;
+                    None
+                },
+                Self::Var(v) => Some(v),
+            })
+            .collect::<Vec<_>>();
+        let sum_variables = AllocatedNonNativeFieldVar::add_many(vars.into_iter())
+            .unwrap()
+            .map(Self::Var)
+            .unwrap_or(Self::zero());
+
+        let sum = sum_variables + sum_constants;
+        sum
+    }
+}
+
+impl<TargetField: PrimeField, BaseField: PrimeField> Sum<Self>
+    for NonNativeFieldVar<TargetField, BaseField>
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum_constants = TargetField::zero();
+        let vars = iter
+            .filter_map(|x| match x {
+                Self::Constant(c) => {
+                    sum_constants += c;
+                    None
+                },
+                Self::Var(v) => Some(v),
+            })
+            .collect::<Vec<_>>();
+        let sum_variables = AllocatedNonNativeFieldVar::add_many(vars.iter())
+            .unwrap()
+            .map(Self::Var)
+            .unwrap_or(Self::zero());
+
+        let sum = sum_variables + sum_constants;
+        sum
     }
 }
 

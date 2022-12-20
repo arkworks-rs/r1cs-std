@@ -1,41 +1,48 @@
 use ark_ec::{
-    bls12::{Bls12Parameters, G1Prepared, G2Prepared, TwistType},
+    bls12::{Bls12Config, G1Prepared, G2Prepared, TwistType},
     short_weierstrass::Affine as GroupAffine,
 };
 use ark_ff::{BitIteratorBE, Field, One};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
-    fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
+    fields::{fp2::Fp2Var, FieldVar},
     groups::curves::short_weierstrass::*,
     Vec,
 };
-use core::fmt::Debug;
+
+type FpVar<P> = <<P as Bls12Config>::Fp as FieldWithVar>::Var;
 
 /// Represents a projective point in G1.
-pub type G1Var<P> =
-    ProjectiveVar<<P as Bls12Parameters>::G1Parameters, FpVar<<P as Bls12Parameters>::Fp>>;
+pub type G1Var<P> = ProjectiveVar<<P as Bls12Config>::G1Config>;
 
 /// Represents an affine point on G1. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G1AffineVar<P> =
-    AffineVar<<P as Bls12Parameters>::G1Parameters, FpVar<<P as Bls12Parameters>::Fp>>;
+pub type G1AffineVar<P> = AffineVar<<P as Bls12Config>::G1Config>;
 
 /// Represents a projective point in G2.
-pub type G2Var<P> = ProjectiveVar<<P as Bls12Parameters>::G2Parameters, Fp2G<P>>;
+pub type G2Var<P> = ProjectiveVar<<P as Bls12Config>::G2Config>;
 /// Represents an affine point on G2. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Parameters, Fp2G<P>>;
+pub type G2AffineVar<P> = AffineVar<<P as Bls12Config>::G2Config>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
-#[derivative(Clone(bound = "G1Var<P>: Clone"), Debug(bound = "G1Var<P>: Debug"))]
-pub struct G1PreparedVar<P: Bls12Parameters>(pub AffineVar<P::G1Parameters, FpVar<P::Fp>>);
+#[derivative(
+    Clone(bound = "P: Bls12Config, P::Fp: FieldWithVar"),
+    Debug(bound = "P: Bls12Config, P::Fp: FieldWithVar")
+)]
+pub struct G1PreparedVar<P: Bls12Config>(pub G1AffineVar<P>)
+where
+    P::Fp: FieldWithVar;
 
-impl<P: Bls12Parameters> G1PreparedVar<P> {
+impl<P: Bls12Config> G1PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     /// Returns the value assigned to `self` in the underlying constraint
     /// system.
     pub fn value(&self) -> Result<G1Prepared<P>, SynthesisError> {
@@ -56,7 +63,10 @@ impl<P: Bls12Parameters> G1PreparedVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
+impl<P: Bls12Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     fn new_variable<T: Borrow<G1Prepared<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -66,19 +76,24 @@ impl<P: Bls12Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
         let cs = ns.cs();
         let g1_prep = f().map(|b| b.borrow().0);
 
-        let x = FpVar::new_variable(ark_relations::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
-        let y = FpVar::new_variable(ark_relations::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
+        let x =
+            FpVar::<P>::new_variable(ark_relations::ns!(cs, "x"), || g1_prep.map(|g| g.x), mode)?;
+        let y =
+            FpVar::<P>::new_variable(ark_relations::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
         let infinity = Boolean::new_variable(
             ark_relations::ns!(cs, "inf"),
             || g1_prep.map(|g| g.infinity),
             mode,
         )?;
-        let g = AffineVar::new(x, y, infinity);
+        let g = G1AffineVar::<P>::new(x, y, infinity);
         Ok(Self(g))
     }
 }
 
-impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
+impl<P: Bls12Config> ToBytesGadget<P::Fp> for G1PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -101,21 +116,27 @@ impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
+type Fp2G<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
 #[derive(Derivative)]
 #[derivative(
-    Clone(bound = "Fp2Var<P::Fp2Config>: Clone"),
-    Debug(bound = "Fp2Var<P::Fp2Config>: Debug")
+    Clone(bound = "P::Fp: FieldWithVar"),
+    Debug(bound = "P::Fp: FieldWithVar")
 )]
-pub struct G2PreparedVar<P: Bls12Parameters> {
+pub struct G2PreparedVar<P: Bls12Config>
+where
+    P::Fp: FieldWithVar,
+{
     #[doc(hidden)]
     pub ell_coeffs: Vec<LCoeff<P>>,
 }
 
-impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
+impl<P: Bls12Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     #[tracing::instrument(target = "r1cs", skip(cs, f, mode))]
     fn new_variable<T: Borrow<G2Prepared<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
@@ -173,7 +194,10 @@ impl<P: Bls12Parameters> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
+impl<P: Bls12Config> ToBytesGadget<P::Fp> for G2PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
@@ -196,7 +220,10 @@ impl<P: Bls12Parameters> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> G2PreparedVar<P> {
+impl<P: Bls12Config> G2PreparedVar<P>
+where
+    P::Fp: FieldWithVar,
+{
     /// Constructs `Self` from a `G2Var`.
     #[tracing::instrument(target = "r1cs")]
     pub fn from_group_var(q: &G2Var<P>) -> Result<Self, SynthesisError> {

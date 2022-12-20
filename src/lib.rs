@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //! This crate implements common "gadgets" that make
 //! programming rank-1 constraint systems easier.
-#![deny(
+#![warn(
     warnings,
     unused,
     future_incompatible,
@@ -65,9 +65,9 @@ pub mod prelude {
         alloc::*,
         bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8, ToBitsGadget, ToBytesGadget},
         eq::*,
-        fields::{FieldOpsBounds, FieldVar},
-        groups::{CurveVar, GroupOpsBounds},
-        pairing::PairingVar,
+        fields::{FieldOpsBounds, FieldVar, FieldWithVar},
+        groups::{CurveVar, CurveWithVar, GroupOpsBounds},
+        pairing::PairingGadget,
         select::*,
         R1CSVar,
     };

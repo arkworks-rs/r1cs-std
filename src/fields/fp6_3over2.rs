@@ -1,17 +1,19 @@
-use crate::fields::{cubic_extension::*, fp2::*};
-use ark_ff::{
-    fields::{fp6_3over2::*, Fp2},
-    CubicExtConfig,
-};
+use crate::fields::{cubic_extension::*, fp2::*, FieldWithVar};
+use ark_ff::fields::{fp6_3over2::*, CubicExtConfig, Fp2};
 use ark_relations::r1cs::SynthesisError;
 use ark_std::ops::MulAssign;
 
 /// A sextic extension field constructed as the tower of a
 /// cubic extension over a quadratic extension field.
 /// This is the R1CS equivalent of `ark_ff::fp6_3over3::Fp6<P>`.
-pub type Fp6Var<P> = CubicExtVar<Fp2Var<<P as Fp6Config>::Fp2Config>, Fp6ConfigWrapper<P>>;
+pub type Fp6Var<P> = CubicExtVar<Fp6ConfigWrapper<P>>;
 
-impl<P: Fp6Config> CubicExtVarConfig<Fp2Var<P::Fp2Config>> for Fp6ConfigWrapper<P> {
+type Fp<P> = <Fp6ConfigWrapper<P> as CubicExtConfig>::BasePrimeField;
+
+impl<P: Fp6Config> CubicExtVarConfig for Fp6ConfigWrapper<P>
+where
+    Fp<P>: FieldWithVar,
+{
     fn mul_base_field_vars_by_frob_coeff(
         c1: &mut Fp2Var<P::Fp2Config>,
         c2: &mut Fp2Var<P::Fp2Config>,
@@ -22,7 +24,10 @@ impl<P: Fp6Config> CubicExtVarConfig<Fp2Var<P::Fp2Config>> for Fp6ConfigWrapper<
     }
 }
 
-impl<P: Fp6Config> Fp6Var<P> {
+impl<P: Fp6Config> Fp6Var<P>
+where
+    Fp<P>: FieldWithVar,
+{
     /// Multiplies `self` by a sparse element which has `c0 == c2 == zero`.
     pub fn mul_by_0_c1_0(&self, c1: &Fp2Var<P::Fp2Config>) -> Result<Self, SynthesisError> {
         // Karatsuba multiplication
@@ -79,7 +84,10 @@ impl<P: Fp6Config> Fp6Var<P> {
     }
 }
 
-impl<P: Fp6Config> MulAssign<Fp2<P::Fp2Config>> for Fp6Var<P> {
+impl<P: Fp6Config> MulAssign<Fp2<P::Fp2Config>> for Fp6Var<P>
+where
+    Fp<P>: FieldWithVar,
+{
     fn mul_assign(&mut self, other: Fp2<P::Fp2Config>) {
         self.c0 *= other;
         self.c1 *= other;

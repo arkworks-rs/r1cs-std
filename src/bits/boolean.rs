@@ -1,6 +1,6 @@
-use ark_ff::{BitIteratorBE, Field, PrimeField};
-
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
+
+use ark_ff::{BitIteratorBE, Field, PrimeField};
 use ark_relations::r1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };

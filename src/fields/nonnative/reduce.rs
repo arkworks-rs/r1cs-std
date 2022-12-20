@@ -1,4 +1,8 @@
-use super::{overhead, params::get_params, AllocatedNonNativeFieldVar};
+use super::{
+    overhead,
+    params::{get_params, OptimizationType},
+    AllocatedNonNativeFieldVar,
+};
 use crate::{
     alloc::AllocVar,
     boolean::Boolean,
@@ -128,6 +132,17 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         *elem = new_elem;
 
         Ok(())
+    }
+
+    pub fn should_reduce_post_addition(
+        num_of_additions_over_normal_form: BaseField,
+        optimization_type: OptimizationType,
+    ) -> bool {
+        let target_size = TargetField::MODULUS_BIT_SIZE as usize;
+        let base_size = BaseField::MODULUS_BIT_SIZE as usize;
+        let params = get_params(target_size, base_size, optimization_type);
+        let surfeit = overhead!(num_of_additions_over_normal_form + BaseField::one()) + 1;
+        base_size <= (2 * params.bits_per_limb + surfeit + 1)
     }
 
     /// Reduction to be enforced after additions

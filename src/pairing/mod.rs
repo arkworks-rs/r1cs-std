@@ -1,7 +1,5 @@
-use crate::prelude::*;
+use crate::{fields::fp::FpVar, prelude::*};
 use ark_ec::pairing::Pairing;
-use ark_ec::CurveGroup;
-use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
 
@@ -14,68 +12,73 @@ pub mod mnt6;
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: Pairing, ConstraintF: Field = <<E as Pairing>::G1 as CurveGroup>::BaseField>
+pub trait PairingGadget: Pairing
+where
+    Self::BaseField: FieldWithVar<Var = FpVar<Self::BaseField>>,
+    Self::TargetField: FieldWithVar<Var = Self::GTVar>,
+    Self::G1: CurveWithVar<Self::BaseField, Var = Self::G1Var>,
+    Self::G2: CurveWithVar<Self::BaseField, Var = Self::G2Var>,
 {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1, ConstraintF>
-        + AllocVar<E::G1, ConstraintF>
-        + AllocVar<E::G1Affine, ConstraintF>;
+    type G1Var: CurveVar<Self::G1, Self::BaseField>
+        + AllocVar<Self::G1, Self::BaseField>
+        + AllocVar<Self::G1Affine, Self::BaseField>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2, ConstraintF>
-        + AllocVar<E::G2, ConstraintF>
-        + AllocVar<E::G2Affine, ConstraintF>;
+    type G2Var: CurveVar<Self::G2, Self::BaseField>
+        + AllocVar<Self::G2, Self::BaseField>
+        + AllocVar<Self::G2Affine, Self::BaseField>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::TargetField, ConstraintF>;
+    type GTVar: FieldVar<Self::TargetField, Self::BaseField>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G1Prepared`.
-    type G1PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G1Prepared, ConstraintF>
+    type G1PreparedVar: ToBytesGadget<Self::BaseField>
+        + AllocVar<Self::G1Prepared, Self::BaseField>
         + Clone
         + Debug;
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G2Prepared`.
-    type G2PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G2Prepared, ConstraintF>
+    type G2PreparedVar: ToBytesGadget<Self::BaseField>
+        + AllocVar<Self::G2Prepared, Self::BaseField>
         + Clone
         + Debug;
 
     /// Computes a multi-miller loop between elements
     /// of `p` and `q`.
-    fn miller_loop(
+    fn miller_loop_gadget(
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError>;
 
     /// Computes a final exponentiation over `p`.
-    fn final_exponentiation(p: &Self::GTVar) -> Result<Self::GTVar, SynthesisError>;
+    fn final_exponentiation_gadget(p: &Self::GTVar) -> Result<Self::GTVar, SynthesisError>;
 
     /// Computes a pairing over `p` and `q`.
     #[tracing::instrument(target = "r1cs")]
-    fn pairing(
+    fn pairing_gadget(
         p: Self::G1PreparedVar,
         q: Self::G2PreparedVar,
     ) -> Result<Self::GTVar, SynthesisError> {
-        let tmp = Self::miller_loop(&[p], &[q])?;
-        Self::final_exponentiation(&tmp)
+        let tmp = <Self as PairingGadget>::miller_loop_gadget(&[p], &[q])?;
+        <Self as PairingGadget>::final_exponentiation_gadget(&tmp)
     }
 
     /// Computes a product of pairings over the elements in `p` and `q`.
     #[must_use]
     #[tracing::instrument(target = "r1cs")]
-    fn product_of_pairings(
+    fn product_of_pairings_gadget(
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
-        let miller_result = Self::miller_loop(p, q)?;
-        Self::final_exponentiation(&miller_result)
+        let miller_result = <Self as PairingGadget>::miller_loop_gadget(p, q)?;
+        <Self as PairingGadget>::final_exponentiation_gadget(&miller_result)
     }
 
     /// Performs the precomputation to generate `Self::G1PreparedVar`.

@@ -1,27 +1,30 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::PairingVar as PG;
+use super::PairingGadget as PG;
 
 use crate::{
-    fields::{fp::FpVar, fp2::Fp2Var, fp4::Fp4Var, FieldVar},
+    fields::{fp::FpVar, fp2::Fp2Var, fp4::Fp4Var, FieldVar, FieldWithVar},
     groups::mnt4::{
         AteAdditionCoefficientsVar, AteDoubleCoefficientsVar, G1PreparedVar, G1Var, G2PreparedVar,
         G2ProjectiveExtendedVar, G2Var,
     },
 };
-use ark_ec::mnt4::{MNT4Parameters, MNT4};
+use ark_ec::mnt4::{MNT4Config, MNT4};
 
 use core::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a MNT4 bilinear group.
-pub struct PairingVar<P: MNT4Parameters>(PhantomData<P>);
+pub struct MNT4Gadget<P: MNT4Config>(PhantomData<P>);
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
-type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Config>;
+type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
+type Fp4G<P> = Fp4Var<<P as MNT4Config>::Fp4Config>;
 /// A variable corresponding to `ark_ec::mnt4::GT`.
 pub type GTVar<P> = Fp4G<P>;
 
-impl<P: MNT4Parameters> PairingVar<P> {
+impl<P: MNT4Config> MNT4Gadget<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     #[tracing::instrument(target = "r1cs", skip(r))]
     pub(crate) fn doubling_step_for_flipped_miller_loop(
         r: &G2ProjectiveExtendedVar<P>,
@@ -196,7 +199,10 @@ impl<P: MNT4Parameters> PairingVar<P> {
     }
 }
 
-impl<P: MNT4Parameters> PG<MNT4<P>, P::Fp> for PairingVar<P> {
+impl<P: MNT4Config> PG for MNT4<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
@@ -204,21 +210,21 @@ impl<P: MNT4Parameters> PG<MNT4<P>, P::Fp> for PairingVar<P> {
     type GTVar = GTVar<P>;
 
     #[tracing::instrument(target = "r1cs")]
-    fn miller_loop(
+    fn miller_loop_gadget(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
         let mut result = Fp4G::<P>::one();
         for (p, q) in ps.iter().zip(qs) {
-            result *= Self::ate_miller_loop(p, q)?;
+            result *= MNT4Gadget::ate_miller_loop(p, q)?;
         }
 
         Ok(result)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn final_exponentiation(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
-        Self::final_exponentiation(r)
+    fn final_exponentiation_gadget(r: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
+        MNT4Gadget::<P>::final_exponentiation(r)
     }
 
     #[tracing::instrument(target = "r1cs")]

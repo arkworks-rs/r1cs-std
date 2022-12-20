@@ -1,21 +1,24 @@
 use ark_relations::r1cs::SynthesisError;
 
-use super::PairingVar as PG;
+use super::PairingGadget as PG;
 
 use crate::{
-    fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar},
+    fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar, FieldWithVar},
     groups::bls12::{G1AffineVar, G1PreparedVar, G1Var, G2PreparedVar, G2Var},
 };
-use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
+use ark_ec::bls12::{Bls12, Bls12Config, TwistType};
 use ark_ff::BitIteratorBE;
 use ark_std::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
-pub struct PairingVar<P: Bls12Parameters>(PhantomData<P>);
+pub struct Bls12Gadget<P: Bls12Config>(PhantomData<P>);
 
-type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
+type Fp2V<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 
-impl<P: Bls12Parameters> PairingVar<P> {
+impl<P: Bls12Config> Bls12Gadget<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     // Evaluate the line function at point p.
     #[tracing::instrument(target = "r1cs")]
     fn ell(
@@ -59,7 +62,10 @@ impl<P: Bls12Parameters> PairingVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
+impl<P: Bls12Config> PG for Bls12<P>
+where
+    P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
+{
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
@@ -67,7 +73,7 @@ impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
     type GTVar = Fp12Var<P::Fp12Config>;
 
     #[tracing::instrument(target = "r1cs")]
-    fn miller_loop(
+    fn miller_loop_gadget(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
     ) -> Result<Self::GTVar, SynthesisError> {
@@ -81,12 +87,12 @@ impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
             f.square_in_place()?;
 
             for &mut (p, ref mut coeffs) in pairs.iter_mut() {
-                Self::ell(&mut f, coeffs.next().unwrap(), &p.0)?;
+                Bls12Gadget::<P>::ell(&mut f, coeffs.next().unwrap(), &p.0)?;
             }
 
             if i {
                 for &mut (p, ref mut coeffs) in pairs.iter_mut() {
-                    Self::ell(&mut f, &coeffs.next().unwrap(), &p.0)?;
+                    Bls12Gadget::<P>::ell(&mut f, &coeffs.next().unwrap(), &p.0)?;
                 }
             }
         }
@@ -99,7 +105,7 @@ impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn final_exponentiation(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
+    fn final_exponentiation_gadget(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
         // Computing the final exponentation following
         // https://eprint.iacr.org/2016/130.pdf.
         // We don't use their "faster" formula because it is difficult to make
@@ -128,15 +134,15 @@ impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
             let mut y0 = r.cyclotomic_square()?;
             y0 = y0.unitary_inverse()?;
 
-            let mut y5 = Self::exp_by_x(&r)?;
+            let mut y5 = Bls12Gadget::<P>::exp_by_x(&r)?;
 
             let mut y1 = y5.cyclotomic_square()?;
             let mut y3 = y0 * &y5;
-            y0 = Self::exp_by_x(&y3)?;
-            let y2 = Self::exp_by_x(&y0)?;
-            let mut y4 = Self::exp_by_x(&y2)?;
+            y0 = Bls12Gadget::<P>::exp_by_x(&y3)?;
+            let y2 = Bls12Gadget::<P>::exp_by_x(&y0)?;
+            let mut y4 = Bls12Gadget::<P>::exp_by_x(&y2)?;
             y4 *= &y1;
-            y1 = Self::exp_by_x(&y4)?;
+            y1 = Bls12Gadget::<P>::exp_by_x(&y4)?;
             y3 = y3.unitary_inverse()?;
             y1 *= &y3;
             y1 *= &r;
