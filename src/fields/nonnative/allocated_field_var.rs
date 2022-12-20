@@ -4,7 +4,7 @@ use super::AllocatedNonNativeFieldMulResultVar;
 use crate::fields::fp::FpVar;
 use crate::prelude::*;
 use crate::ToConstraintFieldGadget;
-use ark_ff::{BigInteger, FpParameters, PrimeField};
+use ark_ff::{BigInteger, FpConfig, PrimeField};
 use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{
     ns,
@@ -512,7 +512,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         // Get p
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
-                &<TargetField as PrimeField>::Params::MODULUS,
+                &<TargetField as PrimeField>::Config::MODULUS,
                 self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);

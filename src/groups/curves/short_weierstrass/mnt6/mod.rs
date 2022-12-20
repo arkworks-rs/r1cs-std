@@ -36,9 +36,9 @@ where
     #[doc(hidden)]
     pub y: FpVar<P::Fp>,
     #[doc(hidden)]
-    pub x_twist: Fp3Var<P::Fp3Params>,
+    pub x_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y_twist: Fp3Var<P::Fp3Params>,
+    pub y_twist: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> G1PreparedVar<P>
@@ -153,7 +153,7 @@ where
     }
 }
 
-type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Params>;
+type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
@@ -167,13 +167,13 @@ where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
     #[doc(hidden)]
-    pub x: Fp3Var<P::Fp3Params>,
+    pub x: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y: Fp3Var<P::Fp3Params>,
+    pub y: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub x_over_twist: Fp3Var<P::Fp3Params>,
+    pub x_over_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
-    pub y_over_twist: Fp3Var<P::Fp3Params>,
+    pub y_over_twist: Fp3Var<P::Fp3Config>,
     #[doc(hidden)]
     pub double_coefficients: Vec<AteDoubleCoefficientsVar<P>>,
     #[doc(hidden)]
@@ -387,10 +387,10 @@ pub struct AteDoubleCoefficientsVar<P: MNT6Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub c_h: Fp3Var<P::Fp3Params>,
-    pub c_4c: Fp3Var<P::Fp3Params>,
-    pub c_j: Fp3Var<P::Fp3Params>,
-    pub c_l: Fp3Var<P::Fp3Params>,
+    pub c_h: Fp3Var<P::Fp3Config>,
+    pub c_4c: Fp3Var<P::Fp3Config>,
+    pub c_j: Fp3Var<P::Fp3Config>,
+    pub c_l: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P>
@@ -482,8 +482,8 @@ pub struct AteAdditionCoefficientsVar<P: MNT6Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub c_l1: Fp3Var<P::Fp3Params>,
-    pub c_rz: Fp3Var<P::Fp3Params>,
+    pub c_l1: Fp3Var<P::Fp3Config>,
+    pub c_rz: Fp3Var<P::Fp3Config>,
 }
 
 impl<P: MNT6Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
@@ -553,8 +553,8 @@ pub struct G2ProjectiveExtendedVar<P: MNT6Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub x: Fp3Var<P::Fp3Params>,
-    pub y: Fp3Var<P::Fp3Params>,
-    pub z: Fp3Var<P::Fp3Params>,
-    pub t: Fp3Var<P::Fp3Params>,
+    pub x: Fp3Var<P::Fp3Config>,
+    pub y: Fp3Var<P::Fp3Config>,
+    pub z: Fp3Var<P::Fp3Config>,
+    pub t: Fp3Var<P::Fp3Config>,
 }

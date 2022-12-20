@@ -4,11 +4,11 @@ use super::*;
 /// to *not* be the point at infinity.
 #[derive(Derivative)]
 #[derivative(
-    Debug(bound = "P: SWModelParameters"),
-    Clone(bound = "P: SWModelParameters")
+    Debug(bound = "P: SWModelConfig"),
+    Clone(bound = "P: SWModelConfig")
 )]
 #[must_use]
-pub struct NonZeroAffineVar<P: SWModelParameters>
+pub struct NonZeroAffineVar<P: SWModelConfig>
 where
     BF<P>: FieldWithVar,
 {
@@ -22,7 +22,7 @@ where
 
 impl<P> NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
+    P: SWModelConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: FieldVar<P::BaseField, CF<P>>,
 {
@@ -43,7 +43,7 @@ where
 
 impl<P> NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
+    P: SWModelConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: FieldVar<P::BaseField, CF<P>>,
     for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
@@ -149,7 +149,7 @@ where
 
 impl<P> R1CSVar<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
+    P: SWModelConfig,
     BF<P>: FieldWithVar,
 {
     type Value = SWAffine<P>;
@@ -165,7 +165,7 @@ where
 
 impl<P> CondSelectGadget<CF<P>> for NonZeroAffineVar<P>
 where
-    P: SWModelParameters,
+    P: SWModelConfig,
     BF<P>: FieldWithVar,
 {
     #[inline]
@@ -190,10 +190,10 @@ mod test_non_zero_affine {
     use crate::groups::curves::short_weierstrass::ProjectiveVar;
     use crate::groups::CurveVar;
     use crate::R1CSVar;
-    use ark_ec::{ProjectiveCurve, SWModelParameters};
+    use ark_ec::{ProjectiveCurve, SWModelConfig};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
-    use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
+    use ark_test_curves::bls12_381::{g1::Config as G1Config, Fq};
 
     #[test]
     fn correctness_test_1() {
@@ -201,13 +201,13 @@ mod test_non_zero_affine {
 
         let x = FpVar::Var(
             AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+                Ok(G1Config::AFFINE_GENERATOR_COEFFS.0)
             })
             .unwrap(),
         );
         let y = FpVar::Var(
             AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+                Ok(G1Config::AFFINE_GENERATOR_COEFFS.1)
             })
             .unwrap(),
         );
@@ -216,7 +216,7 @@ mod test_non_zero_affine {
         // (1 + 2 + ... + 2^9) G
 
         let sum_a = {
-            let mut a = ProjectiveVar::<G1Parameters>::new(
+            let mut a = ProjectiveVar::<G1Config>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -240,7 +240,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let mut a = NonZeroAffineVar::<G1Parameters>::new(x, y);
+            let mut a = NonZeroAffineVar::<G1Config>::new(x, y);
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -268,20 +268,20 @@ mod test_non_zero_affine {
 
         let x = FpVar::Var(
             AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.0)
+                Ok(G1Config::AFFINE_GENERATOR_COEFFS.0)
             })
             .unwrap(),
         );
         let y = FpVar::Var(
             AllocatedFp::<Fq>::new_witness(cs.clone(), || {
-                Ok(G1Parameters::AFFINE_GENERATOR_COEFFS.1)
+                Ok(G1Config::AFFINE_GENERATOR_COEFFS.1)
             })
             .unwrap(),
         );
 
         // The following code tests `double_and_add`.
         let sum_a = {
-            let a = ProjectiveVar::<G1Parameters>::new(
+            let a = ProjectiveVar::<G1Config>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -299,7 +299,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let a = NonZeroAffineVar::<G1Parameters>::new(x, y);
+            let a = NonZeroAffineVar::<G1Config>::new(x, y);
 
             let mut cur = a.double().unwrap();
             for _ in 1..10 {

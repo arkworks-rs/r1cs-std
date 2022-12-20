@@ -1,22 +1,22 @@
 use crate::fields::{cubic_extension::*, fp2::*, FieldWithVar};
-use ark_ff::fields::{fp6_3over2::*, CubicExtParameters, Fp2};
+use ark_ff::fields::{fp6_3over2::*, CubicExtConfig, Fp2};
 use ark_relations::r1cs::SynthesisError;
 use core::ops::MulAssign;
 
 /// A sextic extension field constructed as the tower of a
 /// cubic extension over a quadratic extension field.
 /// This is the R1CS equivalent of `ark_ff::fp6_3over3::Fp6<P>`.
-pub type Fp6Var<P> = CubicExtVar<Fp6ParamsWrapper<P>>;
+pub type Fp6Var<P> = CubicExtVar<Fp6ConfigWrapper<P>>;
 
-type Fp<P> = <Fp6ParamsWrapper<P> as CubicExtParameters>::BasePrimeField;
+type Fp<P> = <Fp6ConfigWrapper<P> as CubicExtConfig>::BasePrimeField;
 
-impl<P: Fp6Parameters> CubicExtVarParams for Fp6ParamsWrapper<P>
+impl<P: Fp6Config> CubicExtVarConfig for Fp6ConfigWrapper<P>
 where
     Fp<P>: FieldWithVar,
 {
     fn mul_base_field_vars_by_frob_coeff(
-        c1: &mut Fp2Var<P::Fp2Params>,
-        c2: &mut Fp2Var<P::Fp2Params>,
+        c1: &mut Fp2Var<P::Fp2Config>,
+        c2: &mut Fp2Var<P::Fp2Config>,
         power: usize,
     ) {
         *c1 *= Self::FROBENIUS_COEFF_C1[power % Self::DEGREE_OVER_BASE_PRIME_FIELD];
@@ -24,12 +24,12 @@ where
     }
 }
 
-impl<P: Fp6Parameters> Fp6Var<P>
+impl<P: Fp6Config> Fp6Var<P>
 where
     Fp<P>: FieldWithVar,
 {
     /// Multiplies `self` by a sparse element which has `c0 == c2 == zero`.
-    pub fn mul_by_0_c1_0(&self, c1: &Fp2Var<P::Fp2Params>) -> Result<Self, SynthesisError> {
+    pub fn mul_by_0_c1_0(&self, c1: &Fp2Var<P::Fp2Config>) -> Result<Self, SynthesisError> {
         // Karatsuba multiplication
         // v0 = a0 * b0 = 0
 
@@ -59,8 +59,8 @@ where
     /// Multiplies `self` by a sparse element which has `c2 == zero`.
     pub fn mul_by_c0_c1_0(
         &self,
-        c0: &Fp2Var<P::Fp2Params>,
-        c1: &Fp2Var<P::Fp2Params>,
+        c0: &Fp2Var<P::Fp2Config>,
+        c1: &Fp2Var<P::Fp2Config>,
     ) -> Result<Self, SynthesisError> {
         let v0 = &self.c0 * c0;
         let v1 = &self.c1 * c1;
@@ -84,11 +84,11 @@ where
     }
 }
 
-impl<P: Fp6Parameters> MulAssign<Fp2<P::Fp2Params>> for Fp6Var<P>
+impl<P: Fp6Config> MulAssign<Fp2<P::Fp2Config>> for Fp6Var<P>
 where
     Fp<P>: FieldWithVar,
 {
-    fn mul_assign(&mut self, other: Fp2<P::Fp2Params>) {
+    fn mul_assign(&mut self, other: Fp2<P::Fp2Config>) {
         self.c0 *= other;
         self.c1 *= other;
         self.c2 *= other;

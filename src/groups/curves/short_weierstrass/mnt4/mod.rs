@@ -36,9 +36,9 @@ where
     #[doc(hidden)]
     pub y: FpVar<P::Fp>,
     #[doc(hidden)]
-    pub x_twist: Fp2Var<P::Fp2Params>,
+    pub x_twist: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
-    pub y_twist: Fp2Var<P::Fp2Params>,
+    pub y_twist: Fp2Var<P::Fp2Config>,
 }
 
 impl<P: MNT4Parameters> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P>
@@ -153,7 +153,7 @@ where
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Params>;
+type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
@@ -167,13 +167,13 @@ where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
     #[doc(hidden)]
-    pub x: Fp2Var<P::Fp2Params>,
+    pub x: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
-    pub y: Fp2Var<P::Fp2Params>,
+    pub y: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
-    pub x_over_twist: Fp2Var<P::Fp2Params>,
+    pub x_over_twist: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
-    pub y_over_twist: Fp2Var<P::Fp2Params>,
+    pub y_over_twist: Fp2Var<P::Fp2Config>,
     #[doc(hidden)]
     pub double_coefficients: Vec<AteDoubleCoefficientsVar<P>>,
     #[doc(hidden)]
@@ -387,10 +387,10 @@ pub struct AteDoubleCoefficientsVar<P: MNT4Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub c_h: Fp2Var<P::Fp2Params>,
-    pub c_4c: Fp2Var<P::Fp2Params>,
-    pub c_j: Fp2Var<P::Fp2Params>,
-    pub c_l: Fp2Var<P::Fp2Params>,
+    pub c_h: Fp2Var<P::Fp2Config>,
+    pub c_4c: Fp2Var<P::Fp2Config>,
+    pub c_j: Fp2Var<P::Fp2Config>,
+    pub c_l: Fp2Var<P::Fp2Config>,
 }
 
 impl<P: MNT4Parameters> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P>
@@ -487,8 +487,8 @@ pub struct AteAdditionCoefficientsVar<P: MNT4Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub c_l1: Fp2Var<P::Fp2Params>,
-    pub c_rz: Fp2Var<P::Fp2Params>,
+    pub c_l1: Fp2Var<P::Fp2Config>,
+    pub c_rz: Fp2Var<P::Fp2Config>,
 }
 
 impl<P: MNT4Parameters> AllocVar<AteAdditionCoefficients<P>, P::Fp>
@@ -557,8 +557,8 @@ pub struct G2ProjectiveExtendedVar<P: MNT4Parameters>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
-    pub x: Fp2Var<P::Fp2Params>,
-    pub y: Fp2Var<P::Fp2Params>,
-    pub z: Fp2Var<P::Fp2Params>,
-    pub t: Fp2Var<P::Fp2Params>,
+    pub x: Fp2Var<P::Fp2Config>,
+    pub y: Fp2Var<P::Fp2Config>,
+    pub z: Fp2Var<P::Fp2Config>,
+    pub t: Fp2Var<P::Fp2Config>,
 }

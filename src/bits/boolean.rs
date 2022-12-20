@@ -1,4 +1,4 @@
-use ark_ff::{BitIteratorBE, Field, FpParameters, PrimeField};
+use ark_ff::{BitIteratorBE, Field, FpConfig, PrimeField};
 
 use crate::{fields::fp::FpVar, prelude::*, Assignment, ToConstraintFieldGadget, Vec};
 use ark_relations::r1cs::{

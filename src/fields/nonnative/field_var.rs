@@ -6,7 +6,7 @@ use crate::fields::FieldVar;
 use crate::prelude::*;
 use crate::{R1CSVar, ToConstraintFieldGadget};
 use ark_ff::PrimeField;
-use ark_ff::{to_bytes, FpParameters};
+use ark_ff::{to_bytes, FpConfig};
 use ark_relations::r1cs::Result as R1CSResult;
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::hash::{Hash, Hasher};
@@ -316,7 +316,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
         use ark_ff::BitIteratorLE;
         match self {
             Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
-                .take((TargetField::Params::MODULUS_BITS) as usize)
+                .take((TargetField::Config::MODULUS_BITS) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),

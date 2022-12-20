@@ -17,8 +17,8 @@ use core::marker::PhantomData;
 /// Specifies the constraints for computing a pairing in a MNT4 bilinear group.
 pub struct MNT4Gadget<P: MNT4Parameters>(PhantomData<P>);
 
-type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Params>;
-type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Params>;
+type Fp2G<P> = Fp2Var<<P as MNT4Parameters>::Fp2Config>;
+type Fp4G<P> = Fp4Var<<P as MNT4Parameters>::Fp4Config>;
 /// A variable corresponding to `ark_ec::mnt4::GT`.
 pub type GTVar<P> = Fp4G<P>;
 

@@ -14,19 +14,19 @@ use crate::{
 type FpVar<P> = <<P as Bls12Parameters>::Fp as FieldWithVar>::Var;
 
 /// Represents a projective point in G1.
-pub type G1Var<P> = ProjectiveVar<<P as Bls12Parameters>::G1Parameters>;
+pub type G1Var<P> = ProjectiveVar<<P as Bls12Parameters>::G1Config>;
 
 /// Represents an affine point on G1. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G1AffineVar<P> = AffineVar<<P as Bls12Parameters>::G1Parameters>;
+pub type G1AffineVar<P> = AffineVar<<P as Bls12Parameters>::G1Config>;
 
 /// Represents a projective point in G2.
-pub type G2Var<P> = ProjectiveVar<<P as Bls12Parameters>::G2Parameters>;
+pub type G2Var<P> = ProjectiveVar<<P as Bls12Parameters>::G2Config>;
 /// Represents an affine point on G2. Should be used only for comparison and
 /// when a canonical representation of a point is required, and not for
 /// arithmetic.
-pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Parameters>;
+pub type G2AffineVar<P> = AffineVar<<P as Bls12Parameters>::G2Config>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
@@ -113,7 +113,7 @@ where
     }
 }
 
-type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Params>;
+type Fp2G<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.

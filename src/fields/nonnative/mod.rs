@@ -157,9 +157,9 @@ macro_rules! overhead {
 
 pub(crate) use overhead;
 
-/// Parameters for a specific `NonNativeFieldVar` instantiation
+/// Config for a specific `NonNativeFieldVar` instantiation
 #[derive(Clone, Debug)]
-pub struct NonNativeFieldParams {
+pub struct NonNativeFieldConfig {
     /// The number of limbs (`BaseField` elements) used to represent a `TargetField` element. Highest limb first.
     pub num_limbs: usize,
 

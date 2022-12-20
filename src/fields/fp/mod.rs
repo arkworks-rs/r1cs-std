@@ -1,4 +1,4 @@
-use ark_ff::{BigInteger, FpParameters, PrimeField};
+use ark_ff::{BigInteger, FpConfig, PrimeField};
 use ark_relations::r1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
@@ -50,18 +50,18 @@ pub enum FpVar<F: PrimeField> {
 }
 
 macro_rules! impl_field_ext {
-    ($Fp:ident, $FpParams:ident) => {
-        impl<P: ark_ff::models::$FpParams> FieldWithVar for ark_ff::models::$Fp<P> {
+    ($Fp:ident, $FpConfig:ident) => {
+        impl<P: ark_ff::models::$FpConfig> FieldWithVar for ark_ff::models::$Fp<P> {
             type Var = FpVar<Self>;
         }
     };
 }
 
-impl_field_ext!(Fp256, Fp256Parameters);
-impl_field_ext!(Fp320, Fp320Parameters);
-impl_field_ext!(Fp384, Fp384Parameters);
-impl_field_ext!(Fp768, Fp768Parameters);
-impl_field_ext!(Fp832, Fp832Parameters);
+impl_field_ext!(Fp256, Fp256Config);
+impl_field_ext!(Fp320, Fp320Config);
+impl_field_ext!(Fp384, Fp384Config);
+impl_field_ext!(Fp768, Fp768Config);
+impl_field_ext!(Fp832, Fp832Config);
 
 impl<F: PrimeField> R1CSVar<F> for FpVar<F> {
     type Value = F;
@@ -487,10 +487,10 @@ impl<F: PrimeField> ToBitsGadget<F> for AllocatedFp<F> {
                 .skip_while(|(_, c)| !c)
                 .map(|(b, _)| Some(b))
                 .collect();
-            assert_eq!(bits.len(), F::Params::MODULUS_BITS as usize);
+            assert_eq!(bits.len(), F::Config::MODULUS_BITS as usize);
             bits
         } else {
-            vec![None; F::Params::MODULUS_BITS as usize]
+            vec![None; F::Config::MODULUS_BITS as usize]
         };
 
         // Convert to little-endian
@@ -921,7 +921,7 @@ impl<F: PrimeField> ToBitsGadget<F> for FpVar<F> {
         use ark_ff::BitIteratorLE;
         match self {
             Self::Constant(c) => Ok(BitIteratorLE::new(&c.into_repr())
-                .take((F::Params::MODULUS_BITS) as usize)
+                .take((F::Config::MODULUS_BITS) as usize)
                 .map(Boolean::constant)
                 .collect::<Vec<_>>()),
             Self::Var(v) => v.to_non_unique_bits_le(),

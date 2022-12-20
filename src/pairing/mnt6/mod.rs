@@ -16,8 +16,8 @@ use core::marker::PhantomData;
 /// Specifies the constraints for computing a pairing in a MNT6 bilinear group.
 pub struct MNT6Gadget<P: MNT6Parameters>(PhantomData<P>);
 
-type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Params>;
-type Fp6G<P> = Fp6Var<<P as MNT6Parameters>::Fp6Params>;
+type Fp3G<P> = Fp3Var<<P as MNT6Parameters>::Fp3Config>;
+type Fp6G<P> = Fp6Var<<P as MNT6Parameters>::Fp6Config>;
 /// A variable corresponding to `ark_ec::mnt6::GT`.
 pub type GTVar<P> = Fp6G<P>;
 

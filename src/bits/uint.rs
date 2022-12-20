@@ -6,7 +6,7 @@ macro_rules! make_uint {
         #[doc = $native_doc_name]
         #[doc = " type."]
         pub mod $mod_name {
-            use ark_ff::{Field, FpParameters, One, PrimeField, Zero};
+            use ark_ff::{Field, FpConfig, One, PrimeField, Zero};
             use core::borrow::Borrow;
             use core::convert::TryFrom;
             use num_bigint::BigUint;

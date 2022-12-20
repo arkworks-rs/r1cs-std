@@ -1,4 +1,4 @@
-use super::NonNativeFieldParams;
+use super::NonNativeFieldConfig;
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new one
 #[must_use]
@@ -6,10 +6,10 @@ pub const fn get_params(
     target_field_size: usize,
     base_field_size: usize,
     optimization_type: OptimizationType,
-) -> NonNativeFieldParams {
+) -> NonNativeFieldConfig {
     let (num_of_limbs, limb_size) =
         find_parameters(base_field_size, target_field_size, optimization_type);
-    NonNativeFieldParams {
+    NonNativeFieldConfig {
         num_limbs: num_of_limbs,
         bits_per_limb: limb_size,
     }

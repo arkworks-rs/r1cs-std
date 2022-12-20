@@ -1,4 +1,4 @@
-use ark_ff::{Field, FpParameters, PrimeField, ToConstraintField};
+use ark_ff::{Field, FpConfig, PrimeField, ToConstraintField};
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
@@ -363,7 +363,7 @@ mod test {
     use crate::fields::fp::FpVar;
     use crate::prelude::AllocationMode::{Constant, Input, Witness};
     use crate::{prelude::*, ToConstraintFieldGadget, Vec};
-    use ark_ff::{FpParameters, PrimeField, ToConstraintField};
+    use ark_ff::{FpConfig, PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
     use ark_std::rand::distributions::Uniform;
     use ark_std::rand::Rng;

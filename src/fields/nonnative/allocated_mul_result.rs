@@ -3,7 +3,7 @@ use super::reduce::{bigint_to_basefield, limbs_to_bigint, Reducer};
 use super::AllocatedNonNativeFieldVar;
 use crate::fields::fp::FpVar;
 use crate::prelude::*;
-use ark_ff::{FpParameters, PrimeField};
+use ark_ff::{FpConfig, PrimeField};
 use ark_relations::r1cs::{OptimizationGoal, Result as R1CSResult};
 use ark_relations::{ns, r1cs::ConstraintSystemRef};
 use ark_std::marker::PhantomData;
@@ -69,7 +69,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
-                &<TargetField as PrimeField>::Params::MODULUS,
+                &<TargetField as PrimeField>::Config::MODULUS,
                 self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
@@ -95,7 +95,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         // Step 1: get p
         let p_representations =
             AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
-                &<TargetField as PrimeField>::Params::MODULUS,
+                &<TargetField as PrimeField>::Config::MODULUS,
                 self.get_optimization_type()
             )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);

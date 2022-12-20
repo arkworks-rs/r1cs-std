@@ -1,5 +1,5 @@
 use ark_ff::{
-    fields::{CubicExtField, CubicExtParameters, Field},
+    fields::{CubicExtField, CubicExtConfig, Field},
     Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
@@ -20,7 +20,7 @@ use crate::{
     Clone(bound = "P::BaseField: FieldWithVar")
 )]
 #[must_use]
-pub struct CubicExtVar<P: CubicExtVarParams>
+pub struct CubicExtVar<P: CubicExtVarConfig>
 where
     P::BaseField: FieldWithVar,
 {
@@ -34,9 +34,9 @@ where
     _params: PhantomData<P>,
 }
 
-type BFVar<P> = <<P as CubicExtParameters>::BaseField as FieldWithVar>::Var;
+type BFVar<P> = <<P as CubicExtConfig>::BaseField as FieldWithVar>::Var;
 
-impl<P: CubicExtVarParams> FieldWithVar for CubicExtField<P>
+impl<P: CubicExtVarConfig> FieldWithVar for CubicExtField<P>
 where
     P::BaseField: FieldWithVar,
 {
@@ -45,7 +45,7 @@ where
 
 /// This trait describes parameters that are used to implement arithmetic for
 /// `CubicExtVar`.
-pub trait CubicExtVarParams: CubicExtParameters
+pub trait CubicExtVarConfig: CubicExtConfig
 where
     Self::BaseField: FieldWithVar,
 {
@@ -55,7 +55,7 @@ where
     fn mul_base_field_vars_by_frob_coeff(c1: &mut BFVar<Self>, c2: &mut BFVar<Self>, power: usize);
 }
 
-impl<P: CubicExtVarParams> CubicExtVar<P>
+impl<P: CubicExtVarConfig> CubicExtVar<P>
 where
     P::BaseField: FieldWithVar,
 {
@@ -97,7 +97,7 @@ where
 
 impl<P> R1CSVar<P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     type Value = CubicExtField<P>;
@@ -117,7 +117,7 @@ where
 
 impl<P> From<Boolean<P::BasePrimeField>> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     fn from(other: Boolean<P::BasePrimeField>) -> Self {
@@ -130,20 +130,20 @@ where
 
 impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
 }
 impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for &'a CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
 }
 
 impl<P> FieldVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     fn constant(other: CubicExtField<P>) -> Self {
@@ -307,7 +307,7 @@ impl_bounded_ops!(
     |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
         *this = &*this + CubicExtVar::constant(other)
     },
-    (P: CubicExtVarParams),
+    (P: CubicExtVarConfig),
     P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
@@ -325,7 +325,7 @@ impl_bounded_ops!(
     |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
         *this = &*this - CubicExtVar::constant(other)
     },
-    (P: CubicExtVarParams),
+    (P: CubicExtVarConfig),
     P::BaseField: FieldWithVar,
 );
 impl_bounded_ops!(
@@ -364,13 +364,13 @@ impl_bounded_ops!(
     |this: &mut CubicExtVar<P>, other: CubicExtField<P>| {
         *this = CubicExtVar::constant(other) * &*this;
     },
-    (P: CubicExtVarParams),
+    (P: CubicExtVarConfig),
     P::BaseField: FieldWithVar,
 );
 
 impl<P> EqGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -411,7 +411,7 @@ where
 impl<P> ToBitsGadget<P::BasePrimeField> for CubicExtVar<P>
 where
     P::BaseField: FieldWithVar,
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
@@ -436,7 +436,7 @@ where
 
 impl<P> ToBytesGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     #[tracing::instrument(target = "r1cs")]
@@ -465,7 +465,7 @@ where
 
 impl<P> ToConstraintFieldGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<P::BasePrimeField>,
 {
@@ -483,7 +483,7 @@ where
 
 impl<P> CondSelectGadget<P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     #[inline]
@@ -503,7 +503,7 @@ where
 impl<P> TwoBitLookupGadget<P::BasePrimeField> for CubicExtVar<P>
 where
     BFVar<P>: TwoBitLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     type TableConstant = CubicExtField<P>;
@@ -526,7 +526,7 @@ where
 impl<P> ThreeBitCondNegLookupGadget<P::BasePrimeField> for CubicExtVar<P>
 where
     BFVar<P>: ThreeBitCondNegLookupGadget<P::BasePrimeField, TableConstant = P::BaseField>,
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     type TableConstant = CubicExtField<P>;
@@ -549,7 +549,7 @@ where
 
 impl<P> AllocVar<CubicExtField<P>, P::BasePrimeField> for CubicExtVar<P>
 where
-    P: CubicExtVarParams,
+    P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
     fn new_variable<T: Borrow<CubicExtField<P>>>(
@@ -577,7 +577,7 @@ where
     }
 }
 
-impl<'a, P: CubicExtVarParams> Sum<&'a CubicExtVar<P>> for CubicExtVar<P>
+impl<'a, P: CubicExtVarConfig> Sum<&'a CubicExtVar<P>> for CubicExtVar<P>
 where
     P::BaseField: FieldWithVar,
 {
@@ -590,7 +590,7 @@ where
     }
 }
 
-impl<'a, P: CubicExtVarParams> Sum<CubicExtVar<P>> for CubicExtVar<P>
+impl<'a, P: CubicExtVarConfig> Sum<CubicExtVar<P>> for CubicExtVar<P>
 where
     P::BaseField: FieldWithVar,
 {

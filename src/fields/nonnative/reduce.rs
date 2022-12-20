@@ -5,7 +5,7 @@ use crate::eq::EqGadget;
 use crate::fields::fp::FpVar;
 use crate::fields::FieldVar;
 use crate::{alloc::AllocVar, boolean::Boolean, R1CSVar};
-use ark_ff::{biginteger::BigInteger, fields::FpParameters, BitIteratorBE, One, PrimeField, Zero};
+use ark_ff::{biginteger::BigInteger, fields::FpConfig, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystemRef, Result as R1CSResult},
@@ -75,7 +75,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         let limb_value = limb.value().unwrap_or_default();
 
         for b in BitIteratorBE::new(limb_value.into_repr()).skip(
-            <<BaseField as PrimeField>::Params as FpParameters>::REPR_SHAVE_BITS as usize
+            <<BaseField as PrimeField>::Config as FpConfig>::REPR_SHAVE_BITS as usize
                 + (BaseField::size_in_bits() - num_bits),
         ) {
             bits_considered.push(b);
