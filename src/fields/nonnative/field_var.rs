@@ -10,8 +10,8 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, 
 use ark_std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
-    vec::Vec,
     iter::Sum,
+    vec::Vec,
 };
 
 /// A gadget for representing non-native (`TargetField`) field elements over the

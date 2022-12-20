@@ -485,8 +485,7 @@ where
     pub c_rz: Fp3Var<P::Fp3Config>,
 }
 
-impl<P: MNT6Config> AllocVar<AteAdditionCoefficients<P>, P::Fp>
-    for AteAdditionCoefficientsVar<P>
+impl<P: MNT6Config> AllocVar<AteAdditionCoefficients<P>, P::Fp> for AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -510,7 +509,7 @@ where
     }
 }
 
-impl<P: MNT6Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> 
+impl<P: MNT6Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -534,7 +533,7 @@ where
     }
 }
 
-impl<P: MNT6Config> AteAdditionCoefficientsVar<P> 
+impl<P: MNT6Config> AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {

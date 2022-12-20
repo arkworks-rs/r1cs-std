@@ -1,5 +1,5 @@
 use super::*;
-use ark_ec::{Group, models::short_weierstrass::SWCurveConfig};
+use ark_ec::{models::short_weierstrass::SWCurveConfig, Group};
 use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
@@ -79,9 +79,7 @@ where
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn double(&self) -> Result<Self, SynthesisError> {
         if [self].is_constant() {
-            let result = Projective::<P>::from(self.value()?)
-                .double()
-                .into_affine();
+            let result = Projective::<P>::from(self.value()?).double().into_affine();
             // Panic if the result is zero.
             assert!(!result.is_zero());
             Ok(Self::new(

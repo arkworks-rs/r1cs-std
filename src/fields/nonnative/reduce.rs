@@ -1,4 +1,8 @@
-use super::{overhead, params::{get_params, OptimizationType}, AllocatedNonNativeFieldVar};
+use super::{
+    overhead,
+    params::{get_params, OptimizationType},
+    AllocatedNonNativeFieldVar,
+};
 use crate::{
     alloc::AllocVar,
     boolean::Boolean,

@@ -1,8 +1,6 @@
 use ark_ec::{
-    short_weierstrass::{
-        Affine, Projective, SWCurveConfig,
-    },
-    AffineRepr, CurveGroup, CurveConfig,
+    short_weierstrass::{Affine, Projective, SWCurveConfig},
+    AffineRepr, CurveConfig, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};

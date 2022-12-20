@@ -1,9 +1,8 @@
 use ark_ec::{
     twisted_edwards::{
-        Affine as TEAffine, MontCurveConfig,
-        Projective as TEProjective, TECurveConfig as TECurveConfig,
+        Affine as TEAffine, MontCurveConfig, Projective as TEProjective, TECurveConfig,
     },
-    AffineRepr, CurveGroup, Group, CurveConfig,
+    AffineRepr, CurveConfig, CurveGroup, Group,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};

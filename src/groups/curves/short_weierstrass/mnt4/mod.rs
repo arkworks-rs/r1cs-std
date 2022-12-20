@@ -392,7 +392,7 @@ where
     pub c_l: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Config> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P> 
+impl<P: MNT4Config> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -422,7 +422,7 @@ where
     }
 }
 
-impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> 
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -454,7 +454,7 @@ where
     }
 }
 
-impl<P: MNT4Config> AteDoubleCoefficientsVar<P> 
+impl<P: MNT4Config> AteDoubleCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -490,8 +490,7 @@ where
     pub c_rz: Fp2Var<P::Fp2Config>,
 }
 
-impl<P: MNT4Config> AllocVar<AteAdditionCoefficients<P>, P::Fp>
-    for AteAdditionCoefficientsVar<P>
+impl<P: MNT4Config> AllocVar<AteAdditionCoefficients<P>, P::Fp> for AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -515,7 +514,7 @@ where
     }
 }
 
-impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> 
+impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -539,7 +538,7 @@ where
     }
 }
 
-impl<P: MNT4Config> AteAdditionCoefficientsVar<P> 
+impl<P: MNT4Config> AteAdditionCoefficientsVar<P>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
@@ -552,7 +551,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct G2ProjectiveExtendedVar<P: MNT4Config> 
+pub struct G2ProjectiveExtendedVar<P: MNT4Config>
 where
     P::Fp: FieldWithVar<Var = FpVar<P::Fp>>,
 {
