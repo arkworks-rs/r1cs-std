@@ -242,24 +242,24 @@ mod test_non_zero_affine {
     use ark_ec::{models::short_weierstrass::SWCurveConfig, CurveGroup};
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{vec::Vec, One};
-    use ark_test_curves::bls12_381::{g1::Parameters as G1Parameters, Fq};
+    use ark_test_curves::bls12_381::{g1::Config as G1Config, Fq};
 
     #[test]
     fn correctness_test_1() {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.y)).unwrap(),
         );
 
         // The following code uses `double` and `add` (`add_unchecked`) to compute
         // (1 + 2 + ... + 2^9) G
 
         let sum_a = {
-            let mut a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+            let mut a = ProjectiveVar::<G1Config, FpVar<Fq>>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -283,7 +283,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let mut a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let mut a = NonZeroAffineVar::<G1Config, FpVar<Fq>>::new(x, y);
 
             let mut double_sequence = Vec::new();
             double_sequence.push(a.clone());
@@ -310,15 +310,15 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.y)).unwrap(),
         );
 
         // The following code tests `double_and_add`.
         let sum_a = {
-            let a = ProjectiveVar::<G1Parameters, FpVar<Fq>>::new(
+            let a = ProjectiveVar::<G1Config, FpVar<Fq>>::new(
                 x.clone(),
                 y.clone(),
                 FpVar::Constant(Fq::one()),
@@ -336,7 +336,7 @@ mod test_non_zero_affine {
         };
 
         let sum_b = {
-            let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+            let a = NonZeroAffineVar::<G1Config, FpVar<Fq>>::new(x, y);
 
             let mut cur = a.double().unwrap();
             for _ in 1..10 {
@@ -356,22 +356,22 @@ mod test_non_zero_affine {
         let cs = ConstraintSystem::<Fq>::new_ref();
 
         let x = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.x)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.x)).unwrap(),
         );
         let y = FpVar::Var(
-            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Parameters::GENERATOR.y)).unwrap(),
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.y)).unwrap(),
         );
 
-        let a = NonZeroAffineVar::<G1Parameters, FpVar<Fq>>::new(x, y);
+        let a = NonZeroAffineVar::<G1Config, FpVar<Fq>>::new(x, y);
 
         let n = 10;
 
-        let a_multiples: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> =
+        let a_multiples: Vec<NonZeroAffineVar<G1Config, FpVar<Fq>>> =
             std::iter::successors(Some(a.clone()), |acc| Some(acc.add_unchecked(&a).unwrap()))
                 .take(n)
                 .collect();
 
-        let all_equal: Vec<NonZeroAffineVar<G1Parameters, FpVar<Fq>>> = (0..n / 2)
+        let all_equal: Vec<NonZeroAffineVar<G1Config, FpVar<Fq>>> = (0..n / 2)
             .map(|i| {
                 a_multiples[i]
                     .add_unchecked(&a_multiples[n - i - 1])
