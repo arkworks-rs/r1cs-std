@@ -762,7 +762,7 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             FpVar::Var(v) => v.frobenius_map(power).map(FpVar::Var),
             FpVar::Constant(f) => {
                 let mut f = *f;
-                f.frobenius_map(power);
+                f.frobenius_map_in_place(power);
                 Ok(FpVar::Constant(f))
             },
         }
