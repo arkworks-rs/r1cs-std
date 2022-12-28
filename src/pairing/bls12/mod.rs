@@ -6,16 +6,16 @@ use crate::{
     fields::{fp::FpVar, fp12::Fp12Var, fp2::Fp2Var, FieldVar},
     groups::bls12::{G1AffineVar, G1PreparedVar, G1Var, G2PreparedVar, G2Var},
 };
-use ark_ec::bls12::{Bls12, Bls12Parameters, TwistType};
+use ark_ec::bls12::{Bls12, Bls12Config, TwistType};
 use ark_ff::BitIteratorBE;
 use ark_std::marker::PhantomData;
 
 /// Specifies the constraints for computing a pairing in a BLS12 bilinear group.
-pub struct PairingVar<P: Bls12Parameters>(PhantomData<P>);
+pub struct PairingVar<P: Bls12Config>(PhantomData<P>);
 
-type Fp2V<P> = Fp2Var<<P as Bls12Parameters>::Fp2Config>;
+type Fp2V<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 
-impl<P: Bls12Parameters> PairingVar<P> {
+impl<P: Bls12Config> PairingVar<P> {
     // Evaluate the line function at point p.
     #[tracing::instrument(target = "r1cs")]
     fn ell(
@@ -59,7 +59,7 @@ impl<P: Bls12Parameters> PairingVar<P> {
     }
 }
 
-impl<P: Bls12Parameters> PG<Bls12<P>, P::Fp> for PairingVar<P> {
+impl<P: Bls12Config> PG<Bls12<P>, P::Fp> for PairingVar<P> {
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;
