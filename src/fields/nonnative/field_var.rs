@@ -138,7 +138,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> FieldVar<TargetField, BaseF
         match self {
             Self::Constant(c) => Ok(Self::Constant({
                 let mut tmp = *c;
-                tmp.frobenius_map(power);
+                tmp.frobenius_map_in_place(power);
                 tmp
             })),
             Self::Var(v) => Ok(Self::Var(v.frobenius_map(power)?)),
