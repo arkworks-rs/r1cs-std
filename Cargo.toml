@@ -25,16 +25,16 @@ num-traits = {version = "0.2", default-features = false }
 num-integer = { version = "0.1.44", default-features = false }
 
 [dev-dependencies]
-# ark-test-curves = { version = "0.4.0", default-features = false, features = ["bls12_381_scalar_field", "bls12_381_curve", "mnt4_753_scalar_field"] }
-# ark-poly = { version = "0.4.0", default-features = false }
-# paste = "1.0"
-# ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false  }
-# ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false  }
-# ark-mnt4-298 = { version = "0.4.0", features = ["curve"], default-features = false  }
-# ark-mnt4-753 = { version = "0.4.0", features = ["curve"], default-features = false  }
-# ark-mnt6-298 = { version = "0.4.0", default-features = false  }
-# ark-mnt6-753 = { version = "0.4.0", default-features = false  }
-# ark-pallas = { version = "0.4.0", features = ["curve"],  default-features = false  }
+ark-test-curves = { version = "0.4.0", default-features = false, features = ["bls12_381_scalar_field", "bls12_381_curve", "mnt4_753_scalar_field"] }
+ark-poly = { version = "0.4.0", default-features = false }
+paste = "1.0"
+ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false  }
+ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false  }
+ark-mnt4-298 = { version = "0.4.0", features = ["curve"], default-features = false  }
+ark-mnt4-753 = { version = "0.4.0", features = ["curve"], default-features = false  }
+ark-mnt6-298 = { version = "0.4.0", default-features = false  }
+ark-mnt6-753 = { version = "0.4.0", default-features = false  }
+ark-pallas = { version = "0.4.0", features = ["curve"],  default-features = false  }
 
 [features]
 default = ["std"]
