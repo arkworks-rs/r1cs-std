@@ -241,7 +241,6 @@ where
 impl<P: SWCurveConfig> ProjectiveVar<P>
 where
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Mixed addition, which is useful when `other = (x2, y2)` is known to have
     /// z = 1.
@@ -261,7 +260,7 @@ where
 
         let xx = x1 * x2; // 1
         let yy = y1 * y2; // 2
-        let xy_pairs = ((x1 + y1) * &(x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
+        let xy_pairs = ((x1 + y1) * (x2 + y2)) - (&xx + &yy); // 4, 5, 6, 7, 8
         let xz_pairs = (x2 * z1) + x1; // 8, 9
         let yz_pairs = (y2 * z1) + y1; // 10, 11
 
@@ -381,7 +380,6 @@ where
 impl<P: SWCurveConfig> CurveWithVar<CF<P>> for Projective<P>
 where
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     type Var = ProjectiveVar<P>;
 }
@@ -390,7 +388,6 @@ impl<P> CurveVar<Projective<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(g: Projective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
@@ -586,7 +583,6 @@ where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: ToConstraintFieldGadget<CF<P>>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn to_constraint_field(&self) -> Result<Vec<FpVar<CF<P>>>, SynthesisError> {
         self.to_affine()?.to_constraint_field()
@@ -595,7 +591,6 @@ where
 
 fn mul_by_coeff_a<P: SWCurveConfig>(f: &BFVar<P>) -> BFVar<P>
 where
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
 {
     if !P::COEFF_A.is_zero() {
@@ -681,7 +676,6 @@ impl_bounded_ops!(
         *this = &*this + ProjectiveVar::constant(other)
     },
     (P: SWCurveConfig),
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
 );
 
@@ -695,7 +689,6 @@ impl_bounded_ops!(
     |this: &mut ProjectiveVar<P>, other: &'a ProjectiveVar<P>| *this += other.negate().unwrap(),
     |this: &mut ProjectiveVar<P>, other: Projective<P>| *this = &*this - ProjectiveVar::constant(other),
     (P: SWCurveConfig),
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     BF<P>: FieldWithVar,
 );
 
@@ -703,7 +696,6 @@ impl<'a, P> GroupOpsBounds<'a, Projective<P>, ProjectiveVar<P>> for ProjectiveVa
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
@@ -711,7 +703,6 @@ impl<'a, P> GroupOpsBounds<'a, Projective<P>, ProjectiveVar<P>> for &'a Projecti
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
@@ -719,7 +710,6 @@ impl<P> CondSelectGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
@@ -740,7 +730,6 @@ impl<P> EqGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<CF<P>>, SynthesisError> {
@@ -786,7 +775,6 @@ impl<P> AllocVar<Affine<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn new_variable<T: Borrow<Affine<P>>>(
         cs: impl Into<Namespace<CF<P>>>,
@@ -805,7 +793,6 @@ impl<P> AllocVar<Projective<P>, CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn new_variable<T: Borrow<Projective<P>>>(
         cs: impl Into<Namespace<CF<P>>>,
@@ -916,7 +903,6 @@ impl<P> ToBitsGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<CF<P>>>, SynthesisError> {
@@ -943,7 +929,6 @@ impl<P> ToBytesGadget<CF<P>> for ProjectiveVar<P>
 where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> Result<Vec<UInt8<CF<P>>>, SynthesisError> {

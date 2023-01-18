@@ -12,7 +12,7 @@ use crate::{
 };
 use ark_std::iter::Sum;
 
-use super::FieldWithVar;
+use super::{FieldWithVar, FieldRefOpsBounds};
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
 /// in `ark-ff`, i.e. `ark_ff::QuadExtField`.
@@ -160,12 +160,12 @@ where
     }
 }
 
-impl<'a, P: QuadExtVarConfig> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>> for QuadExtVar<P> where
+impl<'a, P: QuadExtVarConfig> FieldOpsBounds<QuadExtField<P>, &'a Self> for QuadExtVar<P> where
     P::BaseField: FieldWithVar
 {
 }
 
-impl<'a, P: QuadExtVarConfig> FieldOpsBounds<'a, QuadExtField<P>, QuadExtVar<P>>
+impl<'a, P: QuadExtVarConfig> FieldRefOpsBounds<QuadExtField<P>, QuadExtVar<P>>
     for &'a QuadExtVar<P>
 where
     P::BaseField: FieldWithVar,

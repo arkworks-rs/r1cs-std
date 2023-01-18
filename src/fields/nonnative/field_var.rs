@@ -1,7 +1,7 @@
 use super::{params::OptimizationType, AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
 use crate::{
     boolean::Boolean,
-    fields::{fp::FpVar, FieldVar},
+    fields::{fp::FpVar, FieldVar, FieldRefOpsBounds},
     prelude::*,
     R1CSVar, ToConstraintFieldGadget,
 };
@@ -92,13 +92,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     }
 }
 
-impl<'a, TargetField: PrimeField, BaseField: PrimeField> FieldOpsBounds<'a, TargetField, Self>
+impl<'a, TargetField: PrimeField, BaseField: PrimeField> FieldOpsBounds<TargetField, &'a Self>
     for NonNativeFieldVar<TargetField, BaseField>
 {
 }
 
 impl<'a, TargetField: PrimeField, BaseField: PrimeField>
-    FieldOpsBounds<'a, TargetField, NonNativeFieldVar<TargetField, BaseField>>
+    FieldRefOpsBounds<TargetField, NonNativeFieldVar<TargetField, BaseField>>
     for &'a NonNativeFieldVar<TargetField, BaseField>
 {
 }

@@ -7,7 +7,7 @@ use ark_std::iter::Sum;
 use core::{borrow::Borrow, marker::PhantomData};
 
 use crate::{
-    fields::{fp::FpVar, FieldOpsBounds, FieldVar, FieldWithVar},
+    fields::{fp::FpVar, FieldRefOpsBounds, FieldOpsBounds, FieldVar, FieldWithVar},
     prelude::*,
     ToConstraintFieldGadget, Vec,
 };
@@ -128,13 +128,13 @@ where
     }
 }
 
-impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for CubicExtVar<P>
+impl<'a, P> FieldOpsBounds<CubicExtField<P>, &'a Self> for CubicExtVar<P>
 where
     P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,
 {
 }
-impl<'a, P> FieldOpsBounds<'a, CubicExtField<P>, CubicExtVar<P>> for &'a CubicExtVar<P>
+impl<'a, P> FieldRefOpsBounds<CubicExtField<P>, CubicExtVar<P>> for &'a CubicExtVar<P>
 where
     P: CubicExtVarConfig,
     P::BaseField: FieldWithVar,

@@ -44,7 +44,6 @@ where
     P: SWCurveConfig,
     BF<P>: FieldWithVar,
     BFVar<P>: FieldVar<P::BaseField, CF<P>>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Performs an addition without checking that other != ±self.
     #[tracing::instrument(target = "r1cs", skip(self, other))]

@@ -114,7 +114,6 @@ mod montgomery_affine_impl {
     impl<P: TECurveConfig> MontgomeryAffineVar<P>
     where
         P::BaseField: FieldWithVar,
-        for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     {
         /// Converts `self` into a Twisted Edwards curve point variable.
         #[tracing::instrument(target = "r1cs")]
@@ -168,7 +167,6 @@ mod montgomery_affine_impl {
     where
         P: TECurveConfig,
         P::BaseField: FieldWithVar,
-        for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
     {
         type Output = MontgomeryAffineVar<P>;
 
@@ -304,7 +302,6 @@ where
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>
         + ThreeBitCondNegLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     /// Compute a scalar multiplication of `bases` with respect to `scalars`,
     /// where the elements of `scalars` are length-three slices of bits, and
@@ -412,9 +409,7 @@ type CF<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 impl<P: TECurveConfig> CurveWithVar<CF<P>> for TEProjective<P>
 where
     P::BaseField: FieldWithVar,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     type Var = AffineVar<P>;
 }
@@ -424,7 +419,6 @@ where
     P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     fn constant(g: TEProjective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
@@ -578,7 +572,6 @@ where
     P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEProjective<P>>>(
@@ -679,7 +672,6 @@ where
     P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'a> &'a BFVar<P>: FieldOpsBounds<'a, P::BaseField, BFVar<P>>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEAffine<P>>>(
@@ -786,7 +778,6 @@ impl_bounded_ops!(
     ),
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 );
 
 impl_bounded_ops!(
@@ -803,7 +794,6 @@ impl_bounded_ops!(
     ),
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for <'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>
 );
 
 impl<'a, P> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P>> for AffineVar<P>
@@ -811,7 +801,6 @@ where
     P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 
@@ -820,7 +809,6 @@ where
     P: TECurveConfig,
     P::BaseField: FieldWithVar,
     BFVar<P>: TwoBitLookupGadget<CF<P>, TableConstant = P::BaseField>,
-    for<'b> &'b BFVar<P>: FieldOpsBounds<'b, P::BaseField, BFVar<P>>,
 {
 }
 

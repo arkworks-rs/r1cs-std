@@ -51,21 +51,36 @@ pub mod fp6_2over3;
 pub mod fp6_3over2;
 
 pub trait FieldWithVar: Field {
-    type Var: FieldVar<Self, Self::BasePrimeField>;
+    type Var: FieldVar<Self, Self::BasePrimeField> + for<'a> FieldOpsBounds<Self, &'a Self::Var>;
 }
 
-/// This trait is a hack used to work around the lack of implied bounds.
-pub trait FieldOpsBounds<'a, F, T: 'a>:
+pub trait FieldRefOpsBounds<F, T>:
     Sized
-    + Add<&'a T, Output = T>
-    + Sub<&'a T, Output = T>
-    + Mul<&'a T, Output = T>
+    + for<'a> Add<&'a T, Output = T>
+    + for<'a> Sub<&'a T, Output = T>
+    + for<'a> Mul<&'a T, Output = T>
     + Add<T, Output = T>
     + Sub<T, Output = T>
     + Mul<T, Output = T>
     + Add<F, Output = T>
     + Sub<F, Output = T>
     + Mul<F, Output = T>
+{
+}
+
+/// This trait is a hack used to work around the lack of implied bounds.
+pub trait FieldOpsBounds<F, S: FieldRefOpsBounds<F, Self>>:
+    'static
+    + Sized
+    + for<'a> Add<&'a Self, Output = Self>
+    + for<'a> Sub<&'a Self, Output = Self>
+    + for<'a> Mul<&'a Self, Output = Self>
+    + Add<Self, Output = Self>
+    + Sub<Self, Output = Self>
+    + Mul<Self, Output = Self>
+    + Add<F, Output = Self>
+    + Sub<F, Output = Self>
+    + Mul<F, Output = Self>
 {
 }
 
@@ -80,7 +95,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     + AllocVar<F, ConstraintF>
     + ToBytesGadget<ConstraintF>
     + CondSelectGadget<ConstraintF>
-    + for<'a> FieldOpsBounds<'a, F, Self>
+    + for<'a> FieldOpsBounds<F, &'a Self>
     + for<'a> AddAssign<&'a Self>
     + for<'a> SubAssign<&'a Self>
     + for<'a> MulAssign<&'a Self>
@@ -125,7 +140,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     /// Sets `self = self + self`.
     fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
-    /// Coputes `-self`.
+    /// Computes `-self`.
     fn negate(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         result.negate_in_place()?;
@@ -136,20 +151,17 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
     fn negate_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
     /// Computes `self * self`.
-    ///
-    /// A default implementation is provided which just invokes the underlying
-    /// multiplication routine. However, this method should be specialized
-    /// for extension fields, where faster algorithms exist for squaring.
     fn square(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         result.square_in_place()?;
         Ok(result)
     }
 
-    /// Sets `self = self.square()`.
+    /// Sets `self = self * self`.
     fn square_in_place(&mut self) -> Result<&mut Self, SynthesisError>;
 
     /// Enforces that `self * other == result`.
+    /// Provides a default implementation in terms of `mul` and `self.enforce_equal`.
     fn mul_equals(&self, other: &Self, result: &Self) -> Result<(), SynthesisError> {
         let actual_result = self.clone() * other;
         result.enforce_equal(&actual_result)
@@ -199,7 +211,7 @@ pub trait FieldVar<F: Field, ConstraintF: Field>:
         }
     }
 
-    /// Computes the frobenius map over `self`.
+    /// Computes the Frobenius map over `self`.
     fn frobenius_map(&self, power: usize) -> Result<Self, SynthesisError>;
 
     /// Sets `self = self.frobenius_map()`.

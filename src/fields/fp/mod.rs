@@ -6,7 +6,7 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{
-    fields::{FieldOpsBounds, FieldVar, FieldWithVar},
+    fields::{FieldOpsBounds, FieldRefOpsBounds, FieldVar, FieldWithVar},
     prelude::*,
     Assignment, ToConstraintFieldGadget, Vec,
 };
@@ -94,8 +94,8 @@ impl<F: PrimeField> From<AllocatedFp<F>> for FpVar<F> {
     }
 }
 
-impl<'a, F: PrimeField> FieldOpsBounds<'a, F, Self> for FpVar<F> {}
-impl<'a, F: PrimeField> FieldOpsBounds<'a, F, FpVar<F>> for &'a FpVar<F> {}
+impl<'a, F: PrimeField> FieldOpsBounds<F, &'a Self> for FpVar<F> {}
+impl<'a, F: PrimeField> FieldRefOpsBounds<F, FpVar<F>> for &'a FpVar<F> {}
 
 impl<F: PrimeField> AllocatedFp<F> {
     /// Constructs `Self` from a `Boolean`: if `other` is false, this outputs
