@@ -175,8 +175,7 @@ macro_rules! make_uint {
                     assert!($size <= 128);
 
                     assert!(operands.len() >= 1);
-                    assert!($size + (operands.len() as f32).log(2.).ceil() as usize
-                            <= F::MODULUS_BIT_SIZE as usize);
+                    assert!($size + ark_std::log2(operands.len()) <= F::MODULUS_BIT_SIZE);
 
                     if operands.len() == 1 {
                         return Ok(operands[0].clone());
