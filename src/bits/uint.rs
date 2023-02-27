@@ -137,6 +137,24 @@ macro_rules! make_uint {
                         .map(|v| v.rotate_right(u32::try_from(by).unwrap()));
                     result
                 }
+                
+                /// Rotates `self` to the left by `by` steps, wrapping around.
+                #[tracing::instrument(target = "r1cs", skip(self))]
+                pub fn rotl(&self, by: usize) -> Self {
+                    let mut result = self.clone();
+                    let by = by % $size;
+
+                    let new_bits = self.bits.iter().skip(by).chain(&self.bits).take($size);
+
+                    for (res, new) in result.bits.iter_mut().zip(new_bits) {
+                        *res = new.clone();
+                    }
+
+                    result.value = self
+                        .value
+                        .map(|v| v.rotate_left(u32::try_from(by).unwrap()));
+                    result
+                }
 
                 /// Outputs `self ^ other`.
                 ///
