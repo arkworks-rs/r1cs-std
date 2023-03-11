@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## Pending
+- [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
 
 ### Breaking changes
 
