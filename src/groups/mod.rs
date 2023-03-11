@@ -134,7 +134,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: Field>:
             // else, set self = self;
             result = bit.borrow().select(&self_plus_base, &result)?;
         }
-        *self = result;
+        *self += result;
         Ok(())
     }
 
