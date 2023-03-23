@@ -559,7 +559,7 @@ where
             .map(|(b, c)| (b.borrow().clone(), *c))
             .unzip();
         let base = bases[0];
-        *self = Self::constant(base).scalar_mul_le(bits.iter())?;
+        *self += Self::constant(base).scalar_mul_le(bits.iter())?;
         Ok(())
     }
 }
