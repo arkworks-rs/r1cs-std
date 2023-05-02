@@ -1,6 +1,5 @@
 use crate::prelude::*;
-use ark_ec::pairing::Pairing;
-use ark_ec::CurveGroup;
+use ark_ec::{pairing::Pairing, CurveGroup};
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
