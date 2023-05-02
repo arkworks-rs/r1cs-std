@@ -1068,12 +1068,14 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
 mod test {
     use crate::{
         alloc::{AllocVar, AllocationMode},
+        boolean::Boolean,
         eq::EqGadget,
         fields::fp::FpVar,
+        select::CondSelectGadget,
         R1CSVar,
     };
     use ark_relations::r1cs::ConstraintSystem;
-    use ark_std::{UniformRand, Zero};
+    use ark_std::{rand::Rng, UniformRand, Zero};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
@@ -1105,5 +1107,43 @@ mod test {
 
         assert!(cs.is_satisfied().unwrap());
         assert_eq!(sum.value().unwrap(), sum_expected);
+    }
+
+    #[test]
+    fn test_fpvar_random_access() {
+        let mut rng = ark_std::test_rng();
+
+        for _ in 0..100 {
+            let cs = ConstraintSystem::<Fr>::new_ref();
+
+            // value array
+            let values: Vec<Fr> = (0..128).map(|_| rng.gen()).collect();
+            let values_const: Vec<FpVar<Fr>> = values.iter().map(|x| FpVar::Constant(*x)).collect();
+
+            // index array
+            let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+            let position_var: Vec<Boolean<Fr>> = position
+                .iter()
+                .map(|b| {
+                    Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                        .unwrap()
+                })
+                .collect();
+
+            // index
+            let mut index = 0;
+            for x in position {
+                index *= 2;
+                index += if x { 1 } else { 0 };
+            }
+
+            assert_eq!(
+                FpVar::conditionally_select_power_of_two_vector(&position_var, &values_const)
+                    .unwrap()
+                    .value()
+                    .unwrap(),
+                values[index]
+            )
+        }
     }
 }
