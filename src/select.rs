@@ -22,7 +22,7 @@ where
 
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
-    /// big endian order.
+    /// big endian order. This is hybrid method 5.3 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf.
     ///
     /// # Example
     /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`)
@@ -32,39 +32,45 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
-        let m = values.len();
-        let n = position.len();
-
-        // Assert m is a power of 2, and n = log(m)
-        assert!(m.is_power_of_two());
-        assert_eq!(1 << n, m);
-
-        let mut cur_mux_values = values.to_vec();
-
-        // Traverse the evaluation tree from bottom to top in level order traversal.
-        // This is method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
-        // TODO: Add method 5.2/5.3
-        for i in 0..n {
-            // Size of current layer.
-            let cur_size = 1 << (n - i);
-            assert_eq!(cur_mux_values.len(), cur_size);
-
-            let mut next_mux_values = Vec::new();
-            for j in (0..cur_size).step_by(2) {
-                let cur = Self::conditionally_select(
-                    &position[n - 1 - i],
-                    // true case
-                    &cur_mux_values[j + 1],
-                    // false case
-                    &cur_mux_values[j],
-                )?;
-                next_mux_values.push(cur);
-            }
-            cur_mux_values = next_mux_values;
-        }
-
-        Ok(cur_mux_values[0].clone())
+        repeated_selection(position, values)
     }
+}
+
+/// Repeated selection method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
+fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
+    position: &[Boolean<ConstraintF>],
+    values: &[CondG],
+) -> Result<CondG, SynthesisError> {
+    let m = values.len();
+    let n = position.len();
+
+    // Assert m is a power of 2, and n = log(m)
+    assert!(m.is_power_of_two());
+    assert_eq!(1 << n, m);
+
+    let mut cur_mux_values = values.to_vec();
+
+    // Traverse the evaluation tree from bottom to top in level order traversal.
+    for i in 0..n {
+        // Size of current layer.
+        let cur_size = 1 << (n - i);
+        assert_eq!(cur_mux_values.len(), cur_size);
+
+        let mut next_mux_values = Vec::new();
+        for j in (0..cur_size).step_by(2) {
+            let cur = CondG::conditionally_select(
+                &position[n - 1 - i],
+                // true case
+                &cur_mux_values[j + 1],
+                // false case
+                &cur_mux_values[j],
+            )?;
+            next_mux_values.push(cur);
+        }
+        cur_mux_values = next_mux_values;
+    }
+
+    Ok(cur_mux_values[0].clone())
 }
 
 /// Performs a lookup in a 4-element table using two bits.
