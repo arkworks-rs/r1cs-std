@@ -980,32 +980,45 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
-    fn conditionally_select_power_of_two_vector(
-        position: &[Boolean<F>],
+    fn add_lc(
+        val: &Self,
+        lc: &LinearCombination<F>,
+    ) -> Result<LinearCombination<F>, SynthesisError> {
+        let root: LinearCombination<F> = LinearCombination::zero();
+        let v = val.value().unwrap();
+        Ok(root + (v, lc))
+    }
+
+    fn allocate_vars(
         values: &[Self],
-    ) -> Result<Self, SynthesisError> {
-        let m = values.len();
-
-        let selector_sums = sum_of_conditions(position)?;
-
+        position: &[Boolean<F>],
+        lc: Vec<LinearCombination<F>>,
+    ) -> Result<Vec<Self>, SynthesisError> {
         let cs = position.cs();
 
-        let mut root: LinearCombination<F> = LinearCombination::zero();
-        for i in 0..m {
-            let v = values[i].value().unwrap();
-            root = &root + (v, &selector_sums[i]);
-        }
-        let result = cs.new_lc(root.clone())?;
-
-        // index for the witness
+        // index for the chunk
         let mut index = 0;
         for x in position {
             index *= 2;
             index += if x.value()? { 1 } else { 0 };
         }
+        let chunk_size = 1 << position.len();
+        let root_vals: Vec<FpVar<F>> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
 
-        Ok(AllocatedFp::new(Some(values[index].value().unwrap()), result, cs.clone()).into())
+        let allocated_vars: Vec<FpVar<F>> = root_vals
+            .iter()
+            .zip(lc)
+            .map(|(val, lc)| {
+                let v = val.value().unwrap();
+                let var = cs.new_lc(lc).unwrap();
+                AllocatedFp::new(Some(v), var, cs.clone()).into()
+            })
+            .collect::<Vec<FpVar<F>>>();
+
+        Ok(allocated_vars)
     }
 }
 

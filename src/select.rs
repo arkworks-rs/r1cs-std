@@ -20,6 +20,26 @@ where
         false_value: &Self,
     ) -> Result<Self, SynthesisError>;
 
+    // fn sum_of_lc(
+    //     lc: Vec<LinearCombination<ConstraintF>>,
+    //     values: &[Self],
+    // ) -> Result<Self, SynthesisError>;
+
+    fn add_lc(
+        _val: &Self,
+        _lc: &LinearCombination<ConstraintF>,
+    ) -> Result<LinearCombination<ConstraintF>, SynthesisError> {
+        unimplemented!()
+    }
+
+    fn allocate_vars(
+        _values: &[Self],
+        _position: &[Boolean<ConstraintF>],
+        _lc: Vec<LinearCombination<ConstraintF>>,
+    ) -> Result<Vec<Self>, SynthesisError> {
+        unimplemented!()
+    }
+
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
     /// big endian order. This is hybrid method 5.3 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf.
@@ -32,8 +52,35 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
-        let _ = sum_of_conditions(position, values);
-        repeated_selection(position, values)
+        // let num_leaves = values.len();
+        let n = position.len();
+
+        // split n into l and m, where l + m = n
+        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
+        let m = n / 2;
+        let l = n - m;
+
+        let two_to_l = 1 << l;
+        let two_to_m = 1 << m;
+
+        // we only need the lower L bits
+        let lower_bits = &mut position[m..].to_vec();
+        let sub_tree = sum_of_conditions(lower_bits)?;
+
+        let mut upper_leaves = Vec::with_capacity(two_to_m);
+
+        for i in 0..two_to_m {
+            let mut x = LinearCombination::zero();
+            for j in 0..two_to_l {
+                x = &x + Self::add_lc(&values[i * two_to_l + j], &sub_tree[j].clone())?;
+            }
+            upper_leaves.push(x);
+        }
+
+        let upper_elems = Self::allocate_vars(values, lower_bits, upper_leaves)?;
+
+        let upper_bits = &mut position[..m].to_vec();
+        repeated_selection(upper_bits, upper_elems)
     }
 }
 
@@ -120,7 +167,7 @@ pub fn sum_of_conditions<ConstraintF: Field>(
 /// Repeated selection method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
 fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     position: &[Boolean<ConstraintF>],
-    values: &[CondG],
+    values: Vec<CondG>,
 ) -> Result<CondG, SynthesisError> {
     let m = values.len();
     let n = position.len();
@@ -129,7 +176,7 @@ fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     assert!(m.is_power_of_two());
     assert_eq!(1 << n, m);
 
-    let mut cur_mux_values = values.to_vec();
+    let mut cur_mux_values = values;
 
     // Traverse the evaluation tree from bottom to top in level order traversal.
     for i in 0..n {
