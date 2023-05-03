@@ -37,17 +37,6 @@ where
     }
 }
 
-fn count_ones(x: usize) -> usize {
-    // count the number of 1s in the binary representation of x
-    let mut count = 0;
-    let mut y = x;
-    while y > 0 {
-        count += y & 1;
-        y >>= 1;
-    }
-    count
-}
-
 /// Sum of conditions method 5.2 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
 /// Use this to generate the selector sums.
 pub fn sum_of_conditions<ConstraintF: Field>(
@@ -88,6 +77,17 @@ pub fn sum_of_conditions<ConstraintF: Field>(
         for j in (1 << i) + 1..(1 << (i + 1)) {
             selectors[j] = selectors[1 << i].and(&selectors[j - (1 << i)])?;
         }
+    }
+
+    fn count_ones(x: usize) -> usize {
+        // count the number of 1s in the binary representation of x
+        let mut count = 0;
+        let mut y = x;
+        while y > 0 {
+            count += y & 1;
+            y >>= 1;
+        }
+        count
     }
 
     // Selector sums for each leaf node
