@@ -49,24 +49,14 @@ fn count_ones(x: usize) -> usize {
 }
 
 /// Sum of conditions method 5.2 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
-fn sum_of_conditions<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
+/// Use this to generate the selector sums.
+pub fn sum_of_conditions<ConstraintF: Field>(
     position: &[Boolean<ConstraintF>],
-    values: &[CondG],
-) -> Result<CondG, SynthesisError> {
-    let m = values.len();
+) -> Result<Vec<LinearCombination<ConstraintF>>, SynthesisError> {
     let n = position.len();
+    let m = 1 << n;
 
-    // Assert m is a power of 2, and n = log(m)
-    assert!(m.is_power_of_two());
-    assert_eq!(1 << n, m);
-
-    let mut selectors: Vec<LinearCombination<ConstraintF>> = Vec::with_capacity(m);
-
-    // fill the selectors vec with Boolean true entries
-    for _ in 0..m {
-        selectors.push(Boolean::constant(true).lc());
-    }
-
+    let mut selectors: Vec<Boolean<ConstraintF>> = vec![Boolean::constant(true); m];
     // let's construct the table of selectors.
     // for a bit-decomposition (b_{n-1}, b_{n-2}, ..., b_0) of `power`:
     // [
@@ -79,53 +69,52 @@ fn sum_of_conditions<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     //      b_0,
     //      1,
     // ]
-    // signal selectors[leafCount];
     //
     // the element of the selector table at index i is a product of `bits`
     // e.g. for i = 5 == (101)_binary
     // `selectors[5]` <== b_2 * b_0`
     // we can construct the first `max_bits_in_power - 1` elements without products,
     // directly from `bits`:
-    // e.g. for
+    // e.g.:
+    // `selectors[0] <== 1`
     // `selectors[1] <== b_0`
     // `selectors[2] <== b_1`
     // `selectors[4] <== b_2`
     // `selectors[8] <== b_3`
 
-    // First element is true, but we've already filled it in.
-    // selectors[0] = Boolean::constant(true);
+    // First element is 1==true, but we've already initialized the vector with `true`.
     for i in 0..n {
-        selectors[1 << i] = position[i].lc();
+        selectors[1 << i] = position[n - i - 1].clone();
         for j in (1 << i) + 1..(1 << (i + 1)) {
-            selectors[j] = &selectors[1 << i] + &selectors[j - (1 << i)];
+            selectors[j] = selectors[1 << i].and(&selectors[j - (1 << i)])?;
         }
     }
 
-    let mut selector_sums: Vec<LinearCombination<ConstraintF>> = Vec::with_capacity(m);
+    // Selector sums for each leaf node
+    // E.g. for n = 2, m = 4 we have:
+    // `selectors[0] <== 1`
+    // `selectors[1] <== b_0`
+    // `selectors[2] <== b_1`
+    // `selectors[3] <== b_1 * b_0`
+    // Then the selector_sums for i = 0, 1, 2, 3 are:
+    // i = 0 = (00) = (1-b_1)*(1-b_0) = 1 - b_0 - b_1 + b_0*b_1 = selectors[0] - selectors[1] - selectors[2] + selectors[3]
+    // i = 1 = (01) = (1-b_1)*b_0 = b_0 - b_0*b_1               =                selectors[1]                - selectors[3]
+    // i = 2 = (10) = b_1*(1-b_0) = b_1 - b_0*b_1               =                               selectors[2] - selectors[3]
+    // i = 3 = (11) = b_1*b_0                                   =                                              selectors[3]
+    let mut selector_sums: Vec<LinearCombination<ConstraintF>> = vec![LinearCombination::zero(); m];
     for i in 0..m {
         for j in 0..m {
             if i | j == j {
                 let counts = count_ones(j - i);
                 if counts % 2 == 0 {
-                    selector_sums[i] = &selector_sums[i] + &selectors[j];
+                    selector_sums[i] = &selector_sums[i] + &selectors[j].lc();
                 } else {
-                    selector_sums[i] = &selector_sums[i] - &selectors[j];
+                    selector_sums[i] = &selector_sums[i] - &selectors[j].lc();
                 };
             }
         }
     }
-
-    let root: LinearCombination<ConstraintF> = LinearCombination::zero();
-    // var x = 0;
-    for i in 0..m {
-        root = &root + (values[i], selector_sums[i]);
-    }
-    // for (var i = 0; i < nextPow; i++) {
-    //     x += leaves[i] * selector_sums[i];
-    // }
-    // root <== x;
-
-    unimplemented!()
+    Ok(selector_sums)
 }
 
 /// Repeated selection method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
