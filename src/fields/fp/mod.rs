@@ -985,7 +985,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         lc: &LinearCombination<F>,
     ) -> Result<LinearCombination<F>, SynthesisError> {
         let root: LinearCombination<F> = LinearCombination::zero();
-        let v = val.value().unwrap();
+        let v = val.value()?;
         Ok(root + (v, lc))
     }
 
@@ -1008,17 +1008,17 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
             .map(|chunk| chunk[index].clone())
             .collect();
 
-        let allocated_vars: Vec<Self> = root_vals
+        let allocated_vars: Result<Vec<Self>, _> = root_vals
             .iter()
             .zip(lc)
             .map(|(val, lc)| {
-                let v = val.value().unwrap();
-                let var = cs.new_lc(lc).unwrap();
-                AllocatedFp::new(Some(v), var, cs.clone()).into()
+                let v = val.value()?;
+                let var = cs.new_lc(lc)?;
+                Ok(AllocatedFp::new(Some(v), var, cs.clone()).into())
             })
-            .collect::<Vec<Self>>();
+            .collect::<Result<Vec<Self>, _>>();
 
-        Ok(allocated_vars)
+        allocated_vars
     }
 }
 
