@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use ark_ff::Field;
-use ark_relations::r1cs::{LinearCombination, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, SynthesisError, Variable};
 use ark_std::vec::Vec;
 /// Generates constraints for selecting between one of many values.
 pub trait CondSelectGadget<ConstraintF: Field>
@@ -32,11 +32,11 @@ where
         unimplemented!()
     }
 
-    fn allocate_vars(
-        _values: &[Self],
-        _position: &[Boolean<ConstraintF>],
-        _lc: Vec<LinearCombination<ConstraintF>>,
-    ) -> Result<Vec<Self>, SynthesisError> {
+    fn allocate_to_lc(
+        _var: Variable,
+        _val: &Self,
+        _cs: &ConstraintSystemRef<ConstraintF>,
+    ) -> Result<Self, SynthesisError> {
         unimplemented!()
     }
 
@@ -52,7 +52,6 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
-        // let num_leaves = values.len();
         let n = position.len();
 
         // split n into l and m, where l + m = n
@@ -77,7 +76,7 @@ where
             upper_leaves.push(x);
         }
 
-        let upper_elems = Self::allocate_vars(values, lower_bits, upper_leaves)?;
+        let upper_elems = allocate_vars(values, lower_bits, upper_leaves)?;
 
         let upper_bits = &mut position[..m].to_vec();
         repeated_selection(upper_bits, upper_elems)
@@ -86,7 +85,7 @@ where
 
 /// Sum of conditions method 5.2 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
 /// Use this to generate the selector sums.
-pub fn sum_of_conditions<ConstraintF: Field>(
+fn sum_of_conditions<ConstraintF: Field>(
     position: &[Boolean<ConstraintF>],
 ) -> Result<Vec<LinearCombination<ConstraintF>>, SynthesisError> {
     let n = position.len();
@@ -162,6 +161,37 @@ pub fn sum_of_conditions<ConstraintF: Field>(
         }
     }
     Ok(selector_sums)
+}
+
+fn allocate_vars<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
+    values: &[CondG],
+    position: &[Boolean<ConstraintF>],
+    lc: Vec<LinearCombination<ConstraintF>>,
+) -> Result<Vec<CondG>, SynthesisError> {
+    let cs = position.cs();
+
+    // index for the chunk
+    let mut index = 0;
+    for x in position {
+        index *= 2;
+        index += if x.value()? { 1 } else { 0 };
+    }
+    let chunk_size = 1 << position.len();
+    let root_vals: Vec<CondG> = values
+        .chunks(chunk_size)
+        .map(|chunk| chunk[index].clone())
+        .collect();
+
+    let allocated_vars: Result<Vec<CondG>, _> = root_vals
+        .iter()
+        .zip(lc)
+        .map(|(val, lc)| {
+            let var = cs.new_lc(lc)?;
+            CondG::allocate_to_lc(var, val, &cs)
+        })
+        .collect::<Result<Vec<CondG>, _>>();
+
+    allocated_vars
 }
 
 /// Repeated selection method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf

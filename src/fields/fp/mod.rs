@@ -989,36 +989,13 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         Ok(root + (v, lc))
     }
 
-    fn allocate_vars(
-        values: &[Self],
-        position: &[Boolean<F>],
-        lc: Vec<LinearCombination<F>>,
-    ) -> Result<Vec<Self>, SynthesisError> {
-        let cs = position.cs();
-
-        // index for the chunk
-        let mut index = 0;
-        for x in position {
-            index *= 2;
-            index += if x.value()? { 1 } else { 0 };
-        }
-        let chunk_size = 1 << position.len();
-        let root_vals: Vec<Self> = values
-            .chunks(chunk_size)
-            .map(|chunk| chunk[index].clone())
-            .collect();
-
-        let allocated_vars: Result<Vec<Self>, _> = root_vals
-            .iter()
-            .zip(lc)
-            .map(|(val, lc)| {
-                let v = val.value()?;
-                let var = cs.new_lc(lc)?;
-                Ok(AllocatedFp::new(Some(v), var, cs.clone()).into())
-            })
-            .collect::<Result<Vec<Self>, _>>();
-
-        allocated_vars
+    fn allocate_to_lc(
+        var: Variable,
+        val: &Self,
+        cs: &ConstraintSystemRef<F>,
+    ) -> Result<Self, SynthesisError> {
+        let v = val.value()?;
+        Ok(AllocatedFp::new(Some(v), var, cs.clone()).into())
     }
 }
 
