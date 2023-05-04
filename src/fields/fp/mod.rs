@@ -1003,12 +1003,12 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
             index += if x.value()? { 1 } else { 0 };
         }
         let chunk_size = 1 << position.len();
-        let root_vals: Vec<FpVar<F>> = values
+        let root_vals: Vec<Self> = values
             .chunks(chunk_size)
             .map(|chunk| chunk[index].clone())
             .collect();
 
-        let allocated_vars: Vec<FpVar<F>> = root_vals
+        let allocated_vars: Vec<Self> = root_vals
             .iter()
             .zip(lc)
             .map(|(val, lc)| {
@@ -1016,7 +1016,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
                 let var = cs.new_lc(lc).unwrap();
                 AllocatedFp::new(Some(v), var, cs.clone()).into()
             })
-            .collect::<Vec<FpVar<F>>>();
+            .collect::<Vec<Self>>();
 
         Ok(allocated_vars)
     }
