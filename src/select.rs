@@ -42,7 +42,7 @@ where
 
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
-    /// big endian order. This is hybrid method 5.3 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf.
+    /// big endian order. This is hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     ///
     /// # Example
     /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`)
@@ -83,7 +83,7 @@ where
     }
 }
 
-/// Sum of conditions method 5.2 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
+/// Sum of conditions method 5.2 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
 /// Use this to generate the selector sums.
 fn sum_of_conditions<ConstraintF: Field>(
     position: &[Boolean<ConstraintF>],
@@ -117,7 +117,8 @@ fn sum_of_conditions<ConstraintF: Field>(
     // `selectors[4] <== b_2`
     // `selectors[8] <== b_3`
 
-    // First element is 1==true, but we've already initialized the vector with `true`.
+    // First element is 1==true, but we've already initialized the vector with
+    // `true`.
     for i in 0..n {
         selectors[1 << i] = position[n - i - 1].clone();
         for j in (1 << i) + 1..(1 << (i + 1)) {
@@ -143,10 +144,12 @@ fn sum_of_conditions<ConstraintF: Field>(
     // `selectors[2] <== b_1`
     // `selectors[3] <== b_1 * b_0`
     // Then the selector_sums for i = 0, 1, 2, 3 are:
-    // i = 0 = (00) = (1-b_1)*(1-b_0) = 1 - b_0 - b_1 + b_0*b_1 = selectors[0] - selectors[1] - selectors[2] + selectors[3]
-    // i = 1 = (01) = (1-b_1)*b_0 = b_0 - b_0*b_1               =                selectors[1]                - selectors[3]
-    // i = 2 = (10) = b_1*(1-b_0) = b_1 - b_0*b_1               =                               selectors[2] - selectors[3]
-    // i = 3 = (11) = b_1*b_0                                   =                                              selectors[3]
+    // i = 0 = (00) = (1-b_1)*(1-b_0) = 1 - b_0 - b_1 + b_0*b_1 = selectors[0] -
+    // selectors[1] - selectors[2] + selectors[3] i = 1 = (01) = (1-b_1)*b_0 =
+    // b_0 - b_0*b_1               =                selectors[1]                -
+    // selectors[3] i = 2 = (10) = b_1*(1-b_0) = b_1 - b_0*b_1               =
+    // selectors[2] - selectors[3] i = 3 = (11) = b_1*b_0
+    // =                                              selectors[3]
     let mut selector_sums: Vec<LinearCombination<ConstraintF>> = vec![LinearCombination::zero(); m];
     for i in 0..m {
         for j in 0..m {
@@ -194,7 +197,7 @@ fn allocate_vars<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     allocated_vars
 }
 
-/// Repeated selection method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
+/// Repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
 fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     position: &[Boolean<ConstraintF>],
     values: Vec<CondG>,
