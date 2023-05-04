@@ -988,7 +988,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         Ok(lc * v)
     }
 
-    fn allocate_to_lc(
+    fn allocate_with_value(
         var: Variable,
         val: &Self,
         cs: &ConstraintSystemRef<F>,

@@ -32,7 +32,7 @@ where
         unimplemented!()
     }
 
-    fn allocate_to_lc(
+    fn allocate_with_value(
         _var: Variable,
         _val: &Self,
         _cs: &ConstraintSystemRef<ConstraintF>,
@@ -190,7 +190,7 @@ fn allocate_vars<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
         .zip(lc)
         .map(|(val, lc)| {
             let var = cs.new_lc(lc)?;
-            CondG::allocate_to_lc(var, val, &cs)
+            CondG::allocate_with_value(var, val, &cs)
         })
         .collect::<Result<Vec<CondG>, _>>();
 
