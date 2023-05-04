@@ -20,11 +20,6 @@ where
         false_value: &Self,
     ) -> Result<Self, SynthesisError>;
 
-    // fn sum_of_lc(
-    //     lc: Vec<LinearCombination<ConstraintF>>,
-    //     values: &[Self],
-    // ) -> Result<Self, SynthesisError>;
-
     fn add_lc(
         _val: &Self,
         _lc: LinearCombination<ConstraintF>,
