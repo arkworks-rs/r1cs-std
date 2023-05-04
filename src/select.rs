@@ -27,7 +27,7 @@ where
 
     fn add_lc(
         _val: &Self,
-        _lc: &LinearCombination<ConstraintF>,
+        _lc: LinearCombination<ConstraintF>,
     ) -> Result<LinearCombination<ConstraintF>, SynthesisError> {
         unimplemented!()
     }
@@ -71,7 +71,7 @@ where
         for i in 0..two_to_m {
             let mut x = LinearCombination::zero();
             for j in 0..two_to_l {
-                x = &x + Self::add_lc(&values[i * two_to_l + j], &sub_tree[j].clone())?;
+                x = &x + Self::add_lc(&values[i * two_to_l + j], sub_tree[j].clone())?;
             }
             upper_leaves.push(x);
         }

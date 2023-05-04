@@ -982,11 +982,10 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
 
     fn add_lc(
         val: &Self,
-        lc: &LinearCombination<F>,
+        lc: LinearCombination<F>,
     ) -> Result<LinearCombination<F>, SynthesisError> {
-        let root: LinearCombination<F> = LinearCombination::zero();
         let v = val.value()?;
-        Ok(root + (v, lc))
+        Ok(lc * v)
     }
 
     fn allocate_to_lc(
