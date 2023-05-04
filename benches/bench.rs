@@ -2,13 +2,15 @@ use ark_ff::PrimeField;
 use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
-    fields::{nonnative::NonNativeFieldVar, FieldVar},
+    fields::{fp::FpVar, nonnative::NonNativeFieldVar, FieldVar},
+    prelude::Boolean,
+    select::CondSelectGadget,
 };
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
 };
-use ark_std::rand::RngCore;
+use ark_std::rand::{Rng, RngCore};
 
 const NUM_REPETITIONS: usize = 1;
 
@@ -162,6 +164,64 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
+fn cond_select<BaseField: PrimeField, R: RngCore>(
+    cs: ConstraintSystemRef<BaseField>,
+    rng: &mut R,
+) -> (usize, usize) {
+    // value array
+    let values: Vec<BaseField> = (0..128).map(|_| BaseField::rand(rng)).collect();
+    let values_const: Vec<FpVar<BaseField>> = values.iter().map(|x| FpVar::Constant(*x)).collect();
+
+    // index array
+    let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+    let position_var: Vec<Boolean<BaseField>> = position
+        .iter()
+        .map(|b| {
+            Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b)).unwrap()
+        })
+        .collect();
+
+    let constraints_before = cs.num_constraints();
+    let nonzeros_before = get_density(&cs);
+
+    let _ = FpVar::conditionally_select_power_of_two_vector(&position_var, &values_const);
+
+    let constraints_after = cs.num_constraints();
+    let nonzeros_after = get_density(&cs);
+
+    return (
+        constraints_after - constraints_before,
+        nonzeros_after - nonzeros_before,
+    );
+}
+
+macro_rules! cond_select_bench_individual {
+    ($bench_base_field:ty) => {
+        let rng = &mut ark_std::test_rng();
+        let mut num_constraints = 0;
+        let mut num_nonzeros = 0;
+        for _ in 0..NUM_REPETITIONS {
+            let cs_sys = ConstraintSystem::<$bench_base_field>::new();
+            let cs = ConstraintSystemRef::new(cs_sys);
+            cs.set_optimization_goal(OptimizationGoal::Constraints);
+
+            let (cur_constraints, cur_nonzeros) =
+                cond_select::<$bench_base_field, _>(cs.clone(), rng);
+
+            num_constraints += cur_constraints;
+            num_nonzeros += cur_nonzeros;
+
+            assert!(cs.is_satisfied().unwrap());
+        }
+        let average_constraints = num_constraints / NUM_REPETITIONS;
+        let average_nonzeros = num_nonzeros / NUM_REPETITIONS;
+        println!(
+            "cond_select takes: {} constraints, {} non-zeros",
+            average_constraints, average_nonzeros,
+        );
+    };
+}
+
 macro_rules! nonnative_bench_individual {
     ($bench_method:ident, $bench_name:ident, $bench_target_field:ty, $bench_base_field:ty) => {
         let rng = &mut ark_std::test_rng();
@@ -235,4 +295,5 @@ fn main() {
     nonnative_bench!(BLS12MNT4Small, ark_bls12_381::Fr, ark_mnt4_298::Fr);
     nonnative_bench!(BLS12, ark_bls12_381::Fq, ark_bls12_381::Fr);
     nonnative_bench!(MNT6BigMNT4Small, ark_mnt6_753::Fr, ark_mnt4_298::Fr);
+    cond_select_bench_individual!(ark_mnt6_753::Fr);
 }
