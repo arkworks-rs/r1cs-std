@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use ark_ff::Field;
-use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, SynthesisError, Variable};
+use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, SynthesisError};
 use ark_std::vec::Vec;
 /// Generates constraints for selecting between one of many values.
 pub trait CondSelectGadget<ConstraintF: Field>
@@ -20,18 +20,15 @@ where
         false_value: &Self,
     ) -> Result<Self, SynthesisError>;
 
-    fn add_lc(
-        _val: &Self,
-        _lc: LinearCombination<ConstraintF>,
-    ) -> Result<LinearCombination<ConstraintF>, SynthesisError> {
-        unimplemented!()
-    }
-
-    fn allocate_with_value(
-        _var: Variable,
-        _val: &Self,
-        _cs: &ConstraintSystemRef<ConstraintF>,
-    ) -> Result<Self, SynthesisError> {
+    #[allow(unused_variables)]
+    fn hybrid_selection(
+        values: &[Self],
+        root_vals: Vec<Self>,
+        two_to_l: usize,
+        two_to_m: usize,
+        sub_tree: Vec<LinearCombination<ConstraintF>>,
+        cs: ConstraintSystemRef<ConstraintF>,
+    ) -> Result<Vec<Self>, SynthesisError> {
         unimplemented!()
     }
 
@@ -47,6 +44,7 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
+        let cs = position[0].cs();
         let n = position.len();
 
         // split n into l and m, where l + m = n
@@ -61,17 +59,20 @@ where
         let lower_bits = &mut position[m..].to_vec();
         let sub_tree = sum_of_conditions(lower_bits)?;
 
-        let mut upper_leaves = Vec::with_capacity(two_to_m);
-
-        for i in 0..two_to_m {
-            let mut x = LinearCombination::zero();
-            for j in 0..two_to_l {
-                x = &x + Self::add_lc(&values[i * two_to_l + j], sub_tree[j].clone())?;
-            }
-            upper_leaves.push(x);
+        // index for the chunk
+        let mut index = 0;
+        for x in lower_bits {
+            index *= 2;
+            index += if x.value()? { 1 } else { 0 };
         }
+        let chunk_size = 1 << l;
+        let root_vals: Vec<Self> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
 
-        let upper_elems = allocate_vars(values, lower_bits, upper_leaves)?;
+        let upper_elems =
+            Self::hybrid_selection(values, root_vals, two_to_l, two_to_m, sub_tree, cs)?;
 
         let upper_bits = &mut position[..m].to_vec();
         repeated_selection(upper_bits, upper_elems)
@@ -159,37 +160,6 @@ fn sum_of_conditions<ConstraintF: Field>(
         }
     }
     Ok(selector_sums)
-}
-
-fn allocate_vars<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
-    values: &[CondG],
-    position: &[Boolean<ConstraintF>],
-    lc: Vec<LinearCombination<ConstraintF>>,
-) -> Result<Vec<CondG>, SynthesisError> {
-    let cs = position.cs();
-
-    // index for the chunk
-    let mut index = 0;
-    for x in position {
-        index *= 2;
-        index += if x.value()? { 1 } else { 0 };
-    }
-    let chunk_size = 1 << position.len();
-    let root_vals: Vec<CondG> = values
-        .chunks(chunk_size)
-        .map(|chunk| chunk[index].clone())
-        .collect();
-
-    let allocated_vars: Result<Vec<CondG>, _> = root_vals
-        .iter()
-        .zip(lc)
-        .map(|(val, lc)| {
-            let var = cs.new_lc(lc)?;
-            CondG::allocate_with_value(var, val, &cs)
-        })
-        .collect::<Result<Vec<CondG>, _>>();
-
-    allocated_vars
 }
 
 /// Repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>

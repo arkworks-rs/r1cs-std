@@ -980,21 +980,36 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         }
     }
 
-    fn add_lc(
-        val: &Self,
-        lc: LinearCombination<F>,
-    ) -> Result<LinearCombination<F>, SynthesisError> {
-        let v = val.value()?;
-        Ok(lc * v)
-    }
+    fn hybrid_selection(
+        values: &[Self],
+        root_vals: Vec<Self>,
+        two_to_l: usize,
+        two_to_m: usize,
+        sub_tree: Vec<LinearCombination<F>>,
+        cs: ConstraintSystemRef<F>,
+    ) -> Result<Vec<Self>, SynthesisError> {
+        let mut upper_leaves = Vec::with_capacity(two_to_m);
 
-    fn allocate_with_value(
-        var: Variable,
-        val: &Self,
-        cs: &ConstraintSystemRef<F>,
-    ) -> Result<Self, SynthesisError> {
-        let v = val.value()?;
-        Ok(AllocatedFp::new(Some(v), var, cs.clone()).into())
+        for i in 0..two_to_m {
+            let mut x = LinearCombination::zero();
+            for j in 0..two_to_l {
+                let v = values[i * two_to_l + j].value()?;
+                x = &x + sub_tree[j].clone() * v;
+            }
+            upper_leaves.push(x);
+        }
+
+        let allocated_vars: Result<Vec<Self>, _> = root_vals
+            .iter()
+            .zip(upper_leaves)
+            .map(|(val, lc)| {
+                let var = cs.new_lc(lc)?;
+                let v = val.value()?;
+                Ok(AllocatedFp::new(Some(v), var, cs.clone()).into())
+            })
+            .collect::<Result<Vec<Self>, _>>();
+
+        allocated_vars
     }
 }
 
