@@ -578,6 +578,28 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedFp<F> {
             },
         }
     }
+
+    fn hybrid_selection(
+        values: &[Self],
+        root_vals: Vec<Self>,
+        two_to_l: usize,
+        two_to_m: usize,
+        sub_tree: Vec<LinearCombination<F>>,
+        cs: ConstraintSystemRef<F>,
+    ) -> Result<Vec<Self>, SynthesisError> {
+        // get the linear combination for leaves of the upper tree
+        for i in 0..two_to_m {
+            let mut lc = LinearCombination::zero();
+            for j in 0..two_to_l {
+                let v = values[i * two_to_l + j].value()?;
+                lc = &lc + sub_tree[j].clone() * v;
+            }
+
+            cs.enforce_constraint(lc, lc!() + Variable::One, lc!() + root_vals[i].variable)?;
+        }
+
+        Ok(root_vals)
+    }
 }
 
 /// Uses two bits to perform a lookup into a table
