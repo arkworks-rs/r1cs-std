@@ -21,6 +21,14 @@ where
     ) -> Result<Self, SynthesisError>;
 
     #[allow(unused_variables)]
+    /// Given a:
+    /// - vector of leaf values `values`
+    /// - vector of values `root_vals`, where each element is the expected value
+    ///   of a root of a subtree corresponding to the lowest `l` bits
+    /// - list of linear combination `sub_tree` for bottom tree of `2^l` leaves,
+    ///   represnting the sum-of-condidtions of elements.
+    /// Return:
+    /// - a vector of allocated values of `Self`, TODO
     fn hybrid_selection(
         values: &[Self],
         root_vals: Vec<Self>,
@@ -74,6 +82,7 @@ where
         let upper_elems =
             Self::hybrid_selection(values, root_vals, two_to_l, two_to_m, sub_tree, cs)?;
 
+        // apply the repeated selection method, to select one of 2^m subtree results
         let upper_bits = &mut position[..m].to_vec();
         repeated_selection(upper_bits, upper_elems)
     }

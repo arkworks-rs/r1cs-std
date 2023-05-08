@@ -990,6 +990,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
     ) -> Result<Vec<Self>, SynthesisError> {
         let mut upper_leaves = Vec::with_capacity(two_to_m);
 
+        // get the linear combination for leaves of the upper tree: sum of conditions
         for i in 0..two_to_m {
             let mut x = LinearCombination::zero();
             for j in 0..two_to_l {
@@ -999,6 +1000,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
             upper_leaves.push(x);
         }
 
+        // allocate a new FpVar, forcing value from `root_vals` to equal the linear combination obtained above
         let allocated_vars: Result<Vec<Self>, _> = root_vals
             .iter()
             .zip(upper_leaves)
