@@ -5,7 +5,7 @@ use ark_ec::{
     AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
@@ -720,6 +720,54 @@ where
 
         Ok(Self::new(x, y, z))
     }
+
+    fn hybrid_selection(
+        values: &[Self],
+        root_vals: Vec<Self>,
+        two_to_l: usize,
+        two_to_m: usize,
+        sub_tree: Vec<LinearCombination<<P::BaseField as Field>::BasePrimeField>>,
+        cs: ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField>,
+    ) -> Result<Vec<Self>, SynthesisError> {
+        let xs = values.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
+        let root_xs = root_vals.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
+
+        let x = F::hybrid_selection(
+            &xs,
+            root_xs,
+            two_to_l,
+            two_to_m,
+            sub_tree.clone(),
+            cs.clone(),
+        )?;
+
+        let ys = values.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
+        let root_ys = root_vals.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
+
+        let y = F::hybrid_selection(
+            &ys,
+            root_ys,
+            two_to_l,
+            two_to_m,
+            sub_tree.clone(),
+            cs.clone(),
+        )?;
+
+        let zs = values.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
+        let root_zs = root_vals.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
+
+        let z = F::hybrid_selection(&zs, root_zs, two_to_l, two_to_m, sub_tree, cs)?;
+
+        // zip x, y, z and make Vec of Self
+        let root_vals = x
+            .iter()
+            .zip(y.iter())
+            .zip(z.iter())
+            .map(|((x, y), z)| Self::new(x.clone(), y.clone(), z.clone()))
+            .collect::<Vec<_>>();
+
+        Ok(root_vals)
+    }
 }
 
 impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for ProjectiveVar<P, F>
@@ -963,5 +1011,60 @@ where
         bytes.extend_from_slice(&y_bytes);
         bytes.extend_from_slice(&inf_bytes);
         Ok(bytes)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::groups::curves::short_weierstrass::ProjectiveVar;
+    use crate::{fields::fp::FpVar, prelude::*};
+    use ark_ec::short_weierstrass::Projective;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::rand::Rng;
+    use ark_test_curves::bls12_381::{g1::Config, Fq};
+
+    #[test]
+    fn test_projective_random_access() {
+        pub type FBaseVar = FpVar<Fq>;
+
+        let mut rng = ark_std::test_rng();
+
+        for _ in 0..100 {
+            let cs = ConstraintSystem::<Fq>::new_ref();
+
+            // value array
+            let values: Vec<Projective<Config>> = (0..128).map(|_| rng.gen()).collect();
+            let values_const: Vec<ProjectiveVar<Config, FBaseVar>> =
+                values.iter().map(|x| ProjectiveVar::constant(*x)).collect();
+
+            // index array
+            let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+            let position_var: Vec<Boolean<Fq>> = position
+                .iter()
+                .map(|b| {
+                    Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                        .unwrap()
+                })
+                .collect();
+
+            // index
+            let mut index = 0;
+            for x in position {
+                index *= 2;
+                index += if x { 1 } else { 0 };
+            }
+
+            assert_eq!(
+                ProjectiveVar::conditionally_select_power_of_two_vector(
+                    &position_var,
+                    &values_const
+                )
+                .unwrap()
+                .value()
+                .unwrap(),
+                values[index]
+            )
+        }
     }
 }
