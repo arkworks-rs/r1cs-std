@@ -22,7 +22,7 @@ where
 
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
-    /// big endian order. This is hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
+    /// big endian order. The default is the repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     ///
     /// # Example
     /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`)
@@ -37,7 +37,7 @@ where
 }
 
 /// Sum of conditions method 5.2 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
-/// Use this to generate the selector sums.
+/// Use this to generate the selector conditions.
 pub fn sum_of_conditions<ConstraintF: Field>(
     position: &[Boolean<ConstraintF>],
 ) -> Result<Vec<LinearCombination<ConstraintF>>, SynthesisError> {

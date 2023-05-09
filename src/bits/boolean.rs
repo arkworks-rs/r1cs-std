@@ -217,6 +217,7 @@ impl<F: Field> CondSelectGadget<F> for AllocatedBool<F> {
         }
     }
 
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     fn conditionally_select_power_of_two_vector(
         position: &[Boolean<F>],
         values: &[Self],
@@ -1000,6 +1001,7 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
         }
     }
 
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     fn conditionally_select_power_of_two_vector(
         position: &[Boolean<F>],
         values: &[Self],

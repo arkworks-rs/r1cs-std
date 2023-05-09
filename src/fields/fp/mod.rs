@@ -579,6 +579,7 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedFp<F> {
         }
     }
 
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     fn conditionally_select_power_of_two_vector(
         position: &[Boolean<F>],
         values: &[Self],
@@ -1031,6 +1032,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         }
     }
 
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     fn conditionally_select_power_of_two_vector(
         position: &[Boolean<F>],
         values: &[Self],
