@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use ark_ff::Field;
-use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, SynthesisError};
+use ark_relations::r1cs::{LinearCombination, SynthesisError};
 use ark_std::vec::Vec;
 /// Generates constraints for selecting between one of many values.
 pub trait CondSelectGadget<ConstraintF: Field>
@@ -20,26 +20,6 @@ where
         false_value: &Self,
     ) -> Result<Self, SynthesisError>;
 
-    #[allow(unused_variables)]
-    /// Given a:
-    /// - vector of leaf values `values`
-    /// - vector of values `root_vals`, where each element is the expected value
-    ///   of a root of a subtree corresponding to the lowest `l` bits
-    /// - list of linear combination `sub_tree` for bottom tree of `2^l` leaves,
-    ///   represnting the sum-of-condidtions of elements.
-    /// Return:
-    /// - a vector of allocated values of `Self`, TODO
-    fn hybrid_selection(
-        values: &[Self],
-        root_vals: Vec<Self>,
-        two_to_l: usize,
-        two_to_m: usize,
-        sub_tree: Vec<LinearCombination<ConstraintF>>,
-        cs: ConstraintSystemRef<ConstraintF>,
-    ) -> Result<Vec<Self>, SynthesisError> {
-        unimplemented!()
-    }
-
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
     /// big endian order. This is hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
@@ -52,45 +32,13 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
-        let cs = position[0].cs();
-        let n = position.len();
-
-        // split n into l and m, where l + m = n
-        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
-        let m = n / 2;
-        let l = n - m;
-
-        let two_to_l = 1 << l;
-        let two_to_m = 1 << m;
-
-        // we only need the lower L bits
-        let lower_bits = &mut position[m..].to_vec();
-        let sub_tree = sum_of_conditions(lower_bits)?;
-
-        // index for the chunk
-        let mut index = 0;
-        for x in lower_bits {
-            index *= 2;
-            index += if x.value()? { 1 } else { 0 };
-        }
-        let chunk_size = 1 << l;
-        let root_vals: Vec<Self> = values
-            .chunks(chunk_size)
-            .map(|chunk| chunk[index].clone())
-            .collect();
-
-        let upper_elems =
-            Self::hybrid_selection(values, root_vals, two_to_l, two_to_m, sub_tree, cs)?;
-
-        // apply the repeated selection method, to select one of 2^m subtree results
-        let upper_bits = &mut position[..m].to_vec();
-        repeated_selection(upper_bits, upper_elems)
+        repeated_selection(position, values.to_vec())
     }
 }
 
 /// Sum of conditions method 5.2 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
 /// Use this to generate the selector sums.
-fn sum_of_conditions<ConstraintF: Field>(
+pub fn sum_of_conditions<ConstraintF: Field>(
     position: &[Boolean<ConstraintF>],
 ) -> Result<Vec<LinearCombination<ConstraintF>>, SynthesisError> {
     let n = position.len();
@@ -172,7 +120,7 @@ fn sum_of_conditions<ConstraintF: Field>(
 }
 
 /// Repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
-fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
+pub fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
     position: &[Boolean<ConstraintF>],
     values: Vec<CondG>,
 ) -> Result<CondG, SynthesisError> {

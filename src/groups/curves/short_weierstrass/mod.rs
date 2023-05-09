@@ -5,7 +5,7 @@ use ark_ec::{
     AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
-use ark_relations::r1cs::{ConstraintSystemRef, LinearCombination, Namespace, SynthesisError};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
@@ -721,52 +721,20 @@ where
         Ok(Self::new(x, y, z))
     }
 
-    fn hybrid_selection(
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<<P::BaseField as Field>::BasePrimeField>],
         values: &[Self],
-        root_vals: Vec<Self>,
-        two_to_l: usize,
-        two_to_m: usize,
-        sub_tree: Vec<LinearCombination<<P::BaseField as Field>::BasePrimeField>>,
-        cs: ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField>,
-    ) -> Result<Vec<Self>, SynthesisError> {
-        let xs = values.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
-        let root_xs = root_vals.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
+    ) -> Result<Self, SynthesisError> {
+        let x_values = values.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
+        let x = F::conditionally_select_power_of_two_vector(&position, &x_values)?;
 
-        let x = F::hybrid_selection(
-            &xs,
-            root_xs,
-            two_to_l,
-            two_to_m,
-            sub_tree.clone(),
-            cs.clone(),
-        )?;
+        let y_values = values.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
+        let y = F::conditionally_select_power_of_two_vector(&position, &y_values)?;
 
-        let ys = values.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
-        let root_ys = root_vals.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
+        let z_values = values.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
+        let z = F::conditionally_select_power_of_two_vector(&position, &z_values)?;
 
-        let y = F::hybrid_selection(
-            &ys,
-            root_ys,
-            two_to_l,
-            two_to_m,
-            sub_tree.clone(),
-            cs.clone(),
-        )?;
-
-        let zs = values.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
-        let root_zs = root_vals.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
-
-        let z = F::hybrid_selection(&zs, root_zs, two_to_l, two_to_m, sub_tree, cs)?;
-
-        // zip x, y, z and make Vec of Self
-        let root_vals = x
-            .iter()
-            .zip(y.iter())
-            .zip(z.iter())
-            .map(|((x, y), z)| Self::new(x.clone(), y.clone(), z.clone()))
-            .collect::<Vec<_>>();
-
-        Ok(root_vals)
+        Ok(Self::new(x, y, z))
     }
 }
 
@@ -1017,8 +985,7 @@ where
 #[cfg(test)]
 mod test {
 
-    use crate::groups::curves::short_weierstrass::ProjectiveVar;
-    use crate::{fields::fp::FpVar, prelude::*};
+    use crate::{fields::fp::FpVar, groups::curves::short_weierstrass::ProjectiveVar, prelude::*};
     use ark_ec::short_weierstrass::Projective;
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::rand::Rng;

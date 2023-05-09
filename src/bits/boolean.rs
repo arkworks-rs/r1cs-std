@@ -217,24 +217,53 @@ impl<F: Field> CondSelectGadget<F> for AllocatedBool<F> {
         }
     }
 
-    fn hybrid_selection(
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<F>],
         values: &[Self],
-        root_vals: Vec<Self>,
-        two_to_l: usize,
-        two_to_m: usize,
-        sub_tree: Vec<LinearCombination<F>>,
-        cs: ConstraintSystemRef<F>,
-    ) -> Result<Vec<Self>, SynthesisError> {
-        for i in 0..two_to_m {
-            let mut x = LinearCombination::zero();
-            for j in 0..two_to_l {
-                let v = values[i * two_to_l + j].value()?;
-                x = &x + sub_tree[j].clone() * v.into();
-            }
-            cs.enforce_constraint(x, lc!() + Variable::One, lc!() + root_vals[i].variable)?;
-        }
+    ) -> Result<Self, SynthesisError> {
+        let cs = position[0].cs();
+        let n = position.len();
 
-        Ok(root_vals)
+        // split n into l and m, where l + m = n
+        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
+        let m = n / 2;
+        let l = n - m;
+
+        let two_to_l = 1 << l;
+        let two_to_m = 1 << m;
+
+        // we only need the lower L bits
+        let lower_bits = &mut position[m..].to_vec();
+        let sub_tree = sum_of_conditions(lower_bits)?;
+
+        // index for the chunk
+        let mut index = 0;
+        for x in lower_bits {
+            index *= 2;
+            index += if x.value()? { 1 } else { 0 };
+        }
+        let chunk_size = 1 << l;
+        let root_vals: Vec<Self> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
+
+        let upper_elems = {
+            for i in 0..two_to_m {
+                let mut x = LinearCombination::zero();
+                for j in 0..two_to_l {
+                    let v = values[i * two_to_l + j].value()?;
+                    x = &x + sub_tree[j].clone() * v.into();
+                }
+                cs.enforce_constraint(x, lc!() + Variable::One, lc!() + root_vals[i].variable)?;
+            }
+
+            Ok(root_vals)
+        }?;
+
+        // apply the repeated selection method, to select one of 2^m subtree results
+        let upper_bits = &mut position[..m].to_vec();
+        repeated_selection(upper_bits, upper_elems)
     }
 }
 
@@ -971,24 +1000,53 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
         }
     }
 
-    fn hybrid_selection(
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<F>],
         values: &[Self],
-        root_vals: Vec<Self>,
-        two_to_l: usize,
-        two_to_m: usize,
-        sub_tree: Vec<LinearCombination<F>>,
-        cs: ConstraintSystemRef<F>,
-    ) -> Result<Vec<Self>, SynthesisError> {
-        for i in 0..two_to_m {
-            let mut x = LinearCombination::zero();
-            for j in 0..two_to_l {
-                let v = values[i * two_to_l + j].value()?;
-                x = &x + sub_tree[j].clone() * v.into();
-            }
-            cs.enforce_constraint(x, lc!() + Variable::One, root_vals[i].lc())?;
-        }
+    ) -> Result<Self, SynthesisError> {
+        let cs = position[0].cs();
+        let n = position.len();
 
-        Ok(root_vals)
+        // split n into l and m, where l + m = n
+        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
+        let m = n / 2;
+        let l = n - m;
+
+        let two_to_l = 1 << l;
+        let two_to_m = 1 << m;
+
+        // we only need the lower L bits
+        let lower_bits = &mut position[m..].to_vec();
+        let sub_tree = sum_of_conditions(lower_bits)?;
+
+        // index for the chunk
+        let mut index = 0;
+        for x in lower_bits {
+            index *= 2;
+            index += if x.value()? { 1 } else { 0 };
+        }
+        let chunk_size = 1 << l;
+        let root_vals: Vec<Self> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
+
+        let upper_elems = {
+            for i in 0..two_to_m {
+                let mut x = LinearCombination::zero();
+                for j in 0..two_to_l {
+                    let v = values[i * two_to_l + j].value()?;
+                    x = &x + sub_tree[j].clone() * v.into();
+                }
+                cs.enforce_constraint(x, lc!() + Variable::One, root_vals[i].lc())?;
+            }
+
+            Ok(root_vals)
+        }?;
+
+        // apply the repeated selection method, to select one of 2^m subtree results
+        let upper_bits = &mut position[..m].to_vec();
+        repeated_selection(upper_bits, upper_elems)
     }
 }
 
