@@ -149,7 +149,6 @@ jobs:
           - vesta
           - mnt4_298
           - mnt6_298
-          - mnt6_753
           - ed_on_bls12_381
     steps:
       - name: Checkout curves
