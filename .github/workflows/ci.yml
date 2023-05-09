@@ -14,13 +14,11 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
+
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
         components: rustfmt
 
     - name: cargo fmt --check
@@ -41,14 +39,14 @@ jobs:
           - nightly
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Rust (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
+        id: toolchain
+      - run: rustup override set ${{steps.toolchain.outputs.name}}
 
       - uses: actions/cache@v2
         with:
@@ -92,13 +90,10 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
         components: rustfmt
 
     - name: cargo doc --all --no-deps --document-private-items --all-features
@@ -112,21 +107,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Rust (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
+        id: toolchain-thumbv6m
         with:
-          toolchain: stable
           target: thumbv6m-none-eabi
-          override: true
+      - run: rustup override set ${{steps.toolchain-thumbv6m.outputs.name}}
 
       - name: Install Rust ARM64 (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
+        id: toolchain-aarch64
         with:
-          toolchain: stable
           target: aarch64-unknown-none
-          override: true
+      - run: rustup override set ${{steps.toolchain-aarch64.outputs.name}}
 
       - uses: actions/cache@v2
         with:
@@ -168,11 +163,7 @@ jobs:
           path: r1cs-std
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Patch cargo.toml
         run: |
