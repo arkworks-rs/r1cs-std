@@ -1,8 +1,10 @@
+use ark_ec::short_weierstrass::Projective;
 use ark_ff::{PrimeField, UniformRand};
 use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
     fields::{fp::FpVar, nonnative::NonNativeFieldVar, FieldVar},
+    groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
     prelude::Boolean,
     select::CondSelectGadget,
 };
@@ -165,7 +167,7 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
 }
 
 macro_rules! cond_select_bench_individual {
-    ($bench_name:ident, $bench_base_field:ty, $var:ty, $native_type:ty) => {
+    ($bench_name:ident, $bench_base_field:ty, $var:ty, $native_type:ty, $constant:ident) => {
         let rng = &mut ark_std::test_rng();
         let mut num_constraints = 0;
         let mut num_nonzeros = 0;
@@ -178,7 +180,8 @@ macro_rules! cond_select_bench_individual {
                 // value array
                 let values: Vec<$native_type> =
                     (0..128).map(|_| <$native_type>::rand(rng)).collect();
-                let values_const: Vec<$var> = values.iter().map(|x| <$var>::Constant(*x)).collect();
+                let values_const: Vec<$var> =
+                    values.iter().map(|x| <$var>::$constant(*x)).collect();
 
                 // index array
                 let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
@@ -298,12 +301,22 @@ fn main() {
         FpVar_select,
         ark_mnt6_753::Fr,
         FpVar<ark_mnt6_753::Fr>,
-        ark_mnt6_753::Fr
+        ark_mnt6_753::Fr,
+        Constant
     );
     cond_select_bench_individual!(
         Boolean_select,
         ark_mnt6_753::Fr,
         Boolean<ark_mnt6_753::Fr>,
-        bool
+        bool,
+        Constant
+    );
+    pub type FBaseVar = FpVar<ark_mnt6_753::Fq>;
+    cond_select_bench_individual!(
+        SWProjective_select,
+        ark_mnt6_753::Fq,
+        ProjectiveVar<ark_mnt6_753::g1::Config, FBaseVar>,
+        Projective<ark_mnt6_753::g1::Config>,
+        constant
     );
 }
