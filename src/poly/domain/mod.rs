@@ -145,6 +145,13 @@ mod tests {
         let num_cosets = 1 << (COSET_DIM - LOCALIZATION);
 
         let coset_index = rng.gen_range(0..num_cosets);
+        println!("{:0b}", coset_index);
+        dbg!(UInt32::new_witness(cs.clone(), || Ok(coset_index))
+            .unwrap()
+            .to_bits_le()
+            .iter()
+            .map(|x| x.value().unwrap() as u8)
+            .collect::<Vec<_>>());
         let coset_index_var = UInt32::new_witness(cs.clone(), || Ok(coset_index))
             .unwrap()
             .to_bits_le()
