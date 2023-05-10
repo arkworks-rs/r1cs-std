@@ -185,11 +185,12 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
         result
     }
 
-    /// Converts a little-endian byte order representation of bits into a
-    /// field element.
-
-    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`.
-    pub fn to_fp_var(&self) -> Result<FpVar<F>, SynthesisError>
+    /// Converts `self` into a field element. The elements comprising `self` are 
+    /// interpreted as a little-endian bit order representation of a field element.
+    ///
+    /// # Panics
+    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
+    pub fn to_fp(&self) -> Result<FpVar<F>, SynthesisError>
     where
         F: PrimeField,
     {
@@ -198,8 +199,12 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
         Boolean::le_bits_to_fp_var(&self.bits)
     }
 
-    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`.
-    pub fn from_fp_var(other: &FpVar<F>) -> Result<Self, SynthesisError>
+    /// Converts a field element into its little-endian bit order representation.
+    ///
+    /// # Panics 
+    ///
+    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
+    pub fn from_fp(other: &FpVar<F>) -> Result<Self, SynthesisError>
     where
         F: PrimeField,
     {
@@ -217,7 +222,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             .map(|b| Boolean::new_variable(cs.clone(), || Ok(*b), mode))
             .collect::<Result<Vec<_>, _>>()?;
         let result = Self::from_bits_le(&lower_bits);
-        let rest: FpVar<F> = other - &result.to_fp_var()?;
+        let rest: FpVar<F> = other - &result.to_fp()?;
         rest.enforce_equal(&FpVar::zero())?;
         Ok(result)
     }
