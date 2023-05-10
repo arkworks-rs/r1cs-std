@@ -358,7 +358,7 @@ where
                 let x_coeffs = coords.iter().map(|p| p.0).collect::<Vec<_>>();
                 let y_coeffs = coords.iter().map(|p| p.1).collect::<Vec<_>>();
 
-                let precomp = bits[0].and(&bits[1])?;
+                let precomp = &bits[0] & &bits[1];
 
                 let x = F::zero()
                     + x_coeffs[0]
@@ -423,7 +423,7 @@ where
     }
 
     fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
-        self.x.is_zero()?.and(&self.y.is_one()?)
+        Ok(self.x.is_zero()? & &self.y.is_one()?)
     }
 
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
@@ -848,7 +848,7 @@ where
     ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
-        x_equal.and(&y_equal)
+        Ok(x_equal & y_equal)
     }
 
     #[inline]
@@ -870,9 +870,7 @@ where
         other: &Self,
         condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
     ) -> Result<(), SynthesisError> {
-        self.is_eq(other)?
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (self.is_eq(other)? & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 

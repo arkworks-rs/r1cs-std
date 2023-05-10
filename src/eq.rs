@@ -14,7 +14,7 @@ pub trait EqGadget<F: Field> {
     ///
     /// By default, this is defined as `self.is_eq(other)?.not()`.
     fn is_neq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        Ok(self.is_eq(other)?.not())
+        Ok(!self.is_eq(other)?)
     }
 
     /// If `should_enforce == true`, enforce that `self` and `other` are equal;

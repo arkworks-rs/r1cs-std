@@ -372,7 +372,7 @@ where
         let b0 = self.c0.is_eq(&other.c0)?;
         let b1 = self.c1.is_eq(&other.c1)?;
         let b2 = self.c2.is_eq(&other.c2)?;
-        b0.and(&b1)?.and(&b2)
+        Ok(b0 & b1 & b2)
     }
 
     #[inline]
@@ -396,9 +396,7 @@ where
         condition: &Boolean<P::BasePrimeField>,
     ) -> Result<(), SynthesisError> {
         let is_equal = self.is_eq(other)?;
-        is_equal
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (is_equal & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 

@@ -129,13 +129,14 @@ impl<F: PrimeField> AllocatedFp<F> {
     ///
     /// This does not create any constraints and only creates one linear
     /// combination.
-    pub fn add_many<'a, I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+    pub fn add_many<B: Borrow<Self>, I: Iterator<Item = B>>(iter: I) -> Self {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
         let mut value = F::zero();
         let mut new_lc = lc!();
 
         for variable in iter {
+            let variable = variable.borrow();
             if !variable.cs.is_none() {
                 cs = cs.or(variable.cs.clone());
             }
@@ -323,7 +324,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This requires three constraints.
     #[tracing::instrument(target = "r1cs")]
     pub fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        Ok(self.is_neq(other)?.not())
+        Ok(!self.is_neq(other)?)
     }
 
     /// Outputs the bit `self != other`.
@@ -391,7 +392,7 @@ impl<F: PrimeField> AllocatedFp<F> {
         )?;
         self.cs.enforce_constraint(
             lc!() + self.variable - other.variable,
-            is_not_equal.not().lc(),
+            (!&is_not_equal).lc(),
             lc!(),
         )?;
         Ok(is_not_equal)
@@ -554,8 +555,8 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedFp<F> {
         false_val: &Self,
     ) -> Result<Self, SynthesisError> {
         match cond {
-            Boolean::Constant(true) => Ok(true_val.clone()),
-            Boolean::Constant(false) => Ok(false_val.clone()),
+            &Boolean::Constant(true) => Ok(true_val.clone()),
+            &Boolean::Constant(false) => Ok(false_val.clone()),
             _ => {
                 let cs = cond.cs();
                 let result = Self::new_witness(cs.clone(), || {
@@ -952,13 +953,13 @@ impl<F: PrimeField> CondSelectGadget<F> for FpVar<F> {
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
         match cond {
-            Boolean::Constant(true) => Ok(true_value.clone()),
-            Boolean::Constant(false) => Ok(false_value.clone()),
+            &Boolean::Constant(true) => Ok(true_value.clone()),
+            &Boolean::Constant(false) => Ok(false_value.clone()),
             _ => {
                 match (true_value, false_value) {
                     (Self::Constant(t), Self::Constant(f)) => {
                         let is = AllocatedFp::from(cond.clone());
-                        let not = AllocatedFp::from(cond.not());
+                        let not = AllocatedFp::from(!cond);
                         // cond * t + (1 - cond) * f
                         Ok(is.mul_constant(*t).add(&not.mul_constant(*f)).into())
                     },
@@ -1049,6 +1050,22 @@ impl<F: PrimeField> AllocVar<F, F> for FpVar<F> {
 
 impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
     fn sum<I: Iterator<Item = &'a FpVar<F>>>(iter: I) -> FpVar<F> {
+        let mut sum_constants = F::zero();
+        let sum_variables = FpVar::Var(AllocatedFp::<F>::add_many(iter.filter_map(|x| match x {
+            FpVar::Constant(c) => {
+                sum_constants += c;
+                None
+            },
+            FpVar::Var(v) => Some(v),
+        })));
+
+        let sum = sum_variables + sum_constants;
+        sum
+    }
+}
+
+impl<'a, F: PrimeField> Sum<FpVar<F>> for FpVar<F> {
+    fn sum<I: Iterator<Item = FpVar<F>>>(iter: I) -> FpVar<F> {
         let mut sum_constants = F::zero();
         let sum_variables = FpVar::Var(AllocatedFp::<F>::add_many(iter.filter_map(|x| match x {
             FpVar::Constant(c) => {

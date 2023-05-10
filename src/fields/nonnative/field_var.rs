@@ -229,7 +229,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
                 Boolean::new_witness(cs, || Ok(self.value()? == other.value()?))?;
 
             self.conditional_enforce_equal(other, &should_enforce_equal)?;
-            self.conditional_enforce_not_equal(other, &should_enforce_equal.not())?;
+            self.conditional_enforce_not_equal(other, &!&should_enforce_equal)?;
 
             Ok(should_enforce_equal)
         }
@@ -341,8 +341,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
         false_value: &Self,
     ) -> R1CSResult<Self> {
         match cond {
-            Boolean::Constant(true) => Ok(true_value.clone()),
-            Boolean::Constant(false) => Ok(false_value.clone()),
+            &Boolean::Constant(true) => Ok(true_value.clone()),
+            &Boolean::Constant(false) => Ok(false_value.clone()),
             _ => {
                 let cs = cond.cs();
                 let true_value = match true_value {

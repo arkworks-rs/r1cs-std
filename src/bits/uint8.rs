@@ -206,8 +206,7 @@ mod test {
 
             for b in r.bits.iter() {
                 match b {
-                    Boolean::Is(b) => assert!(b.value()? == (expected & 1 == 1)),
-                    Boolean::Not(b) => assert!(!b.value()? == (expected & 1 == 1)),
+                    Boolean::Var(b) => assert!(b.value()? == (expected & 1 == 1)),
                     Boolean::Constant(b) => assert!(*b == (expected & 1 == 1)),
                 }
 

@@ -1,4 +1,4 @@
-use ark_ff::{Field, One, PrimeField, Zero};
+use ark_ff::{BigInteger, Field, One, PrimeField, Zero};
 use core::{borrow::Borrow, convert::TryFrom, fmt::Debug};
 use num_bigint::BigUint;
 use num_traits::{NumCast, PrimInt};
@@ -9,6 +9,7 @@ use ark_relations::r1cs::{
 
 use crate::{
     boolean::{AllocatedBool, Boolean},
+    fields::fp::FpVar,
     prelude::*,
     Assignment, Vec,
 };
@@ -184,6 +185,43 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
         result
     }
 
+    /// Converts a little-endian byte order representation of bits into a
+    /// field element.
+
+    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`.
+    pub fn to_fp_var(&self) -> Result<FpVar<F>, SynthesisError>
+    where
+        F: PrimeField,
+    {
+        assert!(N <= F::MODULUS_BIT_SIZE as usize - 1);
+
+        Boolean::le_bits_to_fp_var(&self.bits)
+    }
+
+    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`.
+    pub fn from_fp_var(other: &FpVar<F>) -> Result<Self, SynthesisError>
+    where
+        F: PrimeField,
+    {
+        assert!(N <= F::MODULUS_BIT_SIZE as usize - 1);
+        let value = other.value()?.into_bigint().to_bits_le();
+        let cs = other.cs();
+        let mode = if other.is_constant() {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+        let lower_bits = value
+            .iter()
+            .take(N)
+            .map(|b| Boolean::new_variable(cs.clone(), || Ok(*b), mode))
+            .collect::<Result<Vec<_>, _>>()?;
+        let result = Self::from_bits_le(&lower_bits);
+        let rest: FpVar<F> = other - &result.to_fp_var()?;
+        rest.enforce_equal(&FpVar::zero())?;
+        Ok(result)
+    }
+
     /// Perform modular addition of `operands`.
     ///
     /// The user must ensure that overflow does not occur.
@@ -205,11 +243,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
 
         // Compute the maximum value of the sum so we allocate enough bits for
         // the result
-        let mut max_value = T::max_value()
-            .checked_mul(
-                &T::from(ark_std::log2(operands.len())).ok_or(SynthesisError::Unsatisfiable)?,
-            )
-            .ok_or(SynthesisError::Unsatisfiable)?;
+        let mut max_value = T::max_value() * T::from(operands.len() as u128).unwrap();
 
         // Keep track of the resulting value
         let mut result_value = Some(BigUint::zero());
@@ -241,23 +275,16 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             let mut coeff = F::one();
             for bit in &op.bits {
                 match *bit {
-                    Boolean::Is(ref bit) => {
-                        all_constants = false;
-
-                        // Add coeff * bit_gadget
-                        lc += (coeff, bit.variable());
-                    },
-                    Boolean::Not(ref bit) => {
-                        all_constants = false;
-
-                        // Add coeff * (1 - bit_gadget) = coeff * ONE - coeff *
-                        // bit_gadget
-                        lc = lc + (coeff, Variable::One) - (coeff, bit.variable());
-                    },
                     Boolean::Constant(bit) => {
                         if bit {
                             lc += (coeff, Variable::One);
                         }
+                    },
+                    _ => {
+                        all_constants = false;
+
+                        // Add coeff * bit_gadget
+                        lc = lc + (coeff, &bit.lc());
                     },
                 }
 
@@ -424,8 +451,8 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, Constra
 
 //             for x in v.iter().zip(expected_to_be_same.iter()) {
 //                 match x {
-//                     (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
-//                     (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
+//                     (&Boolean::TRUE, &Boolean::TRUE) => {},
+//                     (&Boolean::FALSE, &Boolean::FALSE) => {},
 //                     _ => unreachable!(),
 //                 }
 //             }

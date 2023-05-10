@@ -9,7 +9,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     fn _not(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for a in &mut result.bits {
-            *a = a.not()
+            *a = !&*a
         }
         result.value = self.value.map(Not::not);
         dbg!(result.value);
@@ -96,10 +96,8 @@ mod tests {
         } else {
             AllocationMode::Witness
         };
-        let expected = UInt::<N, T, F>::new_variable(cs.clone(), 
-        || Ok(!a.value().unwrap()),
-            expected_mode
-        )?;
+        let expected =
+            UInt::<N, T, F>::new_variable(cs.clone(), || Ok(!a.value().unwrap()), expected_mode)?;
         assert_eq!(expected.value(), computed.value());
         expected.enforce_equal(&expected)?;
         if !a.is_constant() {

@@ -9,7 +9,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     fn _xor(&self, other: &Self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for (a, b) in result.bits.iter_mut().zip(&other.bits) {
-            *a = a.xor(b)?
+            *a ^= b;
         }
         result.value = self.value.and_then(|a| Some(a ^ other.value?));
         Ok(result)
@@ -220,9 +220,10 @@ mod tests {
         } else {
             AllocationMode::Witness
         };
-        let expected = UInt::<N, T, F>::new_variable(cs.clone(), 
-        || Ok(a.value().unwrap() ^ b.value().unwrap()),
-            expected_mode
+        let expected = UInt::<N, T, F>::new_variable(
+            cs.clone(),
+            || Ok(a.value().unwrap() ^ b.value().unwrap()),
+            expected_mode,
         )?;
         assert_eq!(expected.value(), computed.value());
         expected.enforce_equal(&expected)?;
