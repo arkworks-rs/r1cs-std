@@ -50,14 +50,20 @@ pub mod pairing;
 /// This module describes a trait for allocating new variables in a constraint
 /// system.
 pub mod alloc;
+
 /// This module describes a trait for checking equality of variables.
 pub mod eq;
+
 /// This module implements functions for manipulating polynomial variables over
 /// finite fields.
 pub mod poly;
+
 /// This module describes traits for conditionally selecting a variable from a
 /// list of variables.
 pub mod select;
+
+#[cfg(test)]
+pub(crate) mod test_utils;
 
 #[allow(missing_docs)]
 pub mod prelude {

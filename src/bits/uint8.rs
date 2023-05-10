@@ -195,12 +195,12 @@ mod test {
             dbg!(b_bit.value().unwrap());
             dbg!(c_bit.value().unwrap());
 
-            let r = a_bit.xor(&b_bit).unwrap();
-            let r = r.xor(&c_bit).unwrap();
+            let mut r = a_bit ^ b_bit;
+            r ^= &c_bit;
 
             assert!(cs.is_satisfied().unwrap());
 
-            dbg!(Some(expected));
+            dbg!(expected);
             dbg!(r.value().unwrap());
             assert_eq!(r.value, Some(expected));
 

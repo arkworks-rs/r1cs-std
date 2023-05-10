@@ -13,6 +13,16 @@ use crate::{
     Assignment, Vec,
 };
 
+mod and;
+mod cmp;
+mod eq;
+mod not;
+mod or;
+mod xor;
+
+#[cfg(test)]
+pub(crate) mod test_utils;
+
 /// This struct represent an unsigned `N` bit integer as a sequence of `N` [`Boolean`]s.
 #[derive(Clone, Debug)]
 pub struct UInt<const N: usize, T: PrimInt + Debug, F: Field> {
@@ -174,39 +184,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
         result
     }
 
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
-    pub fn xor(&self, other: &Self) -> Result<Self, SynthesisError> {
-        let mut result = self.clone();
-        for (a, b) in result.bits.iter_mut().zip(&other.bits) {
-            *a = a.xor(b)?
-        }
-        result.value = self.value.and_then(|a| Some(a ^ other.value?));
-        dbg!(result.value);
-        Ok(result)
-    }
-
     /// Perform modular addition of `operands`.
     ///
     /// The user must ensure that overflow does not occur.
@@ -357,64 +334,6 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> ToBytesGadget<Const
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> EqGadget<ConstraintF>
-    for UInt<N, T, ConstraintF>
-{
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
-    fn is_eq(&self, other: &Self) -> Result<Boolean<ConstraintF>, SynthesisError> {
-        let chunk_size = usize::try_from(ConstraintF::MODULUS_BIT_SIZE - 1).unwrap();
-        let chunks_are_eq = self
-            .bits
-            .chunks(chunk_size)
-            .zip(other.bits.chunks(chunk_size))
-            .map(|(a, b)| {
-                let a = Boolean::le_bits_to_fp_var(a)?;
-                let b = Boolean::le_bits_to_fp_var(b)?;
-                a.is_eq(&b)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        Boolean::kary_and(&chunks_are_eq)
-    }
-
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
-    fn conditional_enforce_equal(
-        &self,
-        other: &Self,
-        condition: &Boolean<ConstraintF>,
-    ) -> Result<(), SynthesisError> {
-        let chunk_size = usize::try_from(ConstraintF::MODULUS_BIT_SIZE - 1).unwrap();
-        for (a, b) in self
-            .bits
-            .chunks(chunk_size)
-            .zip(other.bits.chunks(chunk_size))
-        {
-            let a = Boolean::le_bits_to_fp_var(a)?;
-            let b = Boolean::le_bits_to_fp_var(b)?;
-            a.conditional_enforce_equal(&b, condition)?;
-        }
-        Ok(())
-    }
-
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
-    fn conditional_enforce_not_equal(
-        &self,
-        other: &Self,
-        condition: &Boolean<ConstraintF>,
-    ) -> Result<(), SynthesisError> {
-        let chunk_size = usize::try_from(ConstraintF::MODULUS_BIT_SIZE - 1).unwrap();
-        for (a, b) in self
-            .bits
-            .chunks(chunk_size)
-            .zip(other.bits.chunks(chunk_size))
-        {
-            let a = Boolean::le_bits_to_fp_var(a)?;
-            let b = Boolean::le_bits_to_fp_var(b)?;
-            a.conditional_enforce_not_equal(&b, condition)?;
-        }
-        Ok(())
-    }
-}
-
 impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> CondSelectGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
@@ -473,182 +392,182 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, Constra
     }
 }
 
-//     #[cfg(test)]
-//     mod test {
-//         use super::UInt;
-//         use crate::{bits::boolean::Boolean, prelude::*, Vec};
-//         use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-//         use ark_std::rand::Rng;
-//         use ark_test_curves::mnt4_753::Fr;
+// #[cfg(test)]
+// mod test {
+//     use super::UInt;
+//     use crate::{bits::boolean::Boolean, prelude::*, Vec};
+//     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
+//     use ark_std::rand::Rng;
+//     use ark_test_curves::mnt4_753::Fr;
 
-//         #[test]
-//         fn test_from_bits() -> Result<(), SynthesisError> {
-//             let mut rng = ark_std::test_rng();
+//     #[test]
+//     fn test_from_bits() -> Result<(), SynthesisError> {
+//         let mut rng = ark_std::test_rng();
 
-//             for _ in 0..1000 {
-//                 let v = (0..$size)
-//                 .map(|_| Boolean::constant(rng.gen()))
-//                 .collect::<Vec<Boolean<Fr>>>();
+//         for _ in 0..1000 {
+//             let v = (0..$size)
+//             .map(|_| Boolean::constant(rng.gen()))
+//             .collect::<Vec<Boolean<Fr>>>();
 
-//                 let b = UInt::from_bits_le(&v);
+//             let b = UInt::from_bits_le(&v);
 
-//                 for (i, bit) in b.bits.iter().enumerate() {
-//                     match bit {
-//                         &Boolean::Constant(bit) => {
-//                             assert_eq!(bit, ((b.value()? >> i) & 1 == 1));
-//                         },
-//                         _ => unreachable!(),
-//                     }
-//                 }
-
-//                 let expected_to_be_same = b.to_bits_le();
-
-//                 for x in v.iter().zip(expected_to_be_same.iter()) {
-//                     match x {
-//                         (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
-//                         (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
-//                         _ => unreachable!(),
-//                     }
+//             for (i, bit) in b.bits.iter().enumerate() {
+//                 match bit {
+//                     &Boolean::Constant(bit) => {
+//                         assert_eq!(bit, ((b.value()? >> i) & 1 == 1));
+//                     },
+//                     _ => unreachable!(),
 //                 }
 //             }
-//             Ok(())
-//         }
 
-//         #[test]
-//         fn test_xor() -> Result<(), SynthesisError> {
-//             use Boolean::*;
-//             let mut rng = ark_std::test_rng();
+//             let expected_to_be_same = b.to_bits_le();
 
-//             for _ in 0..1000 {
-//                 let cs = ConstraintSystem::<Fr>::new_ref();
-
-//                 let a: $native = rng.gen();
-//                 let b: $native = rng.gen();
-//                 let c: $native = rng.gen();
-
-//                 let mut expected = a ^ b ^ c;
-
-//                 let a_bit = $name::new_witness(cs.clone(), || Ok(a))?;
-//                 let b_bit = $name::constant(b);
-//                 let c_bit = $name::new_witness(cs.clone(), || Ok(c))?;
-
-//                 let r = a_bit.xor(&b_bit).unwrap();
-//                 let r = r.xor(&c_bit).unwrap();
-
-//                 assert!(cs.is_satisfied().unwrap());
-
-//                 assert!(r.value == Some(expected));
-
-//                 for b in r.bits.iter() {
-//                     match b {
-//                         Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
-//                         Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
-//                         Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
-//                     }
-
-//                     expected >>= 1;
+//             for x in v.iter().zip(expected_to_be_same.iter()) {
+//                 match x {
+//                     (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
+//                     (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
+//                     _ => unreachable!(),
 //                 }
 //             }
-//             Ok(())
 //         }
-
-//         #[test]
-//         fn test_add_many_constants() -> Result<(), SynthesisError> {
-//             let mut rng = ark_std::test_rng();
-
-//             for _ in 0..1000 {
-//                 let cs = ConstraintSystem::<Fr>::new_ref();
-
-//                 let a: $native = rng.gen();
-//                 let b: $native = rng.gen();
-//                 let c: $native = rng.gen();
-
-//                 let a_bit = $name::new_constant(cs.clone(), a)?;
-//                 let b_bit = $name::new_constant(cs.clone(), b)?;
-//                 let c_bit = $name::new_constant(cs.clone(), c)?;
-
-//                 let mut expected = a.wrapping_add(b).wrapping_add(c);
-
-//                 let r = $name::add_many(&[a_bit, b_bit, c_bit]).unwrap();
-
-//                 assert!(r.value == Some(expected));
-
-//                 for b in r.bits.iter() {
-//                     match b {
-//                         Boolean::Is(_) => unreachable!(),
-//                         Boolean::Not(_) => unreachable!(),
-//                         Boolean::Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
-//                     }
-
-//                     expected >>= 1;
-//                 }
-//             }
-//             Ok(())
-//         }
-
-//         #[test]
-//         fn test_add_many() -> Result<(), SynthesisError> {
-//             let mut rng = ark_std::test_rng();
-
-//             for _ in 0..1000 {
-//                 let cs = ConstraintSystem::<Fr>::new_ref();
-
-//                 let a: $native = rng.gen();
-//                 let b: $native = rng.gen();
-//                 let c: $native = rng.gen();
-//                 let d: $native = rng.gen();
-
-//                 let mut expected = (a ^ b).wrapping_add(c).wrapping_add(d);
-
-//                 let a_bit = $name::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a))?;
-//                 let b_bit = $name::constant(b);
-//                 let c_bit = $name::constant(c);
-//                 let d_bit = $name::new_witness(ark_relations::ns!(cs, "d_bit"), || Ok(d))?;
-
-//                 let r = a_bit.xor(&b_bit).unwrap();
-//                 let r = $name::add_many(&[r, c_bit, d_bit]).unwrap();
-
-//                 assert!(cs.is_satisfied().unwrap());
-//                 assert!(r.value == Some(expected));
-
-//                 for b in r.bits.iter() {
-//                     match b {
-//                         Boolean::Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
-//                         Boolean::Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
-//                         Boolean::Constant(_) => unreachable!(),
-//                     }
-
-//                     expected >>= 1;
-//                 }
-//             }
-//             Ok(())
-//         }
-
-//         #[test]
-//         fn test_rotr() -> Result<(), SynthesisError> {
-//             let mut rng = ark_std::test_rng();
-
-//             let mut num = rng.gen();
-
-//             let a: $name<Fr> = $name::constant(num);
-
-//             for i in 0..$size {
-//                 let b = a.rotr(i);
-
-//                 assert!(b.value.unwrap() == num);
-
-//                 let mut tmp = num;
-//                 for b in &b.bits {
-//                     match b {
-//                         Boolean::Constant(b) => assert_eq!(*b, tmp & 1 == 1),
-//                         _ => unreachable!(),
-//                     }
-
-//                     tmp >>= 1;
-//                 }
-
-//                 num = num.rotate_right(1);
-//             }
-//             Ok(())
-//         }
+//         Ok(())
 //     }
+
+//     #[test]
+//     fn test_xor() -> Result<(), SynthesisError> {
+//         use Boolean::*;
+//         let mut rng = ark_std::test_rng();
+
+//         for _ in 0..1000 {
+//             let cs = ConstraintSystem::<Fr>::new_ref();
+
+//             let a: $native = rng.gen();
+//             let b: $native = rng.gen();
+//             let c: $native = rng.gen();
+
+//             let mut expected = a ^ b ^ c;
+
+//             let a_bit = $name::new_witness(cs.clone(), || Ok(a))?;
+//             let b_bit = $name::constant(b);
+//             let c_bit = $name::new_witness(cs.clone(), || Ok(c))?;
+
+//             let r = a_bit.xor(&b_bit).unwrap();
+//             let r = r.xor(&c_bit).unwrap();
+
+//             assert!(cs.is_satisfied().unwrap());
+
+//             assert!(r.value == Some(expected));
+
+//             for b in r.bits.iter() {
+//                 match b {
+//                     Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
+//                     Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
+//                     Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
+//                 }
+
+//                 expected >>= 1;
+//             }
+//         }
+//         Ok(())
+//     }
+
+//     #[test]
+//     fn test_add_many_constants() -> Result<(), SynthesisError> {
+//         let mut rng = ark_std::test_rng();
+
+//         for _ in 0..1000 {
+//             let cs = ConstraintSystem::<Fr>::new_ref();
+
+//             let a: $native = rng.gen();
+//             let b: $native = rng.gen();
+//             let c: $native = rng.gen();
+
+//             let a_bit = $name::new_constant(cs.clone(), a)?;
+//             let b_bit = $name::new_constant(cs.clone(), b)?;
+//             let c_bit = $name::new_constant(cs.clone(), c)?;
+
+//             let mut expected = a.wrapping_add(b).wrapping_add(c);
+
+//             let r = $name::add_many(&[a_bit, b_bit, c_bit]).unwrap();
+
+//             assert!(r.value == Some(expected));
+
+//             for b in r.bits.iter() {
+//                 match b {
+//                     Boolean::Is(_) => unreachable!(),
+//                     Boolean::Not(_) => unreachable!(),
+//                     Boolean::Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
+//                 }
+
+//                 expected >>= 1;
+//             }
+//         }
+//         Ok(())
+//     }
+
+//     #[test]
+//     fn test_add_many() -> Result<(), SynthesisError> {
+//         let mut rng = ark_std::test_rng();
+
+//         for _ in 0..1000 {
+//             let cs = ConstraintSystem::<Fr>::new_ref();
+
+//             let a: $native = rng.gen();
+//             let b: $native = rng.gen();
+//             let c: $native = rng.gen();
+//             let d: $native = rng.gen();
+
+//             let mut expected = (a ^ b).wrapping_add(c).wrapping_add(d);
+
+//             let a_bit = $name::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a))?;
+//             let b_bit = $name::constant(b);
+//             let c_bit = $name::constant(c);
+//             let d_bit = $name::new_witness(ark_relations::ns!(cs, "d_bit"), || Ok(d))?;
+
+//             let r = a_bit.xor(&b_bit).unwrap();
+//             let r = $name::add_many(&[r, c_bit, d_bit]).unwrap();
+
+//             assert!(cs.is_satisfied().unwrap());
+//             assert!(r.value == Some(expected));
+
+//             for b in r.bits.iter() {
+//                 match b {
+//                     Boolean::Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
+//                     Boolean::Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
+//                     Boolean::Constant(_) => unreachable!(),
+//                 }
+
+//                 expected >>= 1;
+//             }
+//         }
+//         Ok(())
+//     }
+
+//     #[test]
+//     fn test_rotr() -> Result<(), SynthesisError> {
+//         let mut rng = ark_std::test_rng();
+
+//         let mut num = rng.gen();
+
+//         let a: $name<Fr> = $name::constant(num);
+
+//         for i in 0..$size {
+//             let b = a.rotr(i);
+
+//             assert!(b.value.unwrap() == num);
+
+//             let mut tmp = num;
+//             for b in &b.bits {
+//                 match b {
+//                     Boolean::Constant(b) => assert_eq!(*b, tmp & 1 == 1),
+//                     _ => unreachable!(),
+//                 }
+
+//                 tmp >>= 1;
+//             }
+
+//             num = num.rotate_right(1);
+//         }
+//         Ok(())
+//     }
+// }
