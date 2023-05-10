@@ -4,7 +4,7 @@ use ark_ec::{
     },
     AffineRepr, CurveGroup,
 };
-use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
+use ark_ff::{AdditiveGroup, BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
