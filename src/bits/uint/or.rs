@@ -36,7 +36,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for &'a UInt<
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -66,7 +66,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<&'a Self> for UInt<
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -96,7 +96,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<UInt<N, T, F>> for 
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -126,7 +126,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for UInt<N, T, F>
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -155,7 +155,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<Self> for UInt<N,
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -185,7 +185,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<&'a Self> for
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a.or(&b)?.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -194,5 +194,67 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<&'a Self> for
     fn bitor_assign(&mut self, other: &'a Self) {
         let result = self._or(other).unwrap();
         *self = result;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        prelude::EqGadget,
+        uint::test_utils::{run_binary_exhaustive, run_binary_random},
+        R1CSVar,
+    };
+    use ark_ff::PrimeField;
+    use ark_test_curves::bls12_381::Fr;
+
+    fn uint_or<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+        a: UInt<N, T, F>,
+        b: UInt<N, T, F>,
+    ) -> Result<(), SynthesisError> {
+        let cs = a.cs().or(b.cs());
+        let both_constant = a.is_constant() && b.is_constant();
+        let computed = &a | &b;
+        let expected_mode = if both_constant {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+        let expected = UInt::<N, T, F>::new_variable(cs.clone(), 
+        || Ok(a.value().unwrap() | b.value().unwrap()),
+            expected_mode
+        )?;
+        assert_eq!(expected.value(), computed.value());
+        expected.enforce_equal(&expected)?;
+        if !both_constant {
+            assert!(cs.is_satisfied().unwrap());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn u8_or() {
+        run_binary_exhaustive(uint_or::<u8, 8, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u16_or() {
+        run_binary_random::<1000, 16, _, _>(uint_or::<u16, 16, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u32_or() {
+        run_binary_random::<1000, 32, _, _>(uint_or::<u32, 32, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u64_or() {
+        run_binary_random::<1000, 64, _, _>(uint_or::<u64, 64, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u128_or() {
+        run_binary_random::<1000, 128, _, _>(uint_or::<u128, 128, Fr>).unwrap()
     }
 }

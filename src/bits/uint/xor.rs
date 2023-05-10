@@ -12,7 +12,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             *a = a.xor(b)?
         }
         result.value = self.value.and_then(|a| Some(a ^ other.value?));
-        dbg!(result.value);
         Ok(result)
     }
 }
@@ -201,7 +200,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<&'a Self> fo
 mod tests {
     use super::*;
     use crate::{
-        alloc::AllocVar,
+        alloc::{AllocVar, AllocationMode},
         prelude::EqGadget,
         uint::test_utils::{run_binary_exhaustive, run_binary_random},
         R1CSVar,
@@ -214,13 +213,22 @@ mod tests {
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
         let cs = a.cs().or(b.cs());
-        let computed = a ^ b;
-        let expected = UInt::new_witness(ark_relations::ns!(cs, "xor"), || {
-            Ok(a.value().unwrap() ^ b.value().unwrap())
-        })?;
+        let both_constant = a.is_constant() && b.is_constant();
+        let computed = &a ^ &b;
+        let expected_mode = if both_constant {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+        let expected = UInt::<N, T, F>::new_variable(cs.clone(), 
+        || Ok(a.value().unwrap() ^ b.value().unwrap()),
+            expected_mode
+        )?;
         assert_eq!(expected.value(), computed.value());
         expected.enforce_equal(&expected)?;
-        assert!(cs.is_satisfied().unwrap());
+        if !both_constant {
+            assert!(cs.is_satisfied().unwrap());
+        }
         Ok(())
     }
 
@@ -245,7 +253,7 @@ mod tests {
     }
 
     #[test]
-    fn u128() {
+    fn u128_xor() {
         run_binary_random::<1000, 128, _, _>(uint_xor::<u128, 128, Fr>).unwrap()
     }
 }
