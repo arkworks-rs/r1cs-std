@@ -138,7 +138,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
         assert!(F::MODULUS_BIT_SIZE as usize >= 2 * N);
 
         assert!(operands.len() >= 1);
-        assert!(N * operands.len() <= F::MODULUS_BIT_SIZE as usize);
+        assert!(N as u32 + ark_std::log2(operands.len()) <= F::MODULUS_BIT_SIZE);
 
         if operands.len() == 1 {
             return Ok(operands[0].clone());
