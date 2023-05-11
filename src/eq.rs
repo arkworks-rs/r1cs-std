@@ -116,7 +116,7 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: Field> EqGadget<F> for [T] {
         assert_eq!(self.len(), other.len());
         let some_are_different = self.is_neq(other)?;
         if [&some_are_different, should_enforce].is_constant() {
-            assert!(some_are_different.value().unwrap());
+            assert!(some_are_different.value()?);
             Ok(())
         } else {
             let cs = [&some_are_different, should_enforce].cs();

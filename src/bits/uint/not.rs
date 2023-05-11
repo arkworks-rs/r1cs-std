@@ -96,9 +96,9 @@ mod tests {
             AllocationMode::Witness
         };
         let expected =
-            UInt::<N, T, F>::new_variable(cs.clone(), || Ok(!a.value().unwrap()), expected_mode)?;
+            UInt::<N, T, F>::new_variable(cs.clone(), || Ok(!a.value()?), expected_mode)?;
         assert_eq!(expected.value(), computed.value());
-        expected.enforce_equal(&expected)?;
+        expected.enforce_equal(&computed)?;
         if !a.is_constant() {
             assert!(cs.is_satisfied().unwrap());
         }

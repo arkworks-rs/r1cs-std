@@ -91,13 +91,32 @@ mod tests {
         } else {
             AllocationMode::Witness
         };
-        let expected = Boolean::new_variable(
-            cs.clone(),
-            || Ok(a.value().unwrap() == b.value().unwrap()),
-            expected_mode,
-        )?;
+        let expected =
+            Boolean::new_variable(cs.clone(), || Ok(a.value()? == b.value()?), expected_mode)?;
         assert_eq!(expected.value(), computed.value());
-        expected.enforce_equal(&expected)?;
+        expected.enforce_equal(&computed)?;
+        if !both_constant {
+            assert!(cs.is_satisfied().unwrap());
+        }
+        Ok(())
+    }
+
+    fn uint_neq<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+        a: UInt<N, T, F>,
+        b: UInt<N, T, F>,
+    ) -> Result<(), SynthesisError> {
+        let cs = a.cs().or(b.cs());
+        let both_constant = a.is_constant() && b.is_constant();
+        let computed = a.is_neq(&b)?;
+        let expected_mode = if both_constant {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+        let expected =
+            Boolean::new_variable(cs.clone(), || Ok(a.value()? != b.value()?), expected_mode)?;
+        assert_eq!(expected.value(), computed.value());
+        expected.enforce_equal(&computed)?;
         if !both_constant {
             assert!(cs.is_satisfied().unwrap());
         }
@@ -127,5 +146,30 @@ mod tests {
     #[test]
     fn u128_eq() {
         run_binary_random::<1000, 128, _, _>(uint_eq::<u128, 128, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u8_neq() {
+        run_binary_exhaustive(uint_neq::<u8, 8, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u16_neq() {
+        run_binary_random::<1000, 16, _, _>(uint_neq::<u16, 16, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u32_neq() {
+        run_binary_random::<1000, 32, _, _>(uint_neq::<u32, 32, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u64_neq() {
+        run_binary_random::<1000, 64, _, _>(uint_neq::<u64, 64, Fr>).unwrap()
+    }
+
+    #[test]
+    fn u128_neq() {
+        run_binary_random::<1000, 128, _, _>(uint_neq::<u128, 128, Fr>).unwrap()
     }
 }

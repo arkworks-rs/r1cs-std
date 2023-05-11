@@ -222,11 +222,11 @@ mod tests {
         };
         let expected = UInt::<N, T, F>::new_variable(
             cs.clone(),
-            || Ok(a.value().unwrap() | b.value().unwrap()),
+            || Ok(a.value()? | b.value()?),
             expected_mode,
         )?;
         assert_eq!(expected.value(), computed.value());
-        expected.enforce_equal(&expected)?;
+        expected.enforce_equal(&computed)?;
         if !both_constant {
             assert!(cs.is_satisfied().unwrap());
         }

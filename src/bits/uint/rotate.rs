@@ -85,11 +85,11 @@ mod tests {
             let computed = a.rotate_left(shift);
             let expected = UInt::<N, T, F>::new_variable(
                 cs.clone(),
-                || Ok(a.value().unwrap().rotate_left(shift as u32)),
+                || Ok(a.value()?.rotate_left(shift as u32)),
                 expected_mode,
             )?;
             assert_eq!(expected.value(), computed.value());
-            expected.enforce_equal(&expected)?;
+            expected.enforce_equal(&computed)?;
             if !a.is_constant() {
                 assert!(cs.is_satisfied().unwrap());
             }
@@ -110,11 +110,11 @@ mod tests {
             let computed = a.rotate_right(shift);
             let expected = UInt::<N, T, F>::new_variable(
                 cs.clone(),
-                || Ok(a.value().unwrap().rotate_right(shift as u32)),
+                || Ok(a.value()?.rotate_right(shift as u32)),
                 expected_mode,
             )?;
             assert_eq!(expected.value(), computed.value());
-            expected.enforce_equal(&expected)?;
+            expected.enforce_equal(&computed)?;
             if !a.is_constant() {
                 assert!(cs.is_satisfied().unwrap());
             }

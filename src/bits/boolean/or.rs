@@ -118,13 +118,10 @@ mod tests {
             } else {
                 AllocationMode::Witness
             };
-            let expected = Boolean::new_variable(
-                cs.clone(),
-                || Ok(a.value().unwrap() | b.value().unwrap()),
-                expected_mode,
-            )?;
+            let expected =
+                Boolean::new_variable(cs.clone(), || Ok(a.value()? | b.value()?), expected_mode)?;
             assert_eq!(expected.value(), computed.value());
-            expected.enforce_equal(&expected)?;
+            expected.enforce_equal(&computed)?;
             if !both_constant {
                 assert!(cs.is_satisfied().unwrap());
             }

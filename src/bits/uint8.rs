@@ -191,9 +191,9 @@ mod test {
             let a_bit = UInt8::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a)).unwrap();
             let b_bit = UInt8::constant(b);
             let c_bit = UInt8::new_witness(ark_relations::ns!(cs, "c_bit"), || Ok(c)).unwrap();
-            dbg!(a_bit.value().unwrap());
-            dbg!(b_bit.value().unwrap());
-            dbg!(c_bit.value().unwrap());
+            dbg!(a_bit.value()?);
+            dbg!(b_bit.value()?);
+            dbg!(c_bit.value()?);
 
             let mut r = a_bit ^ b_bit;
             r ^= &c_bit;
@@ -201,7 +201,7 @@ mod test {
             assert!(cs.is_satisfied().unwrap());
 
             dbg!(expected);
-            dbg!(r.value().unwrap());
+            dbg!(r.value()?);
             assert_eq!(r.value, Some(expected));
 
             for b in r.bits.iter() {
