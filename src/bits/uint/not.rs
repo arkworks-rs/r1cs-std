@@ -12,7 +12,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             *a = !&*a
         }
         result.value = self.value.map(Not::not);
-        dbg!(result.value);
         Ok(result)
     }
 }

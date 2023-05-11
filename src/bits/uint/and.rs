@@ -12,7 +12,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             *a &= b;
         }
         result.value = self.value.and_then(|a| Some(a & other.value?));
-        dbg!(result.value);
         Ok(result)
     }
 }

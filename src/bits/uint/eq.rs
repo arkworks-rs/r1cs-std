@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::fmt::Debug;
+use ark_std::{fmt::Debug, vec::Vec};
 
 use num_traits::PrimInt;
 
