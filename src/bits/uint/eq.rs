@@ -20,8 +20,8 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> EqGadget<Const
             .chunks(chunk_size)
             .zip(other.bits.chunks(chunk_size))
             .map(|(a, b)| {
-                let a = Boolean::le_bits_to_fp_var(a)?;
-                let b = Boolean::le_bits_to_fp_var(b)?;
+                let a = Boolean::le_bits_to_fp(a)?;
+                let b = Boolean::le_bits_to_fp(b)?;
                 a.is_eq(&b)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -40,8 +40,8 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> EqGadget<Const
             .chunks(chunk_size)
             .zip(other.bits.chunks(chunk_size))
         {
-            let a = Boolean::le_bits_to_fp_var(a)?;
-            let b = Boolean::le_bits_to_fp_var(b)?;
+            let a = Boolean::le_bits_to_fp(a)?;
+            let b = Boolean::le_bits_to_fp(b)?;
             a.conditional_enforce_equal(&b, condition)?;
         }
         Ok(())
@@ -59,8 +59,8 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> EqGadget<Const
             .chunks(chunk_size)
             .zip(other.bits.chunks(chunk_size))
         {
-            let a = Boolean::le_bits_to_fp_var(a)?;
-            let b = Boolean::le_bits_to_fp_var(b)?;
+            let a = Boolean::le_bits_to_fp(a)?;
+            let b = Boolean::le_bits_to_fp(b)?;
             a.conditional_enforce_not_equal(&b, condition)?;
         }
         Ok(())

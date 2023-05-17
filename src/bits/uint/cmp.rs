@@ -1,6 +1,7 @@
 use crate::fields::fp::FpVar;
 
 use super::*;
+
 impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
     pub fn is_gt(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         other.is_lt(self)
@@ -10,7 +11,7 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
         if N + 1 < ((F::MODULUS_BIT_SIZE - 1) as usize) {
             let a = self.to_fp()?;
             let b = other.to_fp()?;
-            let (_, rest) = Self::from_fp_to_parts(&(a - b))?;
+            let (_, rest) = FpVar::to_bits_le_with_top_bits_zero(&(a - b), N + 1)?;
             rest.is_eq(&FpVar::zero())
         } else {
             unimplemented!("bit sizes larger than modulus size not yet supported")

@@ -49,6 +49,35 @@ pub enum FpVar<F: PrimeField> {
     Var(AllocatedFp<F>),
 }
 
+impl<F: PrimeField> FpVar<F> {
+    /// Decomposes `self` into a vector of `bits` and a remainder `rest` such that
+    /// * `bits.len() == size`, and
+    /// * `rest == 0`.
+    pub fn to_bits_le_with_top_bits_zero(
+        &self,
+        size: usize,
+    ) -> Result<(Vec<Boolean<F>>, Self), SynthesisError> {
+        assert!(size <= F::MODULUS_BIT_SIZE as usize - 1);
+        let cs = self.cs();
+        let mode = if self.is_constant() {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+
+        let value = self.value().map(|f| f.into_bigint());
+        let lower_bits = (0..size)
+            .map(|i| {
+                Boolean::new_variable(cs.clone(), || value.map(|v| v.get_bit(i as usize)), mode)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let lower_bits_fp = Boolean::le_bits_to_fp(&lower_bits)?;
+        let rest = self - &lower_bits_fp;
+        rest.enforce_equal(&Self::zero())?;
+        Ok((lower_bits, rest))
+    }
+}
+
 impl<F: PrimeField> R1CSVar<F> for FpVar<F> {
     type Value = F;
 
@@ -135,6 +164,7 @@ impl<F: PrimeField> AllocatedFp<F> {
         let mut value = F::zero();
         let mut new_lc = lc!();
 
+        let mut num_iters = 0;
         for variable in iter {
             let variable = variable.borrow();
             if !variable.cs.is_none() {
@@ -146,14 +176,16 @@ impl<F: PrimeField> AllocatedFp<F> {
                 value += variable.value.unwrap();
             }
             new_lc = new_lc + variable.variable;
+            num_iters += 1;
         }
+        assert_ne!(num_iters, 0);
 
         let variable = cs.new_lc(new_lc).unwrap();
 
         if has_value {
-            AllocatedFp::new(Some(value), variable, cs.clone())
+            AllocatedFp::new(Some(value), variable, cs)
         } else {
-            AllocatedFp::new(None, variable, cs.clone())
+            AllocatedFp::new(None, variable, cs)
         }
     }
 

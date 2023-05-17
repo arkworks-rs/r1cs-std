@@ -1,18 +1,12 @@
-use ark_ff::{Field, One, PrimeField, Zero};
+use ark_ff::{Field, PrimeField};
 use core::{borrow::Borrow, convert::TryFrom, fmt::Debug};
-use num_bigint::BigUint;
-use num_traits::{NumCast, PrimInt};
+use num_traits::PrimInt;
 
-use ark_relations::r1cs::{
-    ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
-};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::{
-    boolean::{AllocatedBool, Boolean},
-    prelude::*,
-    Assignment, Vec,
-};
+use crate::{boolean::Boolean, prelude::*, Assignment, Vec};
 
+mod add;
 mod and;
 mod cmp;
 mod convert;
@@ -123,131 +117,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             output_vec.push(Self::new_witness(cs.clone(), || byte.get())?);
         }
         Ok(output_vec)
-    }
-
-    /// Perform modular addition of `operands`.
-    ///
-    /// The user must ensure that overflow does not occur.
-    #[tracing::instrument(target = "r1cs", skip(operands))]
-    pub fn add_many(operands: &[Self]) -> Result<Self, SynthesisError>
-    where
-        F: PrimeField,
-    {
-        // Make some arbitrary bounds for ourselves to avoid overflows
-        // in the scalar field
-        assert!(F::MODULUS_BIT_SIZE as usize >= 2 * N);
-
-        assert!(operands.len() >= 1);
-        assert!(N as u32 + ark_std::log2(operands.len()) <= F::MODULUS_BIT_SIZE);
-
-        if operands.len() == 1 {
-            return Ok(operands[0].clone());
-        }
-
-        // Compute the maximum value of the sum so we allocate enough bits for
-        // the result
-        let mut max_value = T::max_value() * T::from(operands.len() as u128).unwrap();
-
-        // Keep track of the resulting value
-        let mut result_value = Some(BigUint::zero());
-
-        // This is a linear combination that we will enforce to be "zero"
-        let mut lc = LinearCombination::zero();
-
-        let mut all_constants = true;
-
-        // Iterate over the operands
-        for op in operands {
-            // Accumulate the value
-            match op.value {
-                Some(val) => {
-                    result_value
-                        .as_mut()
-                        .map(|v| *v += BigUint::from(val.to_u128().unwrap()));
-                },
-
-                None => {
-                    // If any of our operands have unknown value, we won't
-                    // know the value of the result
-                    result_value = None;
-                },
-            }
-
-            // Iterate over each bit_gadget of the operand and add the operand to
-            // the linear combination
-            let mut coeff = F::one();
-            for bit in &op.bits {
-                match *bit {
-                    Boolean::Constant(bit) => {
-                        if bit {
-                            lc += (coeff, Variable::One);
-                        }
-                    },
-                    _ => {
-                        all_constants = false;
-
-                        // Add coeff * bit_gadget
-                        lc = lc + (coeff, &bit.lc());
-                    },
-                }
-
-                coeff.double_in_place();
-            }
-        }
-
-        // The value of the actual result is modulo 2^$size
-        let modular_value = result_value.clone().and_then(|v| {
-            let modulus = BigUint::from(1u64) << (N as u32);
-            NumCast::from(v % modulus)
-        });
-
-        if all_constants && modular_value.is_some() {
-            // We can just return a constant, rather than
-            // unpacking the result into allocated bits.
-
-            return modular_value
-                .map(UInt::constant)
-                .ok_or(SynthesisError::AssignmentMissing);
-        }
-        let cs = operands.cs();
-
-        // Storage area for the resulting bits
-        let mut result_bits = vec![];
-
-        // Allocate each bit_gadget of the result
-        let mut coeff = F::one();
-        let mut i = 0;
-        while max_value != T::zero() {
-            // Allocate the bit_gadget
-            let b = AllocatedBool::new_witness(cs.clone(), || {
-                result_value
-                    .clone()
-                    .map(|v| (v >> i) & BigUint::one() == BigUint::one())
-                    .get()
-            })?;
-
-            // Subtract this bit_gadget from the linear combination to ensure the sums
-            // balance out
-            lc = lc - (coeff, b.variable());
-
-            result_bits.push(b.into());
-
-            max_value = max_value >> 1;
-            i += 1;
-            coeff.double_in_place();
-        }
-
-        // Enforce that the linear combination equals zero
-        cs.enforce_constraint(lc!(), lc!(), lc)?;
-
-        // Discard carry bits that we don't care about
-        result_bits.truncate(N);
-        let bits = TryFrom::try_from(result_bits).unwrap();
-
-        Ok(UInt {
-            bits,
-            value: modular_value,
-        })
     }
 }
 
@@ -421,70 +290,3 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, Constra
 //         }
 //         Ok(())
 //     }
-
-//     #[test]
-//     fn test_add_many() -> Result<(), SynthesisError> {
-//         let mut rng = ark_std::test_rng();
-
-//         for _ in 0..1000 {
-//             let cs = ConstraintSystem::<Fr>::new_ref();
-
-//             let a: $native = rng.gen();
-//             let b: $native = rng.gen();
-//             let c: $native = rng.gen();
-//             let d: $native = rng.gen();
-
-//             let mut expected = (a ^ b).wrapping_add(c).wrapping_add(d);
-
-//             let a_bit = $name::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a))?;
-//             let b_bit = $name::constant(b);
-//             let c_bit = $name::constant(c);
-//             let d_bit = $name::new_witness(ark_relations::ns!(cs, "d_bit"), || Ok(d))?;
-
-//             let r = a_bit.xor(&b_bit).unwrap();
-//             let r = $name::add_many(&[r, c_bit, d_bit]).unwrap();
-
-//             assert!(cs.is_satisfied().unwrap());
-//             assert!(r.value == Some(expected));
-
-//             for b in r.bits.iter() {
-//                 match b {
-//                     Boolean::Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
-//                     Boolean::Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
-//                     Boolean::Constant(_) => unreachable!(),
-//                 }
-
-//                 expected >>= 1;
-//             }
-//         }
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn test_rotr() -> Result<(), SynthesisError> {
-//         let mut rng = ark_std::test_rng();
-
-//         let mut num = rng.gen();
-
-//         let a: $name<Fr> = $name::constant(num);
-
-//         for i in 0..$size {
-//             let b = a.rotr(i);
-
-//             assert!(b.value.unwrap() == num);
-
-//             let mut tmp = num;
-//             for b in &b.bits {
-//                 match b {
-//                     Boolean::Constant(b) => assert_eq!(*b, tmp & 1 == 1),
-//                     _ => unreachable!(),
-//                 }
-
-//                 tmp >>= 1;
-//             }
-
-//             num = num.rotate_right(1);
-//         }
-//         Ok(())
-//     }
-// }

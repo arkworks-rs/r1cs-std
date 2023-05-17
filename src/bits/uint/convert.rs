@@ -1,5 +1,3 @@
-use ark_ff::BigInteger;
-
 use crate::fields::fp::FpVar;
 
 use super::*;
@@ -16,44 +14,21 @@ impl<const N: usize, F: Field, T: PrimInt + Debug> UInt<N, T, F> {
     {
         assert!(N <= F::MODULUS_BIT_SIZE as usize - 1);
 
-        Boolean::le_bits_to_fp_var(&self.bits)
-    }
-
-    pub(super) fn from_fp_to_parts(other: &FpVar<F>) -> Result<(Self, FpVar<F>), SynthesisError>
-    where
-        F: PrimeField,
-    {
-        assert!(N <= F::MODULUS_BIT_SIZE as usize - 1);
-        let value = other.value()?.into_bigint().to_bits_le();
-        let cs = other.cs();
-        let mode = if other.is_constant() {
-            AllocationMode::Constant
-        } else {
-            AllocationMode::Witness
-        };
-        let lower_bits = value
-            .iter()
-            .take(N)
-            .map(|b| Boolean::new_variable(cs.clone(), || Ok(*b), mode))
-            .collect::<Result<Vec<_>, _>>()?;
-        let result = Self::from_bits_le(&lower_bits);
-        let rest: FpVar<F> = other - &result.to_fp()?;
-        (result.to_fp()? + &rest).enforce_equal(&other)?;
-        Ok((result, rest))
+        Boolean::le_bits_to_fp(&self.bits)
     }
 
     /// Converts a field element into its little-endian bit order representation.
     ///
     /// # Panics
     ///
-    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
-    pub fn from_fp(other: &FpVar<F>) -> Result<Self, SynthesisError>
+    /// Assumes that `N` is at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
+    pub fn from_fp(other: &FpVar<F>) -> Result<(Self, FpVar<F>), SynthesisError>
     where
         F: PrimeField,
     {
-        let (result, rest) = Self::from_fp_to_parts(other)?;
-        rest.enforce_equal(&FpVar::zero())?;
-        Ok(result)
+        let (bits, rest) = other.to_bits_le_with_top_bits_zero(N)?;
+        let result = Self::from_bits_le(&bits);
+        Ok((result, rest))
     }
 
     /// Turns `self` into the underlying little-endian bits.

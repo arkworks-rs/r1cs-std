@@ -456,7 +456,7 @@ impl<F: Field> Boolean<F> {
     /// Convert a little-endian bitwise representation of a field element to
     /// `FpVar<F>`
     #[tracing::instrument(target = "r1cs", skip(bits))]
-    pub fn le_bits_to_fp_var(bits: &[Self]) -> Result<FpVar<F>, SynthesisError>
+    pub fn le_bits_to_fp(bits: &[Self]) -> Result<FpVar<F>, SynthesisError>
     where
         F: PrimeField,
     {
@@ -1003,7 +1003,7 @@ mod test {
                 let bits: Vec<_> =
                     AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
-                let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
+                let claimed_f = Boolean::le_bits_to_fp(&bits)?;
                 claimed_f.enforce_equal(&f)?;
             }
 
@@ -1013,7 +1013,7 @@ mod test {
                 let bits: Vec<_> =
                     AllocVar::new_variable(cs.clone(), || Ok(bits.as_slice()), mode)?;
                 let f = AllocVar::new_variable(cs.clone(), || Ok(f), mode)?;
-                let claimed_f = Boolean::le_bits_to_fp_var(&bits)?;
+                let claimed_f = Boolean::le_bits_to_fp(&bits)?;
                 claimed_f.enforce_equal(&f)?;
             }
             assert!(cs.is_satisfied().unwrap());

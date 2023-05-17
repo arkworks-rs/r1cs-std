@@ -80,7 +80,7 @@ impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<Co
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
         let max_size = ((ConstraintF::MODULUS_BIT_SIZE - 1) / 8) as usize;
         self.chunks(max_size)
-            .map(|chunk| Boolean::le_bits_to_fp_var(chunk.to_bits_le()?.as_slice()))
+            .map(|chunk| Boolean::le_bits_to_fp(chunk.to_bits_le()?.as_slice()))
             .collect::<Result<Vec<_>, SynthesisError>>()
     }
 }
