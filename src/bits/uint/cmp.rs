@@ -1,8 +1,6 @@
-use crate::fields::fp::FpVar;
-
 use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
+impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> UInt<N, T, F> {
     pub fn is_gt(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         other.is_lt(self)
     }
@@ -11,8 +9,8 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
         if N + 1 < ((F::MODULUS_BIT_SIZE - 1) as usize) {
             let a = self.to_fp()?;
             let b = other.to_fp()?;
-            let (_, rest) = FpVar::to_bits_le_with_top_bits_zero(&(a - b), N + 1)?;
-            rest.is_eq(&FpVar::zero())
+            let (bits, _) = (a - b + F::from(T::max_value()) + F::one()).to_bits_le_with_top_bits_zero(N + 1)?;
+            Ok(bits.last().unwrap().clone())
         } else {
             unimplemented!("bit sizes larger than modulus size not yet supported")
         }
@@ -39,7 +37,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_gt<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_gt<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -61,7 +59,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_lt<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_lt<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -83,7 +81,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_ge<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_ge<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -105,7 +103,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_le<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_le<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
