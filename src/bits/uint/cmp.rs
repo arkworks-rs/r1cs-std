@@ -9,7 +9,8 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> UInt<N, T, F> 
         if N + 1 < ((F::MODULUS_BIT_SIZE - 1) as usize) {
             let a = self.to_fp()?;
             let b = other.to_fp()?;
-            let (bits, _) = (a - b + F::from(T::max_value()) + F::one()).to_bits_le_with_top_bits_zero(N + 1)?;
+            let (bits, _) = (a - b + F::from(T::max_value()) + F::one())
+                .to_bits_le_with_top_bits_zero(N + 1)?;
             Ok(bits.last().unwrap().clone())
         } else {
             unimplemented!("bit sizes larger than modulus size not yet supported")

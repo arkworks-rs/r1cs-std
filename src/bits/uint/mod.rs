@@ -14,6 +14,7 @@ mod eq;
 mod not;
 mod or;
 mod rotate;
+mod select;
 mod xor;
 
 #[cfg(test)]
@@ -117,36 +118,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
             output_vec.push(Self::new_witness(cs.clone(), || byte.get())?);
         }
         Ok(output_vec)
-    }
-}
-
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> CondSelectGadget<ConstraintF>
-    for UInt<N, T, ConstraintF>
-{
-    #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]
-    fn conditionally_select(
-        cond: &Boolean<ConstraintF>,
-        true_value: &Self,
-        false_value: &Self,
-    ) -> Result<Self, SynthesisError> {
-        let selected_bits = true_value
-            .bits
-            .iter()
-            .zip(&false_value.bits)
-            .map(|(t, f)| cond.select(t, f));
-        let mut bits = [Boolean::FALSE; N];
-        for (result, new) in bits.iter_mut().zip(selected_bits) {
-            *result = new?;
-        }
-
-        let value = cond.value().ok().and_then(|cond| {
-            if cond {
-                true_value.value().ok()
-            } else {
-                false_value.value().ok()
-            }
-        });
-        Ok(Self { bits, value })
     }
 }
 
