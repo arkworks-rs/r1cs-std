@@ -31,10 +31,8 @@ pub(crate) use ark_std::vec::Vec;
 
 use ark_ff::Field;
 
-/// This module implements gadgets related to bit manipulation, such as
-/// `Boolean` and `UInt`s.
-pub mod bits;
-pub use self::bits::*;
+/// This module contains `Boolean`, an R1CS equivalent of the `bool` type.
+pub mod boolean;
 
 /// Finite field arithmetic.
 pub mod fields;
@@ -67,16 +65,41 @@ pub mod select;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
+/// This module contains `UInt8`, a R1CS equivalent of the `u8` type.
+pub mod uint8;
+/// This module contains a macro for generating `UIntN` types, which are R1CS
+/// equivalents of `N`-bit unsigned integers.
+#[macro_use]
+pub mod uint;
+
+pub mod uint16 {
+    pub type UInt16<F> = super::uint::UInt<16, u16, F>;
+}
+pub mod uint32 {
+    pub type UInt32<F> = super::uint::UInt<32, u32, F>;
+}
+pub mod uint64 {
+    pub type UInt64<F> = super::uint::UInt<64, u64, F>;
+}
+pub mod uint128 {
+    pub type UInt128<F> = super::uint::UInt<128, u128, F>;
+}
+
 #[allow(missing_docs)]
 pub mod prelude {
     pub use crate::{
         alloc::*,
-        bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8},
+        boolean::Boolean,
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
         pairing::PairingVar,
         select::*,
+        uint128::UInt128,
+        uint16::UInt16,
+        uint32::UInt32,
+        uint64::UInt64,
+        uint8::UInt8,
         R1CSVar,
     };
 }
