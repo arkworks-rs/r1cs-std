@@ -114,7 +114,7 @@ mod test {
         let byte_val = 0b01110001;
         let byte =
             UInt8::new_witness(ark_relations::ns!(cs, "alloc value"), || Ok(byte_val)).unwrap();
-        let bits = byte.to_bits_le();
+        let bits = byte.to_bits_le()?;
         for (i, bit) in bits.iter().enumerate() {
             assert_eq!(bit.value()?, (byte_val >> i) & 1 == 1)
         }
@@ -129,7 +129,7 @@ mod test {
             UInt8::new_input_vec(ark_relations::ns!(cs, "alloc value"), &byte_vals).unwrap();
         dbg!(bytes.value())?;
         for (native, variable) in byte_vals.into_iter().zip(bytes) {
-            let bits = variable.to_bits_le();
+            let bits = variable.to_bits_le()?;
             for (i, bit) in bits.iter().enumerate() {
                 assert_eq!(
                     bit.value()?,
@@ -162,7 +162,7 @@ mod test {
                 }
             }
 
-            let expected_to_be_same = val.to_bits_le();
+            let expected_to_be_same = val.to_bits_le()?;
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {

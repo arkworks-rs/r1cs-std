@@ -149,12 +149,14 @@ mod tests {
         dbg!(UInt32::new_witness(cs.clone(), || Ok(coset_index))
             .unwrap()
             .to_bits_le()
+            .unwrap()
             .iter()
             .map(|x| x.value().unwrap() as u8)
             .collect::<Vec<_>>());
         let coset_index_var = UInt32::new_witness(cs.clone(), || Ok(coset_index))
             .unwrap()
             .to_bits_le()
+            .unwrap()
             .into_iter()
             .take(COSET_DIM as usize)
             .collect::<Vec<_>>();

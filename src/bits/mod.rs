@@ -73,21 +73,6 @@ impl<F: Field> ToBitsGadget<F> for [Boolean<F>] {
     }
 }
 
-impl<F: Field> ToBitsGadget<F> for UInt8<F> {
-    fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        Ok(self.bits.to_vec())
-    }
-}
-
-impl<F: Field> ToBitsGadget<F> for [UInt8<F>] {
-    /// Interprets `self` as an integer, and outputs the little-endian
-    /// bit-wise decomposition of that integer.
-    fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        let bits = self.iter().flat_map(|b| &b.bits).cloned().collect();
-        Ok(bits)
-    }
-}
-
 impl<F: Field, T> ToBitsGadget<F> for Vec<T>
 where
     [T]: ToBitsGadget<F>,
@@ -118,26 +103,8 @@ pub trait ToBytesGadget<F: Field> {
     }
 }
 
-impl<F: Field> ToBytesGadget<F> for [UInt8<F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.to_vec())
-    }
-}
-
-impl<F: Field> ToBytesGadget<F> for Vec<UInt8<F>> {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.clone())
-    }
-}
-
 impl<'a, F: Field, T: 'a + ToBytesGadget<F>> ToBytesGadget<F> for &'a T {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         (*self).to_bytes()
-    }
-}
-
-impl<'a, F: Field> ToBytesGadget<F> for &'a [UInt8<F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.to_vec())
     }
 }
