@@ -57,7 +57,8 @@ impl<F: PrimeField> Boolean<F> {
 
             Ok(cur.expect("should not be 0"))
         } else {
-            // b0 & b1 & ... & bN == 1 if and only if sum(b0, b1, ..., bN) == N
+            // b0 | b1 | ... | bN == 1 if and only if not all of b0, b1, ..., bN are 0.
+            // We can enforce this by requiring that the sum of b0, b1, ..., bN is not 0.
             let sum_bits: FpVar<_> = bits.iter().map(|b| FpVar::from(b.clone())).sum();
             sum_bits.is_neq(&FpVar::zero())
         }
@@ -84,11 +85,11 @@ impl<'a, F: PrimeField> BitOr<Self> for &'a Boolean<F> {
     /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
     /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
     ///
-    /// a.or(&b)?.enforce_equal(&Boolean::TRUE)?;
-    /// b.or(&a)?.enforce_equal(&Boolean::TRUE)?;
+    /// (&a | &b).enforce_equal(&Boolean::TRUE)?;
+    /// (&b | &a).enforce_equal(&Boolean::TRUE)?;
     ///
-    /// a.or(&a)?.enforce_equal(&Boolean::TRUE)?;
-    /// b.or(&b)?.enforce_equal(&Boolean::FALSE)?;
+    /// (&a | &a).enforce_equal(&Boolean::TRUE)?;
+    /// (&b | &b).enforce_equal(&Boolean::FALSE)?;
     ///
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())

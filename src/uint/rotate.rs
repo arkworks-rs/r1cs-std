@@ -15,7 +15,7 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> UInt<N, T, Constrai
     /// let a = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
     /// let b = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
     ///
-    /// a.rotate_right(8)?.enforce_equal(&b)?;
+    /// a.rotate_right(8).enforce_equal(&b)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -44,7 +44,7 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> UInt<N, T, Constrai
     /// let a = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
     /// let b = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
     ///
-    /// a.rotate_left(8)?.enforce_equal(&b)?;
+    /// a.rotate_left(8).enforce_equal(&b)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }

@@ -30,11 +30,11 @@ impl<'a, F: Field> Not for &'a Boolean<F> {
     /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
     /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
     ///
-    /// a.not().enforce_equal(&b)?;
-    /// b.not().enforce_equal(&a)?;
+    /// (!&a).enforce_equal(&b)?;
+    /// (!&b).enforce_equal(&a)?;
     ///
-    /// a.not().enforce_equal(&Boolean::FALSE)?;
-    /// b.not().enforce_equal(&Boolean::TRUE)?;
+    /// (!&a).enforce_equal(&Boolean::FALSE)?;
+    /// (!&b).enforce_equal(&Boolean::TRUE)?;
     ///
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())

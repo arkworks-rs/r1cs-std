@@ -35,7 +35,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for &'a UInt
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// (a ^ &b).enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -48,28 +48,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for &'a UInt
 
 impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitxor(self, other: &Self) -> Self::Output {
         self._xor(&other).unwrap()
@@ -78,28 +57,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<&'a Self> for UInt
 
 impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<UInt<N, T, F>> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitxor(self, other: UInt<N, T, F>) -> Self::Output {
         self._xor(&other).unwrap()
@@ -108,28 +66,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<UInt<N, T, F>> for
 
 impl<const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for UInt<N, T, F> {
     type Output = Self;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitxor(self, other: Self) -> Self::Output {
         self._xor(&other).unwrap()
@@ -150,11 +87,12 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<Self> for UInt<N
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
+    /// let mut a = UInt8::new_witness(cs.clone(), || Ok(16))?;
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
+    /// a ^= b;
+    /// a.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -167,28 +105,6 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<Self> for UInt<N
 }
 
 impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<&'a Self> for UInt<N, T, F> {
-    /// Sets `self = self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.xor(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitxor_assign(&mut self, other: &'a Self) {
         let result = self._xor(other).unwrap();

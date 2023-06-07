@@ -35,11 +35,11 @@ impl<'a, F: Field> BitXor<Self> for &'a Boolean<F> {
     /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
     /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
     ///
-    /// a.xor(&b)?.enforce_equal(&Boolean::TRUE)?;
-    /// b.xor(&a)?.enforce_equal(&Boolean::TRUE)?;
+    /// (&a ^ &b).enforce_equal(&Boolean::TRUE)?;
+    /// (&b ^ &a).enforce_equal(&Boolean::TRUE)?;
     ///
-    /// a.xor(&a)?.enforce_equal(&Boolean::FALSE)?;
-    /// b.xor(&b)?.enforce_equal(&Boolean::FALSE)?;
+    /// (&a ^ &a).enforce_equal(&Boolean::FALSE)?;
+    /// (&b ^ &b).enforce_equal(&Boolean::FALSE)?;
     ///
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())

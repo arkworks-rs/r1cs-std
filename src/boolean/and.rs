@@ -62,6 +62,7 @@ impl<F: PrimeField> Boolean<F> {
 
             Ok(cur.expect("should not be 0"))
         } else {
+            // b0 & b1 & ... & bN == 1 if and only if sum(b0, b1, ..., bN) == N
             let sum_bits: FpVar<_> = bits.iter().map(|b| FpVar::from(b.clone())).sum();
             let num_bits = FpVar::Constant(F::from(bits.len() as u64));
             sum_bits.is_eq(&num_bits)
@@ -125,11 +126,11 @@ impl<'a, F: Field> BitAnd<Self> for &'a Boolean<F> {
     /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
     /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
     ///
-    /// a.and(&a)?.enforce_equal(&Boolean::TRUE)?;
+    /// (&a & &a).enforce_equal(&Boolean::TRUE)?;
     ///
-    /// a.and(&b)?.enforce_equal(&Boolean::FALSE)?;
-    /// b.and(&a)?.enforce_equal(&Boolean::FALSE)?;
-    /// b.and(&b)?.enforce_equal(&Boolean::FALSE)?;
+    /// (&a & &b).enforce_equal(&Boolean::FALSE)?;
+    /// (&b & &a).enforce_equal(&Boolean::FALSE)?;
+    /// (&b & &b).enforce_equal(&Boolean::FALSE)?;
     ///
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())

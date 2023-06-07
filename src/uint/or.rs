@@ -18,7 +18,8 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
 
 impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
-    /// Outputs `self ^ other`.
+
+    /// Output `self | other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method
     /// *does not* create any constraints or variables.
@@ -33,9 +34,9 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a 
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
+    /// let c = UInt8::new_witness(cs.clone(), || Ok(16 | 17))?;
     ///
-    /// a.or(&b)?.enforce_equal(&c)?;
+    /// (a | b).enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -48,28 +49,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a 
 
 impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.or(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor(self, other: &Self) -> Self::Output {
         self._or(&other).unwrap()
@@ -80,28 +60,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<UInt<N, T, F>>
     for &'a UInt<N, T, F>
 {
     type Output = UInt<N, T, F>;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.or(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor(self, other: UInt<N, T, F>) -> Self::Output {
         self._or(&other).unwrap()
@@ -110,28 +69,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<UInt<N, T, F>>
 
 impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
     type Output = Self;
-    /// Outputs `self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.or(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
+
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor(self, other: Self) -> Self::Output {
         self._or(&other).unwrap()
@@ -139,7 +77,7 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for UInt<N, 
 }
 
 impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UInt<N, T, F> {
-    /// Sets `self = self ^ other`.
+    /// Sets `self = self | other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method
     /// *does not* create any constraints or variables.
@@ -152,11 +90,12 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UI
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
+    /// let mut a = UInt8::new_witness(cs.clone(), || Ok(16))?;
     /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
+    /// let c = UInt8::new_witness(cs.clone(), || Ok(16 | 17))?;
     ///
-    /// a.or(&b)?.enforce_equal(&c)?;
+    /// a |= b;
+    /// a.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
@@ -171,28 +110,6 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UI
 impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<&'a Self>
     for UInt<N, T, F>
 {
-    /// Sets `self = self ^ other`.
-    ///
-    /// If at least one of `self` and `other` are constants, then this method
-    /// *does not* create any constraints or variables.
-    ///
-    /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
-    /// // We'll use the BLS12-381 scalar field for our constraints.
-    /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
-    /// use ark_r1cs_std::prelude::*;
-    ///
-    /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = UInt8::new_witness(cs.clone(), || Ok(17))?;
-    /// let c = UInt8::new_witness(cs.clone(), || Ok(1))?;
-    ///
-    /// a.or(&b)?.enforce_equal(&c)?;
-    /// assert!(cs.is_satisfied().unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a Self) {
         let result = self._or(other).unwrap();
