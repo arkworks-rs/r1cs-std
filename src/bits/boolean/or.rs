@@ -13,6 +13,44 @@ impl<F: Field> Boolean<F> {
             (Var(ref x), Var(ref y)) => Ok(Var(x.or(y)?)),
         }
     }
+
+    /// Outputs `bits[0] | bits[1] | ... | bits.last().unwrap()`.
+    ///
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    ///
+    /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
+    /// let c = Boolean::new_witness(cs.clone(), || Ok(false))?;
+    ///
+    /// Boolean::kary_or(&[a.clone(), b.clone(), c.clone()])?.enforce_equal(&Boolean::TRUE)?;
+    /// Boolean::kary_or(&[a.clone(), c.clone()])?.enforce_equal(&Boolean::TRUE)?;
+    /// Boolean::kary_or(&[b.clone(), c.clone()])?.enforce_equal(&Boolean::FALSE)?;
+    ///
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(target = "r1cs")]
+    pub fn kary_or(bits: &[Self]) -> Result<Self, SynthesisError> {
+        assert!(!bits.is_empty());
+        let mut cur: Option<Self> = None;
+        for next in bits {
+            cur = if let Some(b) = cur {
+                Some(b | next)
+            } else {
+                Some(next.clone())
+            };
+        }
+
+        Ok(cur.expect("should not be 0"))
+    }
 }
 
 impl<'a, F: Field> BitOr<Self> for &'a Boolean<F> {

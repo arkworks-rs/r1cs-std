@@ -1,6 +1,8 @@
-use ark_ff::Field;
+use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 use ark_std::{ops::BitAnd, ops::BitAndAssign};
+
+use crate::{fields::fp::FpVar, prelude::EqGadget};
 
 use super::Boolean;
 
@@ -14,6 +16,88 @@ impl<F: Field> Boolean<F> {
             (&Constant(true), x) | (x, &Constant(true)) => Ok(x.clone()),
             (Var(ref x), Var(ref y)) => Ok(Var(x.and(y)?)),
         }
+    }
+}
+
+impl<F: PrimeField> Boolean<F> {
+    /// Outputs `bits[0] & bits[1] & ... & bits.last().unwrap()`.
+    ///
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    ///
+    /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
+    /// let c = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    ///
+    /// Boolean::kary_and(&[a.clone(), b.clone(), c.clone()])?.enforce_equal(&Boolean::FALSE)?;
+    /// Boolean::kary_and(&[a.clone(), c.clone()])?.enforce_equal(&Boolean::TRUE)?;
+    ///
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(target = "r1cs")]
+    pub fn kary_and(bits: &[Self]) -> Result<Self, SynthesisError> {
+        assert!(!bits.is_empty());
+        if bits.len() <= 3 {
+            let mut cur: Option<Self> = None;
+            for next in bits {
+                cur = if let Some(b) = cur {
+                    Some(b & next)
+                } else {
+                    Some(next.clone())
+                };
+            }
+
+            Ok(cur.expect("should not be 0"))
+        } else {
+            let sum_bits: FpVar<_> = bits.iter().map(|b| FpVar::from(b.clone())).sum();
+            let num_bits = FpVar::Constant(F::from(bits.len() as u64));
+            sum_bits.is_eq(&num_bits)
+        }
+    }
+
+    /// Outputs `!(bits[0] & bits[1] & ... & bits.last().unwrap())`.
+    ///
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    ///
+    /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
+    /// let c = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    ///
+    /// Boolean::kary_nand(&[a.clone(), b.clone(), c.clone()])?.enforce_equal(&Boolean::TRUE)?;
+    /// Boolean::kary_nand(&[a.clone(), c.clone()])?.enforce_equal(&Boolean::FALSE)?;
+    /// Boolean::kary_nand(&[b.clone(), c.clone()])?.enforce_equal(&Boolean::TRUE)?;
+    ///
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(target = "r1cs")]
+    pub fn kary_nand(bits: &[Self]) -> Result<Self, SynthesisError> {
+        Ok(!Self::kary_and(bits)?)
+    }
+
+    /// Enforces that `Self::kary_nand(bits).is_eq(&Boolean::TRUE)`.
+    ///
+    /// Informally, this means that at least one element in `bits` must be
+    /// `false`.
+    #[tracing::instrument(target = "r1cs")]
+    pub fn enforce_kary_nand(bits: &[Self]) -> Result<(), SynthesisError> {
+        Self::kary_nand(bits)?.enforce_equal(&Boolean::TRUE)
     }
 }
 

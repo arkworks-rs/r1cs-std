@@ -1,5 +1,5 @@
 use crate::{prelude::*, Vec};
-use ark_ff::Field;
+use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 
 /// Specifies how to generate constraints that check for equality for two
@@ -82,7 +82,7 @@ pub trait EqGadget<F: Field> {
     }
 }
 
-impl<T: EqGadget<F> + R1CSVar<F>, F: Field> EqGadget<F> for [T] {
+impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         assert_eq!(self.len(), other.len());

@@ -1,5 +1,41 @@
 use super::*;
 
+impl<F: Field> Boolean<F> {
+    /// Conditionally selects one of `first` and `second` based on the value of
+    /// `self`:
+    ///
+    /// If `self.is_eq(&Boolean::TRUE)`, this outputs `first`; else, it outputs
+    /// `second`.
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    ///
+    /// let a = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    /// let b = Boolean::new_witness(cs.clone(), || Ok(false))?;
+    ///
+    /// let cond = Boolean::new_witness(cs.clone(), || Ok(true))?;
+    ///
+    /// cond.select(&a, &b)?.enforce_equal(&Boolean::TRUE)?;
+    /// cond.select(&b, &a)?.enforce_equal(&Boolean::FALSE)?;
+    ///
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(target = "r1cs", skip(first, second))]
+    pub fn select<T: CondSelectGadget<F>>(
+        &self,
+        first: &T,
+        second: &T,
+    ) -> Result<T, SynthesisError> {
+        T::conditionally_select(&self, first, second)
+    }
+}
 impl<F: Field> CondSelectGadget<F> for Boolean<F> {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
