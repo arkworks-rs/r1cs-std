@@ -17,6 +17,11 @@ impl<F: Field> Boolean<F> {
             (Var(ref x), Var(ref y)) => Ok(Var(x.and(y)?)),
         }
     }
+
+    /// Outputs `!(self & other)`.
+    pub fn nand(&self, other: &Self) -> Result<Self, SynthesisError> {
+        self._and(other).map(|x| !x)
+    }
 }
 
 impl<F: PrimeField> Boolean<F> {
@@ -91,13 +96,13 @@ impl<F: PrimeField> Boolean<F> {
         Ok(!Self::kary_and(bits)?)
     }
 
-    /// Enforces that `Self::kary_nand(bits).is_eq(&Boolean::TRUE)`.
+    /// Enforces that `!(bits[0] & bits[1] & ... ) == Boolean::TRUE`.
     ///
     /// Informally, this means that at least one element in `bits` must be
     /// `false`.
     #[tracing::instrument(target = "r1cs")]
     pub fn enforce_kary_nand(bits: &[Self]) -> Result<(), SynthesisError> {
-        Self::kary_nand(bits)?.enforce_equal(&Boolean::TRUE)
+        Self::kary_and(bits)?.enforce_equal(&Boolean::FALSE)
     }
 }
 
@@ -190,6 +195,7 @@ mod tests {
         prelude::EqGadget,
         R1CSVar,
     };
+    use ark_relations::r1cs::ConstraintSystem;
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
@@ -213,5 +219,112 @@ mod tests {
             Ok(())
         })
         .unwrap()
+    }
+
+    #[test]
+    fn nand() {
+        run_binary_exhaustive::<Fr>(|a, b| {
+            let cs = a.cs().or(b.cs());
+            let both_constant = a.is_constant() && b.is_constant();
+            let computed = a.nand(&b)?;
+            let expected_mode = if both_constant {
+                AllocationMode::Constant
+            } else {
+                AllocationMode::Witness
+            };
+            let expected = Boolean::new_variable(
+                cs.clone(),
+                || Ok(!(a.value()? & b.value()?)),
+                expected_mode,
+            )?;
+            assert_eq!(expected.value(), computed.value());
+            expected.enforce_equal(&computed)?;
+            if !both_constant {
+                assert!(cs.is_satisfied().unwrap());
+            }
+            Ok(())
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn enforce_nand() -> Result<(), SynthesisError> {
+        {
+            let cs = ConstraintSystem::<Fr>::new_ref();
+
+            assert!(
+                Boolean::enforce_kary_nand(&[Boolean::new_constant(cs.clone(), false)?]).is_ok()
+            );
+            assert!(
+                Boolean::enforce_kary_nand(&[Boolean::new_constant(cs.clone(), true)?]).is_err()
+            );
+        }
+
+        for i in 1..5 {
+            // with every possible assignment for them
+            for mut b in 0..(1 << i) {
+                // with every possible negation
+                for mut n in 0..(1 << i) {
+                    let cs = ConstraintSystem::<Fr>::new_ref();
+
+                    let mut expected = true;
+
+                    let mut bits = vec![];
+                    for _ in 0..i {
+                        expected &= b & 1 == 1;
+
+                        let bit = if n & 1 == 1 {
+                            Boolean::new_witness(cs.clone(), || Ok(b & 1 == 1))?
+                        } else {
+                            !Boolean::new_witness(cs.clone(), || Ok(b & 1 == 0))?
+                        };
+                        bits.push(bit);
+
+                        b >>= 1;
+                        n >>= 1;
+                    }
+
+                    let expected = !expected;
+
+                    Boolean::enforce_kary_nand(&bits)?;
+
+                    if expected {
+                        assert!(cs.is_satisfied().unwrap());
+                    } else {
+                        assert!(!cs.is_satisfied().unwrap());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn kary_and() -> Result<(), SynthesisError> {
+        // test different numbers of operands
+        for i in 1..15 {
+            // with every possible assignment for them
+            for mut b in 0..(1 << i) {
+                let cs = ConstraintSystem::<Fr>::new_ref();
+
+                let mut expected = true;
+
+                let mut bits = vec![];
+                for _ in 0..i {
+                    expected &= b & 1 == 1;
+                    bits.push(Boolean::new_witness(cs.clone(), || Ok(b & 1 == 1))?);
+                    b >>= 1;
+                }
+
+                let r = Boolean::kary_and(&bits)?;
+
+                assert!(cs.is_satisfied().unwrap());
+
+                if let Boolean::Var(ref r) = r {
+                    assert_eq!(r.value()?, expected);
+                }
+            }
+        }
+        Ok(())
     }
 }

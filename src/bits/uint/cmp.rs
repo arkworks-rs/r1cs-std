@@ -1,11 +1,9 @@
+use crate::cmp::CmpGadget;
+
 use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> UInt<N, T, F> {
-    pub fn is_gt(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        other.is_lt(self)
-    }
-
-    pub fn is_ge(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> CmpGadget<F> for UInt<N, T, F> {
+    fn is_ge(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         if N + 1 < ((F::MODULUS_BIT_SIZE - 1) as usize) {
             let a = self.to_fp()?;
             let b = other.to_fp()?;
@@ -15,14 +13,6 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> UInt<N, T, F> 
         } else {
             unimplemented!("bit sizes larger than modulus size not yet supported")
         }
-    }
-
-    pub fn is_lt(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        Ok(!self.is_ge(other)?)
-    }
-
-    pub fn is_le(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        other.is_ge(self)
     }
 }
 

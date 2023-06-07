@@ -6,9 +6,10 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 
 use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldOpsBounds, FieldVar},
     prelude::*,
-    ToConstraintFieldGadget, Vec,
+    Vec,
 };
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type

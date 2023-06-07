@@ -9,7 +9,12 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
-use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    fields::fp::FpVar,
+    prelude::*,
+    Vec,
+};
 
 /// This module provides a generic implementation of G1 and G2 for
 /// the [\[BLS12]\](<https://eprint.iacr.org/2002/088.pdf>) family of bilinear groups.

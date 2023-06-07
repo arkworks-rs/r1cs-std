@@ -1,10 +1,15 @@
-use ark_ff::Field;
+use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::{ops::BitOr, ops::BitOrAssign};
 
+use crate::{
+    eq::EqGadget,
+    fields::{fp::FpVar, FieldVar},
+};
+
 use super::Boolean;
 
-impl<F: Field> Boolean<F> {
+impl<F: PrimeField> Boolean<F> {
     fn _or(&self, other: &Self) -> Result<Self, SynthesisError> {
         use Boolean::*;
         match (self, other) {
@@ -40,20 +45,26 @@ impl<F: Field> Boolean<F> {
     #[tracing::instrument(target = "r1cs")]
     pub fn kary_or(bits: &[Self]) -> Result<Self, SynthesisError> {
         assert!(!bits.is_empty());
-        let mut cur: Option<Self> = None;
-        for next in bits {
-            cur = if let Some(b) = cur {
-                Some(b | next)
-            } else {
-                Some(next.clone())
-            };
-        }
+        if bits.len() <= 3 {
+            let mut cur: Option<Self> = None;
+            for next in bits {
+                cur = if let Some(b) = cur {
+                    Some(b | next)
+                } else {
+                    Some(next.clone())
+                };
+            }
 
-        Ok(cur.expect("should not be 0"))
+            Ok(cur.expect("should not be 0"))
+        } else {
+            // b0 & b1 & ... & bN == 1 if and only if sum(b0, b1, ..., bN) == N
+            let sum_bits: FpVar<_> = bits.iter().map(|b| FpVar::from(b.clone())).sum();
+            sum_bits.is_neq(&FpVar::zero())
+        }
     }
 }
 
-impl<'a, F: Field> BitOr<Self> for &'a Boolean<F> {
+impl<'a, F: PrimeField> BitOr<Self> for &'a Boolean<F> {
     type Output = Boolean<F>;
 
     /// Outputs `self | other`.
@@ -89,7 +100,7 @@ impl<'a, F: Field> BitOr<Self> for &'a Boolean<F> {
     }
 }
 
-impl<'a, F: Field> BitOr<&'a Self> for Boolean<F> {
+impl<'a, F: PrimeField> BitOr<&'a Self> for Boolean<F> {
     type Output = Boolean<F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -98,7 +109,7 @@ impl<'a, F: Field> BitOr<&'a Self> for Boolean<F> {
     }
 }
 
-impl<'a, F: Field> BitOr<Boolean<F>> for &'a Boolean<F> {
+impl<'a, F: PrimeField> BitOr<Boolean<F>> for &'a Boolean<F> {
     type Output = Boolean<F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -107,7 +118,7 @@ impl<'a, F: Field> BitOr<Boolean<F>> for &'a Boolean<F> {
     }
 }
 
-impl<F: Field> BitOr<Self> for Boolean<F> {
+impl<F: PrimeField> BitOr<Self> for Boolean<F> {
     type Output = Self;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -116,7 +127,7 @@ impl<F: Field> BitOr<Self> for Boolean<F> {
     }
 }
 
-impl<F: Field> BitOrAssign<Self> for Boolean<F> {
+impl<F: PrimeField> BitOrAssign<Self> for Boolean<F> {
     /// Sets `self = self | other`.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: Self) {
@@ -125,7 +136,7 @@ impl<F: Field> BitOrAssign<Self> for Boolean<F> {
     }
 }
 
-impl<'a, F: Field> BitOrAssign<&'a Self> for Boolean<F> {
+impl<'a, F: PrimeField> BitOrAssign<&'a Self> for Boolean<F> {
     /// Sets `self = self | other`.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a Self) {

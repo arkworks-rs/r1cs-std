@@ -1,5 +1,8 @@
-use crate::prelude::*;
-use ark_ff::Field;
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget},
+    prelude::*,
+};
+use ark_ff::PrimeField;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
@@ -25,7 +28,7 @@ pub trait GroupOpsBounds<'a, F, T: 'a>:
 
 /// A variable that represents a curve point for
 /// the curve `C`.
-pub trait CurveVar<C: CurveGroup, ConstraintF: Field>:
+pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     'static
     + Sized
     + Clone

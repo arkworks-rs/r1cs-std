@@ -191,44 +191,6 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, Constra
 //     }
 
 //     #[test]
-//     fn test_xor() -> Result<(), SynthesisError> {
-//         use Boolean::*;
-//         let mut rng = ark_std::test_rng();
-
-//         for _ in 0..1000 {
-//             let cs = ConstraintSystem::<Fr>::new_ref();
-
-//             let a: $native = rng.gen();
-//             let b: $native = rng.gen();
-//             let c: $native = rng.gen();
-
-//             let mut expected = a ^ b ^ c;
-
-//             let a_bit = $name::new_witness(cs.clone(), || Ok(a))?;
-//             let b_bit = $name::constant(b);
-//             let c_bit = $name::new_witness(cs.clone(), || Ok(c))?;
-
-//             let r = a_bit.xor(&b_bit).unwrap();
-//             let r = r.xor(&c_bit).unwrap();
-
-//             assert!(cs.is_satisfied().unwrap());
-
-//             assert!(r.value == Some(expected));
-
-//             for b in r.bits.iter() {
-//                 match b {
-//                     Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
-//                     Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
-//                     Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
-//                 }
-
-//                 expected >>= 1;
-//             }
-//         }
-//         Ok(())
-//     }
-
-//     #[test]
 //     fn test_add_many_constants() -> Result<(), SynthesisError> {
 //         let mut rng = ark_std::test_rng();
 

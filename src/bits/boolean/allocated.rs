@@ -1,6 +1,6 @@
 use core::borrow::Borrow;
 
-use ark_ff::Field;
+use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError, Variable};
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     Assignment,
 };
 
-use super::{bool_to_field, Boolean};
+use super::Boolean;
 
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
@@ -22,6 +22,10 @@ use super::{bool_to_field, Boolean};
 pub struct AllocatedBool<F: Field> {
     pub(super) variable: Variable,
     pub(super) cs: ConstraintSystemRef<F>,
+}
+
+pub(crate) fn bool_to_field<F: Field>(val: impl Borrow<bool>) -> F {
+    F::from(*val.borrow())
 }
 
 impl<F: Field> AllocatedBool<F> {
@@ -122,8 +126,8 @@ impl<F: Field> AllocatedBool<F> {
             Ok(self.value()? | b.value()?)
         })?;
 
-        // Constrain (1 - a) * (1 - b) = (c), ensuring c is 1 iff
-        // a and b are both false, and otherwise c is 0.
+        // Constrain (1 - a) * (1 - b) = (1 - c), ensuring c is 0 iff
+        // a and b are both false, and otherwise c is 1.
         self.cs.enforce_constraint(
             lc!() + Variable::One - self.variable,
             lc!() + Variable::One - b.variable,
@@ -208,7 +212,7 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
     }
 }
 
-impl<F: Field> CondSelectGadget<F> for AllocatedBool<F> {
+impl<F: PrimeField> CondSelectGadget<F> for AllocatedBool<F> {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
         cond: &Boolean<F>,

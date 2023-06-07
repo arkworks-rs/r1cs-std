@@ -64,44 +64,6 @@ impl<const N: usize, T: PrimInt + Debug + WrappingAdd, F: PrimeField> UInt<N, T,
     }
 }
 
-//     #[test]
-//     fn test_add_many() -> Result<(), SynthesisError> {
-//         let mut rng = ark_std::test_rng();
-
-//         for _ in 0..1000 {
-//             let cs = ConstraintSystem::<Fr>::new_ref();
-
-//             let a: $native = rng.gen();
-//             let b: $native = rng.gen();
-//             let c: $native = rng.gen();
-//             let d: $native = rng.gen();
-
-//             let mut expected = (a ^ b).wrapping_add(c).wrapping_add(d);
-
-//             let a_bit = $name::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a))?;
-//             let b_bit = $name::constant(b);
-//             let c_bit = $name::constant(c);
-//             let d_bit = $name::new_witness(ark_relations::ns!(cs, "d_bit"), || Ok(d))?;
-
-//             let r = a_bit.xor(&b_bit).unwrap();
-//             let r = $name::add_many(&[r, c_bit, d_bit]).unwrap();
-
-//             assert!(cs.is_satisfied().unwrap());
-//             assert!(r.value == Some(expected));
-
-//             for b in r.bits.iter() {
-//                 match b {
-//                     Boolean::Is(b) => assert_eq!(b.value()?, (expected & 1 == 1)),
-//                     Boolean::Not(b) => assert_eq!(!b.value()?, (expected & 1 == 1)),
-//                     Boolean::Constant(_) => unreachable!(),
-//                 }
-
-//                 expected >>= 1;
-//             }
-//         }
-//         Ok(())
-//     }
-
 #[cfg(test)]
 mod tests {
     use super::*;

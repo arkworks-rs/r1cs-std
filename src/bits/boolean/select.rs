@@ -1,6 +1,6 @@
 use super::*;
 
-impl<F: Field> Boolean<F> {
+impl<F: PrimeField> Boolean<F> {
     /// Conditionally selects one of `first` and `second` based on the value of
     /// `self`:
     ///
@@ -36,7 +36,7 @@ impl<F: Field> Boolean<F> {
         T::conditionally_select(&self, first, second)
     }
 }
-impl<F: Field> CondSelectGadget<F> for Boolean<F> {
+impl<F: PrimeField> CondSelectGadget<F> for Boolean<F> {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
         cond: &Boolean<F>,

@@ -8,7 +8,11 @@ use ark_ec::{
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    prelude::*,
+    Vec,
+};
 
 use crate::fields::fp::FpVar;
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};

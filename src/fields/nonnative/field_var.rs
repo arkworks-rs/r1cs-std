@@ -1,9 +1,10 @@
 use super::{params::OptimizationType, AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
 use crate::{
     boolean::Boolean,
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldVar},
     prelude::*,
-    R1CSVar, ToConstraintFieldGadget,
+    R1CSVar,
 };
 use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};

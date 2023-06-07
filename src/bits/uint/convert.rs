@@ -1,3 +1,4 @@
+use crate::convert::*;
 use crate::fields::fp::FpVar;
 
 use super::*;

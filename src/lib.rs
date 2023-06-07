@@ -36,29 +36,31 @@ use ark_ff::Field;
 pub mod bits;
 pub use self::bits::*;
 
-/// This module implements gadgets related to field arithmetic.
+/// Finite field arithmetic.
 pub mod fields;
 
-/// This module implements gadgets related to group arithmetic, and specifically
-/// elliptic curve arithmetic.
+/// Implementations of elliptic curve group arithmetic for popular curve models.
 pub mod groups;
 
-/// This module implements gadgets related to computing pairings in bilinear
-/// groups.
+/// Gadgets for computing pairings in bilinear groups.
 pub mod pairing;
 
-/// This module describes a trait for allocating new variables in a constraint
-/// system.
+/// Utilities for allocating new variables in a constraint system.
 pub mod alloc;
 
-/// This module describes a trait for checking equality of variables.
+/// Utilities for comparing  variables.
+pub mod cmp;
+
+/// Utilities for converting variables to other kinds of variables.
+pub mod convert;
+
+/// Utilities for checking equality of variables.
 pub mod eq;
 
-/// This module implements functions for manipulating polynomial variables over
-/// finite fields.
+/// Definitions of polynomial variables over finite fields.
 pub mod poly;
 
-/// This module describes traits for conditionally selecting a variable from a
+/// Contains traits for conditionally selecting a variable from a
 /// list of variables.
 pub mod select;
 
@@ -69,7 +71,7 @@ pub(crate) mod test_utils;
 pub mod prelude {
     pub use crate::{
         alloc::*,
-        bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8, ToBitsGadget, ToBytesGadget},
+        bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8},
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
@@ -144,13 +146,4 @@ impl<T> Assignment<T> for Option<T> {
     fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError> {
         self.ok_or(ark_relations::r1cs::SynthesisError::AssignmentMissing)
     }
-}
-
-/// Specifies how to convert a variable of type `Self` to variables of
-/// type `FpVar<ConstraintF>`
-pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {
-    /// Converts `self` to `FpVar<ConstraintF>` variables.
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::r1cs::SynthesisError>;
 }

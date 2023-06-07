@@ -1,7 +1,7 @@
 use super::*;
 use crate::select::CondSelectGadget;
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> CondSelectGadget<ConstraintF>
+impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> CondSelectGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]

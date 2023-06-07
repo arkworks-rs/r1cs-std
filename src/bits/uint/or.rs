@@ -1,11 +1,11 @@
-use ark_ff::Field;
+use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::{fmt::Debug, ops::BitOr, ops::BitOrAssign};
 use num_traits::PrimInt;
 
 use super::UInt;
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
+impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
     fn _or(&self, other: &Self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for (a, b) in result.bits.iter_mut().zip(&other.bits) {
@@ -16,7 +16,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `self ^ other`.
     ///
@@ -46,7 +46,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for &'a UInt<
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<&'a Self> for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `self ^ other`.
     ///
@@ -76,7 +76,9 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<&'a Self> for UInt<
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<UInt<N, T, F>> for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<UInt<N, T, F>>
+    for &'a UInt<N, T, F>
+{
     type Output = UInt<N, T, F>;
     /// Outputs `self ^ other`.
     ///
@@ -106,7 +108,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOr<UInt<N, T, F>> for 
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
     type Output = Self;
     /// Outputs `self ^ other`.
     ///
@@ -136,7 +138,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitOr<Self> for UInt<N, T, F>
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self ^ other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method
@@ -166,7 +168,9 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<Self> for UInt<N,
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitOrAssign<&'a Self> for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<&'a Self>
+    for UInt<N, T, F>
+{
     /// Sets `self = self ^ other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method

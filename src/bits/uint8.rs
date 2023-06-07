@@ -3,9 +3,10 @@ use ark_ff::{Field, PrimeField, ToConstraintField};
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
+    convert::{ToBitsGadget, ToConstraintFieldGadget},
     fields::fp::{AllocatedFp, FpVar},
     prelude::*,
-    ToConstraintFieldGadget, Vec,
+    Vec,
 };
 
 pub type UInt8<F> = super::uint::UInt<8, u8, F>;
@@ -96,12 +97,13 @@ impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8
 mod test {
     use super::UInt8;
     use crate::{
+        convert::{ToBitsGadget, ToConstraintFieldGadget},
         fields::fp::FpVar,
         prelude::{
             AllocationMode::{Constant, Input, Witness},
             *,
         },
-        ToConstraintFieldGadget, Vec,
+        Vec,
     };
     use ark_ff::{PrimeField, ToConstraintField};
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};

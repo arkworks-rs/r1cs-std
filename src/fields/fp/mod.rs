@@ -6,9 +6,10 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{FieldOpsBounds, FieldVar},
     prelude::*,
-    Assignment, ToConstraintFieldGadget, Vec,
+    Assignment, Vec,
 };
 use ark_std::iter::Sum;
 
