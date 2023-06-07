@@ -1,5 +1,6 @@
 use ark_r1cs_std::{
-    alloc::AllocVar, fields::nonnative::NonNativeFieldVar, R1CSVar, ToConstraintFieldGadget,
+    alloc::AllocVar, convert::ToConstraintFieldGadget, fields::nonnative::NonNativeFieldVar,
+    R1CSVar,
 };
 use ark_relations::r1cs::ConstraintSystem;
 
