@@ -1,6 +1,5 @@
 use ark_ff::{Field, PrimeField};
 use core::{borrow::Borrow, convert::TryFrom, fmt::Debug};
-use num_traits::PrimInt;
 
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
@@ -17,19 +16,23 @@ mod rotate;
 mod select;
 mod xor;
 
+#[doc(hidden)]
+pub mod prim_uint;
+pub use prim_uint::*;
+
 #[cfg(test)]
 pub(crate) mod test_utils;
 
 /// This struct represent an unsigned `N` bit integer as a sequence of `N` [`Boolean`]s.
 #[derive(Clone, Debug)]
-pub struct UInt<const N: usize, T: PrimInt + Debug, F: Field> {
+pub struct UInt<const N: usize, T: PrimUInt, F: Field> {
     #[doc(hidden)]
     pub bits: [Boolean<F>; N],
     #[doc(hidden)]
     pub value: Option<T>,
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> R1CSVar<F> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> R1CSVar<F> for UInt<N, T, F> {
     type Value = T;
 
     fn cs(&self) -> ConstraintSystemRef<F> {
@@ -46,7 +49,12 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> R1CSVar<F> for UInt<N, T, F> 
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
+    pub const MAX: Self = Self {
+        bits: [Boolean::TRUE; N],
+        value: Some(T::MAX),
+    };
+
     /// Construct a constant [`UInt`] from the native unsigned integer type.
     ///
     /// This *does not* create new variables or constraints.
@@ -121,7 +129,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, ConstraintF>
+impl<const N: usize, T: PrimUInt, ConstraintF: Field> AllocVar<T, ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     fn new_variable<S: Borrow<T>>(
@@ -148,78 +156,3 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> AllocVar<T, Constra
         Ok(Self { bits, value })
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::UInt;
-//     use crate::{bits::boolean::Boolean, prelude::*, Vec};
-//     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-//     use ark_std::rand::Rng;
-//     use ark_test_curves::mnt4_753::Fr;
-
-//     #[test]
-//     fn test_from_bits() -> Result<(), SynthesisError> {
-//         let mut rng = ark_std::test_rng();
-
-//         for _ in 0..1000 {
-//             let v = (0..$size)
-//             .map(|_| Boolean::constant(rng.gen()))
-//             .collect::<Vec<Boolean<Fr>>>();
-
-//             let b = UInt::from_bits_le(&v);
-
-//             for (i, bit) in b.bits.iter().enumerate() {
-//                 match bit {
-//                     &Boolean::Constant(bit) => {
-//                         assert_eq!(bit, ((b.value()? >> i) & 1 == 1));
-//                     },
-//                     _ => unreachable!(),
-//                 }
-//             }
-
-//             let expected_to_be_same = b.to_bits_le();
-
-//             for x in v.iter().zip(expected_to_be_same.iter()) {
-//                 match x {
-//                     (&Boolean::TRUE, &Boolean::TRUE) => {},
-//                     (&Boolean::FALSE, &Boolean::FALSE) => {},
-//                     _ => unreachable!(),
-//                 }
-//             }
-//         }
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn test_add_many_constants() -> Result<(), SynthesisError> {
-//         let mut rng = ark_std::test_rng();
-
-//         for _ in 0..1000 {
-//             let cs = ConstraintSystem::<Fr>::new_ref();
-
-//             let a: $native = rng.gen();
-//             let b: $native = rng.gen();
-//             let c: $native = rng.gen();
-
-//             let a_bit = $name::new_constant(cs.clone(), a)?;
-//             let b_bit = $name::new_constant(cs.clone(), b)?;
-//             let c_bit = $name::new_constant(cs.clone(), c)?;
-
-//             let mut expected = a.wrapping_add(b).wrapping_add(c);
-
-//             let r = $name::add_many(&[a_bit, b_bit, c_bit]).unwrap();
-
-//             assert!(r.value == Some(expected));
-
-//             for b in r.bits.iter() {
-//                 match b {
-//                     Boolean::Is(_) => unreachable!(),
-//                     Boolean::Not(_) => unreachable!(),
-//                     Boolean::Constant(b) => assert_eq!(*b, (expected & 1 == 1)),
-//                 }
-
-//                 expected >>= 1;
-//             }
-//         }
-//         Ok(())
-//     }

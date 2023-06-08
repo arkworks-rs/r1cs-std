@@ -1,15 +1,13 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::{fmt::Debug, vec::Vec};
-
-use num_traits::PrimInt;
+use ark_std::vec::Vec;
 
 use crate::boolean::Boolean;
 use crate::eq::EqGadget;
 
-use super::UInt;
+use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> EqGadget<ConstraintF>
+impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -79,7 +77,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_eq<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_eq<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -101,7 +99,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_neq<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_neq<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {

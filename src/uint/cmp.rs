@@ -2,7 +2,7 @@ use crate::cmp::CmpGadget;
 
 use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField + From<T>> CmpGadget<F> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: PrimeField + From<T>> CmpGadget<F> for UInt<N, T, F> {
     fn is_ge(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         if N + 1 < ((F::MODULUS_BIT_SIZE - 1) as usize) {
             let a = self.to_fp()?;
@@ -28,7 +28,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_gt<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
+    fn uint_gt<T: PrimUInt, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -50,7 +50,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_lt<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
+    fn uint_lt<T: PrimUInt, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -72,7 +72,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_ge<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
+    fn uint_ge<T: PrimUInt, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
@@ -94,7 +94,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_le<T: PrimInt + Debug, const N: usize, F: PrimeField + From<T>>(
+    fn uint_le<T: PrimUInt, const N: usize, F: PrimeField + From<T>>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {

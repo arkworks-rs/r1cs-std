@@ -1,7 +1,7 @@
 use super::*;
 use crate::select::CondSelectGadget;
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: PrimeField> CondSelectGadget<ConstraintF>
+impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> CondSelectGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]
@@ -42,7 +42,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_select<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_select<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {

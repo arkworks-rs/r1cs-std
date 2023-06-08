@@ -1,6 +1,6 @@
 use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> UInt<N, T, ConstraintF> {
+impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// Rotates `self` to the right by `by` steps, wrapping around.
     ///
     /// # Examples
@@ -72,7 +72,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_rotate_left<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_rotate_left<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
         let cs = a.cs();
@@ -97,7 +97,7 @@ mod tests {
         Ok(())
     }
 
-    fn uint_rotate_right<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_rotate_right<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
         let cs = a.cs();

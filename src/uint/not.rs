@@ -1,11 +1,10 @@
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::{fmt::Debug, ops::Not};
-use num_traits::PrimInt;
+use ark_std::ops::Not;
 
-use super::UInt;
+use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
     fn _not(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for a in &mut result.bits {
@@ -16,7 +15,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> Not for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> Not for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `!self`.
     ///
@@ -44,7 +43,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> Not for &'a UInt<N, T, F>
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> Not for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     /// Outputs `!self`.
@@ -85,7 +84,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_not<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_not<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
         let cs = a.cs();

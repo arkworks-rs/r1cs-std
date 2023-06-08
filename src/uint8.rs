@@ -129,7 +129,6 @@ mod test {
         let byte_vals = (64u8..128u8).collect::<Vec<_>>();
         let bytes =
             UInt8::new_input_vec(ark_relations::ns!(cs, "alloc value"), &byte_vals).unwrap();
-        dbg!(bytes.value())?;
         for (native, variable) in byte_vals.into_iter().zip(bytes) {
             let bits = variable.to_bits_le()?;
             for (i, bit) in bits.iter().enumerate() {
@@ -193,17 +192,12 @@ mod test {
             let a_bit = UInt8::new_witness(ark_relations::ns!(cs, "a_bit"), || Ok(a)).unwrap();
             let b_bit = UInt8::constant(b);
             let c_bit = UInt8::new_witness(ark_relations::ns!(cs, "c_bit"), || Ok(c)).unwrap();
-            dbg!(a_bit.value()?);
-            dbg!(b_bit.value()?);
-            dbg!(c_bit.value()?);
 
             let mut r = a_bit ^ b_bit;
             r ^= &c_bit;
 
             assert!(cs.is_satisfied().unwrap());
 
-            dbg!(expected);
-            dbg!(r.value()?);
             assert_eq!(r.value, Some(expected));
 
             for b in r.bits.iter() {

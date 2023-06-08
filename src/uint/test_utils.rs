@@ -1,13 +1,11 @@
+use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
+use std::ops::RangeInclusive;
+
 use crate::test_utils::{self, modes};
 
 use super::*;
-use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
-use ark_std::UniformRand;
-use num_traits::PrimInt;
 
-use std::ops::RangeInclusive;
-
-pub(crate) fn test_unary_op<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+pub(crate) fn test_unary_op<T: PrimUInt, const N: usize, F: PrimeField>(
     a: T,
     mode: AllocationMode,
     test: impl FnOnce(UInt<N, T, F>) -> Result<(), SynthesisError>,
@@ -17,7 +15,7 @@ pub(crate) fn test_unary_op<T: PrimInt + Debug, const N: usize, F: PrimeField>(
     test(a)
 }
 
-pub(crate) fn test_binary_op<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+pub(crate) fn test_binary_op<T: PrimUInt, const N: usize, F: PrimeField>(
     a: T,
     b: T,
     mode_a: AllocationMode,
@@ -34,7 +32,7 @@ pub(crate) fn run_binary_random<const ITERATIONS: usize, const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>, UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>
 where
-    T: PrimInt + Debug + UniformRand,
+    T: PrimUInt,
     F: PrimeField,
 {
     let mut rng = ark_std::test_rng();
@@ -55,7 +53,7 @@ pub(crate) fn run_binary_exhaustive<const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>, UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>
 where
-    T: PrimInt + Debug + UniformRand,
+    T: PrimUInt,
     F: PrimeField,
     RangeInclusive<T>: Iterator<Item = T>,
 {
@@ -71,7 +69,7 @@ pub(crate) fn run_unary_random<const ITERATIONS: usize, const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>
 where
-    T: PrimInt + Debug + UniformRand,
+    T: PrimUInt,
     F: PrimeField,
 {
     let mut rng = ark_std::test_rng();
@@ -89,7 +87,7 @@ pub(crate) fn run_unary_exhaustive<const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>
 where
-    T: PrimInt + Debug + UniformRand,
+    T: PrimUInt,
     F: PrimeField,
     RangeInclusive<T>: Iterator<Item = T>,
 {

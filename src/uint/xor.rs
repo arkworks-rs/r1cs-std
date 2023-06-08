@@ -1,11 +1,10 @@
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::{fmt::Debug, ops::BitXor, ops::BitXorAssign};
-use num_traits::PrimInt;
+use ark_std::{ops::BitXor, ops::BitXorAssign};
 
-use super::UInt;
+use super::*;
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
     fn _xor(&self, other: &Self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for (a, b) in result.bits.iter_mut().zip(&other.bits) {
@@ -16,7 +15,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> UInt<N, T, F> {
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<Self> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `self ^ other`.
     ///
@@ -46,7 +45,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for &'a UInt
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<&'a Self> for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -55,7 +54,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<&'a Self> for UInt
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<UInt<N, T, F>> for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<UInt<N, T, F>> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -64,7 +63,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXor<UInt<N, T, F>> for
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> BitXor<Self> for UInt<N, T, F> {
     type Output = Self;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -73,7 +72,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitXor<Self> for UInt<N, T, F
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> BitXorAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self ^ other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method
@@ -104,7 +103,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<Self> for UInt<N
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> BitXorAssign<&'a Self> for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXorAssign<&'a Self> for UInt<N, T, F> {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitxor_assign(&mut self, other: &'a Self) {
         let result = self._xor(other).unwrap();
@@ -124,7 +123,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_xor<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_xor<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {

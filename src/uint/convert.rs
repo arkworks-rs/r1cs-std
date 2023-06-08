@@ -3,7 +3,7 @@ use crate::fields::fp::FpVar;
 
 use super::*;
 
-impl<const N: usize, F: Field, T: PrimInt + Debug> UInt<N, T, F> {
+impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts `self` into a field element. The elements comprising `self` are
     /// interpreted as a little-endian bit order representation of a field element.
     ///
@@ -74,13 +74,13 @@ impl<const N: usize, F: Field, T: PrimInt + Debug> UInt<N, T, F> {
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> ToBitsGadget<F> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> ToBitsGadget<F> for UInt<N, T, F> {
     fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
         Ok(self.bits.to_vec())
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> ToBitsGadget<F> for [UInt<N, T, F>] {
+impl<const N: usize, T: PrimUInt, F: Field> ToBitsGadget<F> for [UInt<N, T, F>] {
     /// Interprets `self` as an integer, and outputs the little-endian
     /// bit-wise decomposition of that integer.
     fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
@@ -93,7 +93,7 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> ToBitsGadget<F> for [UInt<N, 
 /********************************* Conversions to bytes. *********************************/
 /*****************************************************************************************/
 
-impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> ToBytesGadget<ConstraintF>
+impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     #[tracing::instrument(target = "r1cs", skip(self))]
@@ -106,7 +106,7 @@ impl<const N: usize, T: PrimInt + Debug, ConstraintF: Field> ToBytesGadget<Const
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> ToBytesGadget<F> for [UInt<N, T, F>] {
+impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for [UInt<N, T, F>] {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let mut bytes = Vec::with_capacity(self.len() * (N / 8));
         for elem in self {
@@ -116,13 +116,13 @@ impl<const N: usize, T: PrimInt + Debug, F: Field> ToBytesGadget<F> for [UInt<N,
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: Field> ToBytesGadget<F> for Vec<UInt<N, T, F>> {
+impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for Vec<UInt<N, T, F>> {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         self.as_slice().to_bytes()
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: Field> ToBytesGadget<F> for &'a [UInt<N, T, F>] {
+impl<'a, const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for &'a [UInt<N, T, F>] {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         (*self).to_bytes()
     }

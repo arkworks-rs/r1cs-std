@@ -1,11 +1,10 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::{fmt::Debug, ops::BitOr, ops::BitOrAssign};
-use num_traits::PrimInt;
+use ark_std::{ops::BitOr, ops::BitOrAssign};
 
-use super::UInt;
+use super::{PrimUInt, UInt};
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     fn _or(&self, other: &Self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         for (a, b) in result.bits.iter_mut().zip(&other.bits) {
@@ -16,7 +15,7 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> UInt<N, T, F> {
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     /// Output `self | other`.
@@ -47,7 +46,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for &'a 
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<&'a Self> for UInt<N, T, F> {
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -56,9 +55,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<&'a Self> for 
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<UInt<N, T, F>>
-    for &'a UInt<N, T, F>
-{
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<UInt<N, T, F>> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -67,7 +64,7 @@ impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<UInt<N, T, F>>
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
     type Output = Self;
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -76,7 +73,7 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOr<Self> for UInt<N, 
     }
 }
 
-impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self | other`.
     ///
     /// If at least one of `self` and `other` are constants, then this method
@@ -107,9 +104,7 @@ impl<const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<Self> for UI
     }
 }
 
-impl<'a, const N: usize, T: PrimInt + Debug, F: PrimeField> BitOrAssign<&'a Self>
-    for UInt<N, T, F>
-{
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<&'a Self> for UInt<N, T, F> {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a Self) {
         let result = self._or(other).unwrap();
@@ -129,7 +124,7 @@ mod tests {
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
-    fn uint_or<T: PrimInt + Debug, const N: usize, F: PrimeField>(
+    fn uint_or<T: PrimUInt, const N: usize, F: PrimeField>(
         a: UInt<N, T, F>,
         b: UInt<N, T, F>,
     ) -> Result<(), SynthesisError> {
