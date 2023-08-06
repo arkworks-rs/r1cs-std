@@ -35,6 +35,7 @@ ark-mnt4-753 = { version = "0.4.0", features = ["curve"], default-features = fal
 ark-mnt6-298 = { version = "0.4.0", default-features = false  }
 ark-mnt6-753 = { version = "0.4.0", default-features = false  }
 ark-pallas = { version = "0.4.0", features = ["curve"],  default-features = false  }
+ark-bn254 = { version = "0.4.0", features = ["curve"], default-features = false  }
 
 [features]
 default = ["std"]

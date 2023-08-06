@@ -965,3 +965,61 @@ where
         Ok(bytes)
     }
 }
+
+#[cfg(test)]
+mod test_sw_curve {
+    use crate::{
+        alloc::AllocVar,
+        eq::EqGadget,
+        fields::{fp::FpVar, nonnative::NonNativeFieldVar},
+        groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
+        ToBitsGadget,
+    };
+    use ark_ec::{
+        short_weierstrass::{Projective, SWCurveConfig},
+        CurveGroup,
+    };
+    use ark_ff::PrimeField;
+    use ark_relations::r1cs::{ConstraintSystem, Result};
+    use ark_std::UniformRand;
+    use num_traits::Zero;
+
+    fn zero_point_scalar_mul_satisfied<G>() -> Result<bool>
+    where
+        G: CurveGroup,
+        G::BaseField: PrimeField,
+        G::Config: SWCurveConfig,
+    {
+        let mut rng = ark_std::test_rng();
+
+        let cs = ConstraintSystem::new_ref();
+        let point_in = Projective::<G::Config>::zero();
+        let point_out = Projective::<G::Config>::zero();
+        let scalar = G::ScalarField::rand(&mut rng);
+
+        let point_in =
+            ProjectiveVar::<G::Config, FpVar<G::BaseField>>::new_witness(cs.clone(), || {
+                Ok(point_in)
+            })?;
+        let point_out =
+            ProjectiveVar::<G::Config, FpVar<G::BaseField>>::new_input(cs.clone(), || {
+                Ok(point_out)
+            })?;
+        let scalar = NonNativeFieldVar::new_input(cs.clone(), || Ok(scalar))?;
+
+        let mul = point_in.scalar_mul_le(scalar.to_bits_le().unwrap().iter())?;
+
+        point_out.enforce_equal(&mul)?;
+
+        cs.is_satisfied()
+    }
+
+    #[test]
+    fn test_zero_point_scalar_mul() {
+        assert!(zero_point_scalar_mul_satisfied::<ark_bls12_381::G1Projective>().unwrap());
+        assert!(zero_point_scalar_mul_satisfied::<ark_pallas::Projective>().unwrap());
+        assert!(zero_point_scalar_mul_satisfied::<ark_mnt4_298::G1Projective>().unwrap());
+        assert!(zero_point_scalar_mul_satisfied::<ark_mnt6_298::G1Projective>().unwrap());
+        assert!(zero_point_scalar_mul_satisfied::<ark_bn254::G1Projective>().unwrap());
+    }
+}
