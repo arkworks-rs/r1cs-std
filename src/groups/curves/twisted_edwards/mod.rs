@@ -3,7 +3,7 @@ use ark_ec::{
         Affine as TEAffine, MontCurveConfig as MontgomeryModelParameter,
         Projective as TEProjective, TECurveConfig as TEModelParameters,
     },
-    AffineRepr, CurveGroup, Group,
+    AdditiveGroup, AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
