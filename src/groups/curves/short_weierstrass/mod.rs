@@ -170,8 +170,9 @@ where
         } else {
             let cs = self.cs();
             let infinity = self.is_zero()?;
-            let zero_x = F::zero();
-            let zero_y = F::one();
+            let zero_affine = SWAffine::<P>::zero();
+            let zero_x = F::new_constant(cs.clone(), &zero_affine.x)?;
+            let zero_y = F::new_constant(cs.clone(), &zero_affine.y)?;
             // Allocate a variable whose value is either `self.z.inverse()` if the inverse
             // exists, and is zero otherwise.
             let z_inv = F::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
@@ -210,11 +211,8 @@ where
             Ok(ge) => {
                 let ge = ge.into_affine();
                 if ge.is_zero() {
-                    (
-                        Ok(P::BaseField::zero()),
-                        Ok(P::BaseField::one()),
-                        Ok(P::BaseField::zero()),
-                    )
+                    let zero = SWProjective::<P>::zero();
+                    (Ok(zero.x), Ok(zero.y), Ok(zero.z))
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
@@ -381,7 +379,7 @@ where
     }
 
     fn zero() -> Self {
-        Self::new(F::zero(), F::one(), F::zero())
+        Self::constant(SWProjective::<P>::zero())
     }
 
     fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
