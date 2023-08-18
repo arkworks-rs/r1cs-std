@@ -211,8 +211,13 @@ where
             Ok(ge) => {
                 let ge = ge.into_affine();
                 if ge.is_zero() {
-                    let zero = SWProjective::<P>::zero();
-                    (Ok(zero.x), Ok(zero.y), Ok(zero.z))
+                    // These values are convenient since the point satisfies
+                    // curve equation.
+                    (
+                        Ok(P::BaseField::zero()),
+                        Ok(P::BaseField::one()),
+                        Ok(P::BaseField::zero()),
+                    )
                 } else {
                     (Ok(ge.x), Ok(ge.y), Ok(P::BaseField::one()))
                 }
@@ -379,7 +384,7 @@ where
     }
 
     fn zero() -> Self {
-        Self::constant(SWProjective::<P>::zero())
+        Self::new(F::zero(), F::one(), F::zero())
     }
 
     fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
