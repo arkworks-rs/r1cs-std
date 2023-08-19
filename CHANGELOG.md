@@ -2,6 +2,7 @@
 
 ## Pending
 - [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
+- [\#124](https://github.com/arkworks-rs/r1cs-std/pull/124) Fix `scalar_mul_le` constraints unsatisfiability when short Weierstrass point is zero.
 
 ### Breaking changes
 
