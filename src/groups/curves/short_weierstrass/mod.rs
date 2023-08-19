@@ -723,6 +723,22 @@ where
 
         Ok(Self::new(x, y, z))
     }
+
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<<P::BaseField as Field>::BasePrimeField>],
+        values: &[Self],
+    ) -> Result<Self, SynthesisError> {
+        let x_values = values.iter().map(|v| v.x.clone()).collect::<Vec<_>>();
+        let x = F::conditionally_select_power_of_two_vector(&position, &x_values)?;
+
+        let y_values = values.iter().map(|v| v.y.clone()).collect::<Vec<_>>();
+        let y = F::conditionally_select_power_of_two_vector(&position, &y_values)?;
+
+        let z_values = values.iter().map(|v| v.z.clone()).collect::<Vec<_>>();
+        let z = F::conditionally_select_power_of_two_vector(&position, &z_values)?;
+
+        Ok(Self::new(x, y, z))
+    }
 }
 
 impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for ProjectiveVar<P, F>
@@ -966,5 +982,59 @@ where
         bytes.extend_from_slice(&y_bytes);
         bytes.extend_from_slice(&inf_bytes);
         Ok(bytes)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::{fields::fp::FpVar, groups::curves::short_weierstrass::ProjectiveVar, prelude::*};
+    use ark_ec::short_weierstrass::Projective;
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_std::rand::Rng;
+    use ark_test_curves::bls12_381::{g1::Config, Fq};
+
+    #[test]
+    fn test_projective_random_access() {
+        pub type FBaseVar = FpVar<Fq>;
+
+        let mut rng = ark_std::test_rng();
+
+        for _ in 0..100 {
+            let cs = ConstraintSystem::<Fq>::new_ref();
+
+            // value array
+            let values: Vec<Projective<Config>> = (0..128).map(|_| rng.gen()).collect();
+            let values_const: Vec<ProjectiveVar<Config, FBaseVar>> =
+                values.iter().map(|x| ProjectiveVar::constant(*x)).collect();
+
+            // index array
+            let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+            let position_var: Vec<Boolean<Fq>> = position
+                .iter()
+                .map(|b| {
+                    Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                        .unwrap()
+                })
+                .collect();
+
+            // index
+            let mut index = 0;
+            for x in position {
+                index *= 2;
+                index += if x { 1 } else { 0 };
+            }
+
+            assert_eq!(
+                ProjectiveVar::conditionally_select_power_of_two_vector(
+                    &position_var,
+                    &values_const
+                )
+                .unwrap()
+                .value()
+                .unwrap(),
+                values[index]
+            )
+        }
     }
 }

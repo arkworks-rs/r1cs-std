@@ -1,14 +1,18 @@
-use ark_ff::PrimeField;
+use ark_ec::short_weierstrass::Projective;
+use ark_ff::{PrimeField, UniformRand};
 use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
-    fields::{nonnative::NonNativeFieldVar, FieldVar},
+    fields::{fp::FpVar, nonnative::NonNativeFieldVar, FieldVar},
+    groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
+    prelude::Boolean,
+    select::CondSelectGadget,
 };
 use ark_relations::{
     ns,
     r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
 };
-use ark_std::rand::RngCore;
+use ark_std::rand::{Rng, RngCore};
 
 const NUM_REPETITIONS: usize = 1;
 
@@ -162,6 +166,64 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
+macro_rules! cond_select_bench_individual {
+    ($bench_name:ident, $bench_base_field:ty, $var:ty, $native_type:ty, $constant:ident) => {
+        let rng = &mut ark_std::test_rng();
+        let mut num_constraints = 0;
+        let mut num_nonzeros = 0;
+        for _ in 0..NUM_REPETITIONS {
+            let cs_sys = ConstraintSystem::<$bench_base_field>::new();
+            let cs = ConstraintSystemRef::new(cs_sys);
+            cs.set_optimization_goal(OptimizationGoal::Constraints);
+
+            let (cur_constraints, cur_nonzeros) = {
+                // value array
+                let values: Vec<$native_type> =
+                    (0..128).map(|_| <$native_type>::rand(rng)).collect();
+                let values_const: Vec<$var> =
+                    values.iter().map(|x| <$var>::$constant(*x)).collect();
+
+                // index array
+                let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+                let position_var: Vec<Boolean<$bench_base_field>> = position
+                    .iter()
+                    .map(|b| {
+                        Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                            .unwrap()
+                    })
+                    .collect();
+
+                let constraints_before = cs.num_constraints();
+                let nonzeros_before = get_density(&cs);
+
+                let _ =
+                    <$var>::conditionally_select_power_of_two_vector(&position_var, &values_const);
+
+                let constraints_after = cs.num_constraints();
+                let nonzeros_after = get_density(&cs);
+
+                (
+                    constraints_after - constraints_before,
+                    nonzeros_after - nonzeros_before,
+                )
+            };
+
+            num_constraints += cur_constraints;
+            num_nonzeros += cur_nonzeros;
+
+            assert!(cs.is_satisfied().unwrap());
+        }
+        let average_constraints = num_constraints / NUM_REPETITIONS;
+        let average_nonzeros = num_nonzeros / NUM_REPETITIONS;
+        println!(
+            "{} takes: {} constraints, {} non-zeros",
+            stringify!($bench_name),
+            average_constraints,
+            average_nonzeros,
+        );
+    };
+}
+
 macro_rules! nonnative_bench_individual {
     ($bench_method:ident, $bench_name:ident, $bench_target_field:ty, $bench_base_field:ty) => {
         let rng = &mut ark_std::test_rng();
@@ -235,4 +297,26 @@ fn main() {
     nonnative_bench!(BLS12MNT4Small, ark_bls12_381::Fr, ark_mnt4_298::Fr);
     nonnative_bench!(BLS12, ark_bls12_381::Fq, ark_bls12_381::Fr);
     nonnative_bench!(MNT6BigMNT4Small, ark_mnt6_753::Fr, ark_mnt4_298::Fr);
+    cond_select_bench_individual!(
+        FpVar_select,
+        ark_mnt6_753::Fr,
+        FpVar<ark_mnt6_753::Fr>,
+        ark_mnt6_753::Fr,
+        Constant
+    );
+    cond_select_bench_individual!(
+        Boolean_select,
+        ark_mnt6_753::Fr,
+        Boolean<ark_mnt6_753::Fr>,
+        bool,
+        Constant
+    );
+    pub type FBaseVar = FpVar<ark_mnt6_753::Fq>;
+    cond_select_bench_individual!(
+        SWProjective_select,
+        ark_mnt6_753::Fq,
+        ProjectiveVar<ark_mnt6_753::g1::Config, FBaseVar>,
+        Projective<ark_mnt6_753::g1::Config>,
+        constant
+    );
 }

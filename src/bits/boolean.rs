@@ -216,6 +216,56 @@ impl<F: Field> CondSelectGadget<F> for AllocatedBool<F> {
             _ => unreachable!("Impossible"),
         }
     }
+
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<F>],
+        values: &[Self],
+    ) -> Result<Self, SynthesisError> {
+        let cs = position[0].cs();
+        let n = position.len();
+
+        // split n into l and m, where l + m = n
+        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
+        let m = n / 2;
+        let l = n - m;
+
+        let two_to_l = 1 << l;
+        let two_to_m = 1 << m;
+
+        // we only need the lower L bits
+        let lower_bits = &mut position[m..].to_vec();
+        let sub_tree = sum_of_conditions(lower_bits)?;
+
+        // index for the chunk
+        let mut index = 0;
+        for x in lower_bits {
+            index *= 2;
+            index += if x.value()? { 1 } else { 0 };
+        }
+        let chunk_size = 1 << l;
+        let root_vals: Vec<Self> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
+
+        let upper_elems = {
+            for i in 0..two_to_m {
+                let mut x = LinearCombination::zero();
+                for j in 0..two_to_l {
+                    let v = values[i * two_to_l + j].value()?;
+                    x = &x + sub_tree[j].clone() * v.into();
+                }
+                cs.enforce_constraint(x, lc!() + Variable::One, lc!() + root_vals[i].variable)?;
+            }
+
+            Ok(root_vals)
+        }?;
+
+        // apply the repeated selection method, to select one of 2^m subtree results
+        let upper_bits = &mut position[..m].to_vec();
+        repeated_selection(upper_bits, upper_elems)
+    }
 }
 
 /// Represents a boolean value in the constraint system which is guaranteed
@@ -950,6 +1000,56 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
             },
         }
     }
+
+    /// Using the hybrid method 5.3 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
+    fn conditionally_select_power_of_two_vector(
+        position: &[Boolean<F>],
+        values: &[Self],
+    ) -> Result<Self, SynthesisError> {
+        let cs = position[0].cs();
+        let n = position.len();
+
+        // split n into l and m, where l + m = n
+        // total cost is 2^m + 2^l - l - 2, so we'd rather maximize l than m
+        let m = n / 2;
+        let l = n - m;
+
+        let two_to_l = 1 << l;
+        let two_to_m = 1 << m;
+
+        // we only need the lower L bits
+        let lower_bits = &mut position[m..].to_vec();
+        let sub_tree = sum_of_conditions(lower_bits)?;
+
+        // index for the chunk
+        let mut index = 0;
+        for x in lower_bits {
+            index *= 2;
+            index += if x.value()? { 1 } else { 0 };
+        }
+        let chunk_size = 1 << l;
+        let root_vals: Vec<Self> = values
+            .chunks(chunk_size)
+            .map(|chunk| chunk[index].clone())
+            .collect();
+
+        let upper_elems = {
+            for i in 0..two_to_m {
+                let mut x = LinearCombination::zero();
+                for j in 0..two_to_l {
+                    let v = values[i * two_to_l + j].value()?;
+                    x = &x + sub_tree[j].clone() * v.into();
+                }
+                cs.enforce_constraint(x, lc!() + Variable::One, root_vals[i].lc())?;
+            }
+
+            Ok(root_vals)
+        }?;
+
+        // apply the repeated selection method, to select one of 2^m subtree results
+        let upper_bits = &mut position[..m].to_vec();
+        repeated_selection(upper_bits, upper_elems)
+    }
 }
 
 #[cfg(test)]
@@ -960,6 +1060,7 @@ mod test {
         AdditiveGroup, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero,
     };
     use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
+    use ark_std::rand::Rng;
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
@@ -1819,5 +1920,44 @@ mod test {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn test_bool_random_access() {
+        let mut rng = ark_std::test_rng();
+
+        for _ in 0..100 {
+            let cs = ConstraintSystem::<Fr>::new_ref();
+
+            // value array
+            let values: Vec<bool> = (0..128).map(|_| rng.gen()).collect();
+            let values_const: Vec<Boolean<Fr>> =
+                values.iter().map(|x| Boolean::Constant(*x)).collect();
+
+            // index array
+            let position: Vec<bool> = (0..7).map(|_| rng.gen()).collect();
+            let position_var: Vec<Boolean<Fr>> = position
+                .iter()
+                .map(|b| {
+                    Boolean::new_witness(ark_relations::ns!(cs, "index_arr_element"), || Ok(*b))
+                        .unwrap()
+                })
+                .collect();
+
+            // index
+            let mut index = 0;
+            for x in position {
+                index *= 2;
+                index += if x { 1 } else { 0 };
+            }
+
+            assert_eq!(
+                Boolean::conditionally_select_power_of_two_vector(&position_var, &values_const)
+                    .unwrap()
+                    .value()
+                    .unwrap(),
+                values[index]
+            )
+        }
     }
 }

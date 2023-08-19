@@ -1,8 +1,8 @@
 use crate::prelude::*;
 use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::r1cs::{LinearCombination, SynthesisError};
 use ark_std::vec::Vec;
-/// Generates constraints for selecting between one of two values.
+/// Generates constraints for selecting between one of many values.
 pub trait CondSelectGadget<ConstraintF: Field>
 where
     Self: Sized,
@@ -22,7 +22,7 @@ where
 
     /// Returns an element of `values` whose index in represented by `position`.
     /// `position` is an array of boolean that represents an unsigned integer in
-    /// big endian order.
+    /// big endian order. The default is the repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>.
     ///
     /// # Example
     /// To get the 6th element of `values`, convert unsigned integer 6 (`0b110`)
@@ -32,39 +32,128 @@ where
         position: &[Boolean<ConstraintF>],
         values: &[Self],
     ) -> Result<Self, SynthesisError> {
-        let m = values.len();
-        let n = position.len();
-
-        // Assert m is a power of 2, and n = log(m)
-        assert!(m.is_power_of_two());
-        assert_eq!(1 << n, m);
-
-        let mut cur_mux_values = values.to_vec();
-
-        // Traverse the evaluation tree from bottom to top in level order traversal.
-        // This is method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
-        // TODO: Add method 5.2/5.3
-        for i in 0..n {
-            // Size of current layer.
-            let cur_size = 1 << (n - i);
-            assert_eq!(cur_mux_values.len(), cur_size);
-
-            let mut next_mux_values = Vec::new();
-            for j in (0..cur_size).step_by(2) {
-                let cur = Self::conditionally_select(
-                    &position[n - 1 - i],
-                    // true case
-                    &cur_mux_values[j + 1],
-                    // false case
-                    &cur_mux_values[j],
-                )?;
-                next_mux_values.push(cur);
-            }
-            cur_mux_values = next_mux_values;
-        }
-
-        Ok(cur_mux_values[0].clone())
+        repeated_selection(position, values.to_vec())
     }
+}
+
+/// Sum of conditions method 5.2 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
+/// Use this to generate the selector conditions.
+pub fn sum_of_conditions<ConstraintF: Field>(
+    position: &[Boolean<ConstraintF>],
+) -> Result<Vec<LinearCombination<ConstraintF>>, SynthesisError> {
+    let n = position.len();
+    let m = 1 << n;
+
+    let mut selectors: Vec<Boolean<ConstraintF>> = vec![Boolean::constant(true); m];
+    // let's construct the table of selectors.
+    // for a bit-decomposition (b_{n-1}, b_{n-2}, ..., b_0) of `power`:
+    // [
+    //      (b_{n-1} * b_{n-2} * ... * b_1 * b_0),
+    //      (b_{n-1} * b_{n-2} * ... * b_1),
+    //      (b_{n-1} * b_{n-2} * ... * b_0),
+    //      ...
+    //      (b_1 * b_0),
+    //      b_1,
+    //      b_0,
+    //      1,
+    // ]
+    //
+    // the element of the selector table at index i is a product of `bits`
+    // e.g. for i = 5 == (101)_binary
+    // `selectors[5]` <== b_2 * b_0`
+    // we can construct the first `max_bits_in_power - 1` elements without products,
+    // directly from `bits`:
+    // e.g.:
+    // `selectors[0] <== 1`
+    // `selectors[1] <== b_0`
+    // `selectors[2] <== b_1`
+    // `selectors[4] <== b_2`
+    // `selectors[8] <== b_3`
+
+    // First element is 1==true, but we've already initialized the vector with
+    // `true`.
+    for i in 0..n {
+        selectors[1 << i] = position[n - i - 1].clone();
+        for j in (1 << i) + 1..(1 << (i + 1)) {
+            selectors[j] = selectors[1 << i].and(&selectors[j - (1 << i)])?;
+        }
+    }
+
+    fn count_ones(x: usize) -> usize {
+        // count the number of 1s in the binary representation of x
+        let mut count = 0;
+        let mut y = x;
+        while y > 0 {
+            count += y & 1;
+            y >>= 1;
+        }
+        count
+    }
+
+    // Selector sums for each leaf node
+    // E.g. for n = 2, m = 4 we have:
+    // `selectors[0] <== 1`
+    // `selectors[1] <== b_0`
+    // `selectors[2] <== b_1`
+    // `selectors[3] <== b_1 * b_0`
+    // Then the selector_sums for i = 0, 1, 2, 3 are:
+    // i = 0 = (00) = (1-b_1)*(1-b_0) = 1 - b_0 - b_1 + b_0*b_1 = selectors[0] -
+    // selectors[1] - selectors[2] + selectors[3] i = 1 = (01) = (1-b_1)*b_0 =
+    // b_0 - b_0*b_1               =                selectors[1]                -
+    // selectors[3] i = 2 = (10) = b_1*(1-b_0) = b_1 - b_0*b_1               =
+    // selectors[2] - selectors[3] i = 3 = (11) = b_1*b_0
+    // =                                              selectors[3]
+    let mut selector_sums: Vec<LinearCombination<ConstraintF>> = vec![LinearCombination::zero(); m];
+    for i in 0..m {
+        for j in 0..m {
+            if i | j == j {
+                let counts = count_ones(j - i);
+                if counts % 2 == 0 {
+                    selector_sums[i] = &selector_sums[i] + &selectors[j].lc();
+                } else {
+                    selector_sums[i] = &selector_sums[i] - &selectors[j].lc();
+                };
+            }
+        }
+    }
+    Ok(selector_sums)
+}
+
+/// Repeated selection method 5.1 from <https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf>
+pub fn repeated_selection<ConstraintF: Field, CondG: CondSelectGadget<ConstraintF>>(
+    position: &[Boolean<ConstraintF>],
+    values: Vec<CondG>,
+) -> Result<CondG, SynthesisError> {
+    let m = values.len();
+    let n = position.len();
+
+    // Assert m is a power of 2, and n = log(m)
+    assert!(m.is_power_of_two());
+    assert_eq!(1 << n, m);
+
+    let mut cur_mux_values = values;
+
+    // Traverse the evaluation tree from bottom to top in level order traversal.
+    for i in 0..n {
+        // Size of current layer.
+        let cur_size = 1 << (n - i);
+        assert_eq!(cur_mux_values.len(), cur_size);
+
+        let mut next_mux_values = Vec::new();
+        for j in (0..cur_size).step_by(2) {
+            let cur = CondG::conditionally_select(
+                &position[n - 1 - i],
+                // true case
+                &cur_mux_values[j + 1],
+                // false case
+                &cur_mux_values[j],
+            )?;
+            next_mux_values.push(cur);
+        }
+        cur_mux_values = next_mux_values;
+    }
+
+    Ok(cur_mux_values[0].clone())
 }
 
 /// Performs a lookup in a 4-element table using two bits.
