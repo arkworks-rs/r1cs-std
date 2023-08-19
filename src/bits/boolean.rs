@@ -956,7 +956,9 @@ impl<F: Field> CondSelectGadget<F> for Boolean<F> {
 mod test {
     use super::{AllocatedBool, Boolean};
     use crate::prelude::*;
-    use ark_ff::{BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero};
+    use ark_ff::{
+        AdditiveGroup, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand, Zero,
+    };
     use ark_relations::r1cs::{ConstraintSystem, Namespace, SynthesisError};
     use ark_test_curves::bls12_381::Fr;
 
