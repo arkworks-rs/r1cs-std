@@ -337,10 +337,10 @@ where
         for bit in affine_bits.iter().skip(1) {
             if bit.is_constant() {
                 if *bit == &Boolean::TRUE {
-                    accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                    accumulator = accumulator.add_unchecked(multiple_of_power_of_two)?;
                 }
             } else {
-                let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                let temp = accumulator.add_unchecked(multiple_of_power_of_two)?;
                 accumulator = bit.select(&temp, &accumulator)?;
             }
             multiple_of_power_of_two.double_in_place()?;
