@@ -3,7 +3,7 @@ use ark_ec::{
         Affine as TEAffine, MontCurveConfig as MontgomeryModelParameter,
         Projective as TEProjective, TECurveConfig as TEModelParameters,
     },
-    AffineRepr, CurveGroup, Group,
+    AdditiveGroup, AffineRepr, CurveGroup,
 };
 use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
@@ -337,7 +337,6 @@ where
                 .iter()
                 .zip(segment_powers.borrow())
             {
-                let base_power = base_power.borrow();
                 let mut acc_power = *base_power;
                 let mut coords = vec![];
                 for _ in 0..4 {
@@ -609,7 +608,7 @@ where
                 let (mut ge, iter) = if cofactor_weight < modulus_minus_1_weight {
                     let ge = Self::new_variable_omit_prime_order_check(
                         ark_relations::ns!(cs, "Witness without subgroup check with cofactor mul"),
-                        || f().map(|g| g.borrow().into_affine().mul_by_cofactor_inv().into()),
+                        || f().map(|g| g.into_affine().mul_by_cofactor_inv().into()),
                         mode,
                     )?;
                     (
