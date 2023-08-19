@@ -170,8 +170,9 @@ where
         } else {
             let cs = self.cs();
             let infinity = self.is_zero()?;
-            let zero_x = F::zero();
-            let zero_y = F::one();
+            let zero_affine = SWAffine::<P>::zero();
+            let zero_x = F::new_constant(cs.clone(), &zero_affine.x)?;
+            let zero_y = F::new_constant(cs.clone(), &zero_affine.y)?;
             // Allocate a variable whose value is either `self.z.inverse()` if the inverse
             // exists, and is zero otherwise.
             let z_inv = F::new_witness(ark_relations::ns!(cs, "z_inverse"), || {
@@ -210,6 +211,8 @@ where
             Ok(ge) => {
                 let ge = ge.into_affine();
                 if ge.is_zero() {
+                    // These values are convenient since the point satisfies
+                    // curve equation.
                     (
                         Ok(P::BaseField::zero()),
                         Ok(P::BaseField::one()),
@@ -334,10 +337,10 @@ where
         for bit in affine_bits.iter().skip(1) {
             if bit.is_constant() {
                 if *bit == &Boolean::TRUE {
-                    accumulator = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                    accumulator = accumulator.add_unchecked(multiple_of_power_of_two)?;
                 }
             } else {
-                let temp = accumulator.add_unchecked(&multiple_of_power_of_two)?;
+                let temp = accumulator.add_unchecked(multiple_of_power_of_two)?;
                 accumulator = bit.select(&temp, &accumulator)?;
             }
             multiple_of_power_of_two.double_in_place()?;
