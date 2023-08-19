@@ -10,7 +10,8 @@ keywords = ["zero-knowledge", "cryptography", "zkSNARK", "SNARK", "r1cs"]
 categories = ["cryptography"]
 include = ["Cargo.toml", "src", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 license = "MIT/Apache-2.0"
-edition = "2018"
+edition = "2021"
+resolver = "2"
 
 [dependencies]
 ark-ff = { version = "0.4.0", default-features = false }
@@ -20,8 +21,8 @@ ark-relations = { version = "0.4.0", default-features = false }
 
 derivative = { version = "2", features = ["use_core"] }
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
-num-bigint = {version = "0.4", default-features = false }
-num-traits = {version = "0.2", default-features = false }
+num-bigint = { version = "0.4", default-features = false }
+num-traits = { version = "0.2", default-features = false }
 num-integer = { version = "0.1.44", default-features = false }
 
 [dev-dependencies]
@@ -76,3 +77,11 @@ ark-ff = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-ec = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-poly = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-serialize = { git = "https://github.com/arkworks-rs/algebra/" }
+ark-test-curves = { git = "https://github.com/arkworks-rs/algebra/" }
+ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-mnt4-753 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-mnt6-298 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-mnt6-753 = { git = "https://github.com/arkworks-rs/curves/" }
+ark-pallas = { git = "https://github.com/arkworks-rs/curves/" }
