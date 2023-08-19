@@ -79,6 +79,7 @@ ark-ec = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-poly = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-serialize = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-test-curves = { git = "https://github.com/arkworks-rs/algebra/" }
+ark-bn254 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves/" }
