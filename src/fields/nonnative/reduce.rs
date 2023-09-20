@@ -1,4 +1,4 @@
-use super::{overhead, params::get_params, AllocatedNonNativeFieldVar};
+use super::{overhead, params::Params, AllocatedNonNativeFieldVar};
 use crate::{
     alloc::AllocVar,
     boolean::Boolean,
@@ -56,12 +56,13 @@ pub fn bigint_to_basefield<BaseField: PrimeField>(bigint: &BigUint) -> BaseField
 }
 
 /// the collections of methods for reducing the presentations
-pub struct Reducer<TargetField: PrimeField, BaseField: PrimeField> {
+pub struct Reducer<TargetField: PrimeField, BaseField: PrimeField, P: Params> {
     pub target_phantom: PhantomData<TargetField>,
     pub base_phantom: PhantomData<BaseField>,
+    pub params_phantom: PhantomData<P>,
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseField> {
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> Reducer<TargetField, BaseField, P> {
     /// convert limbs to bits (take at most `BaseField::MODULUS_BIT_SIZE as
     /// usize - 1` bits) This implementation would be more efficient than
     /// the original `to_bits` or `to_non_unique_bits` since we enforce that
@@ -119,11 +120,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
 
     /// Reduction to the normal form
     #[tracing::instrument(target = "r1cs")]
-    pub fn reduce(elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>) -> R1CSResult<()> {
-        let new_elem =
-            AllocatedNonNativeFieldVar::new_witness(ns!(elem.cs(), "normal_form"), || {
-                Ok(elem.value().unwrap_or_default())
-            })?;
+    pub fn reduce(
+        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField, P>,
+    ) -> R1CSResult<()> {
+        let new_elem = AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::new_witness(
+            ns!(elem.cs(), "normal_form"),
+            || Ok(elem.value().unwrap_or_default()),
+        )?;
         elem.conditional_enforce_equal(&new_elem, &Boolean::TRUE)?;
         *elem = new_elem;
 
@@ -133,13 +136,9 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// Reduction to be enforced after additions
     #[tracing::instrument(target = "r1cs")]
     pub fn post_add_reduce(
-        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
+        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField, P>,
     ) -> R1CSResult<()> {
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            elem.get_optimization_type(),
-        );
+        let params = <P as Params>::get::<TargetField, BaseField>(elem.get_optimization_type());
         let surfeit = overhead!(elem.num_of_additions_over_normal_form + BaseField::one()) + 1;
 
         if BaseField::MODULUS_BIT_SIZE as usize > 2 * params.bits_per_limb + surfeit + 1 {
@@ -153,19 +152,15 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// way that allows efficient multiplication
     #[tracing::instrument(target = "r1cs")]
     pub fn pre_mul_reduce(
-        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
-        elem_other: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
+        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField, P>,
+        elem_other: &mut AllocatedNonNativeFieldVar<TargetField, BaseField, P>,
     ) -> R1CSResult<()> {
         assert_eq!(
             elem.get_optimization_type(),
             elem_other.get_optimization_type()
         );
 
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            elem.get_optimization_type(),
-        );
+        let params = <P as Params>::get::<TargetField, BaseField>(elem.get_optimization_type());
 
         if 2 * params.bits_per_limb + ark_std::log2(params.num_limbs) as usize
             > BaseField::MODULUS_BIT_SIZE as usize - 1
@@ -204,7 +199,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
     /// Reduction to the normal form
     #[tracing::instrument(target = "r1cs")]
     pub fn pre_eq_reduce(
-        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField>,
+        elem: &mut AllocatedNonNativeFieldVar<TargetField, BaseField, P>,
     ) -> R1CSResult<()> {
         if elem.is_in_the_normal_form {
             return Ok(());
@@ -333,7 +328,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
                     &accumulated_extra,
                 )))?;
             } else {
-                Reducer::<TargetField, BaseField>::limb_to_bits(&carry, surfeit + bits_per_limb)?;
+                Reducer::<TargetField, BaseField, P>::limb_to_bits(
+                    &carry,
+                    surfeit + bits_per_limb,
+                )?;
             }
         }
 

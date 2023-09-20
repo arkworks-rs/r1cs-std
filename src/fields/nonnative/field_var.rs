@@ -1,4 +1,7 @@
-use super::{params::OptimizationType, AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar};
+use super::{
+    params::{DefaultParams, OptimizationType, Params},
+    AllocatedNonNativeFieldVar, NonNativeFieldMulResultVar,
+};
 use crate::{
     boolean::Boolean,
     fields::{fp::FpVar, FieldVar},
@@ -15,17 +18,22 @@ use ark_std::{
 
 /// A gadget for representing non-native (`TargetField`) field elements over the
 /// constraint field (`BaseField`).
-#[derive(Clone, Debug)]
+#[derive(Derivative)]
+#[derivative(Debug, Clone(bound = "TargetField: Clone, BaseField: Clone"))]
 #[must_use]
-pub enum NonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub enum NonNativeFieldVar<
+    TargetField: PrimeField,
+    BaseField: PrimeField,
+    P: Params = DefaultParams,
+> {
     /// Constant
     Constant(TargetField),
     /// Allocated gadget
-    Var(AllocatedNonNativeFieldVar<TargetField, BaseField>),
+    Var(AllocatedNonNativeFieldVar<TargetField, BaseField, P>),
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> PartialEq
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> PartialEq
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     fn eq(&self, other: &Self) -> bool {
         self.value()
@@ -34,21 +42,21 @@ impl<TargetField: PrimeField, BaseField: PrimeField> PartialEq
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> Eq
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> Eq
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> Hash
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> Hash
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.value().unwrap_or_default().hash(state);
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> R1CSVar<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> R1CSVar<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     type Value = TargetField;
 
@@ -67,8 +75,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> R1CSVar<BaseField>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> From<Boolean<BaseField>>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> From<Boolean<BaseField>>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     fn from(other: Boolean<BaseField>) -> Self {
         if let Boolean::Constant(b) = other {
@@ -82,28 +90,28 @@ impl<TargetField: PrimeField, BaseField: PrimeField> From<Boolean<BaseField>>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField>
-    From<AllocatedNonNativeFieldVar<TargetField, BaseField>>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    From<AllocatedNonNativeFieldVar<TargetField, BaseField, P>>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
-    fn from(other: AllocatedNonNativeFieldVar<TargetField, BaseField>) -> Self {
+    fn from(other: AllocatedNonNativeFieldVar<TargetField, BaseField, P>) -> Self {
         Self::Var(other)
     }
 }
 
-impl<'a, TargetField: PrimeField, BaseField: PrimeField> FieldOpsBounds<'a, TargetField, Self>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<'a, TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    FieldOpsBounds<'a, TargetField, Self> for NonNativeFieldVar<TargetField, BaseField, P>
 {
 }
 
-impl<'a, TargetField: PrimeField, BaseField: PrimeField>
-    FieldOpsBounds<'a, TargetField, NonNativeFieldVar<TargetField, BaseField>>
-    for &'a NonNativeFieldVar<TargetField, BaseField>
+impl<'a, TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    FieldOpsBounds<'a, TargetField, NonNativeFieldVar<TargetField, BaseField, P>>
+    for &'a NonNativeFieldVar<TargetField, BaseField, P>
 {
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> FieldVar<TargetField, BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> FieldVar<TargetField, BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     fn zero() -> Self {
         Self::Constant(TargetField::zero())
@@ -147,13 +155,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> FieldVar<TargetField, BaseF
 }
 
 impl_bounded_ops!(
-    NonNativeFieldVar<TargetField, BaseField>,
+    NonNativeFieldVar<TargetField, BaseField, P>,
     TargetField,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: &'a NonNativeFieldVar<TargetField, BaseField, P>| {
         use NonNativeFieldVar::*;
         match (this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 + c2),
@@ -161,18 +169,18 @@ impl_bounded_ops!(
             (Var(v1), Var(v2)) => Var(v1.add(v2).unwrap()),
         }
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| { this + &NonNativeFieldVar::Constant(other) },
-    (TargetField: PrimeField, BaseField: PrimeField),
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: TargetField| { this + &NonNativeFieldVar::Constant(other) },
+    (TargetField: PrimeField, BaseField: PrimeField, P: Params),
 );
 
 impl_bounded_ops!(
-    NonNativeFieldVar<TargetField, BaseField>,
+    NonNativeFieldVar<TargetField, BaseField, P>,
     TargetField,
     Sub,
     sub,
     SubAssign,
     sub_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: &'a NonNativeFieldVar<TargetField, BaseField, P>| {
         use NonNativeFieldVar::*;
         match (this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 - c2),
@@ -181,20 +189,20 @@ impl_bounded_ops!(
             (Var(v1), Var(v2)) => Var(v1.sub(v2).unwrap()),
         }
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: TargetField| {
         this - &NonNativeFieldVar::Constant(other)
     },
-    (TargetField: PrimeField, BaseField: PrimeField),
+    (TargetField: PrimeField, BaseField: PrimeField, P: Params),
 );
 
 impl_bounded_ops!(
-    NonNativeFieldVar<TargetField, BaseField>,
+    NonNativeFieldVar<TargetField, BaseField, P>,
     TargetField,
     Mul,
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: &'a NonNativeFieldVar<TargetField, BaseField>| {
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: &'a NonNativeFieldVar<TargetField, BaseField, P>| {
         use NonNativeFieldVar::*;
         match (this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 * c2),
@@ -202,21 +210,21 @@ impl_bounded_ops!(
             (Var(v1), Var(v2)) => Var(v1.mul(v2).unwrap()),
         }
     },
-    |this: &'a NonNativeFieldVar<TargetField, BaseField>, other: TargetField| {
+    |this: &'a NonNativeFieldVar<TargetField, BaseField, P>, other: TargetField| {
         if other.is_zero() {
             NonNativeFieldVar::zero()
         } else {
             this * &NonNativeFieldVar::Constant(other)
         }
     },
-    (TargetField: PrimeField, BaseField: PrimeField),
+    (TargetField: PrimeField, BaseField: PrimeField, P: Params),
 );
 
 /// *************************************************************************
 /// *************************************************************************
 
-impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> EqGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     #[tracing::instrument(target = "r1cs")]
     fn is_eq(&self, other: &Self) -> R1CSResult<Boolean<BaseField>> {
@@ -280,8 +288,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> EqGadget<BaseField>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> ToBitsGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseField>>> {
@@ -304,8 +312,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> ToBytesGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     /// Outputs the unique byte decomposition of `self` in *little-endian*
     /// form.
@@ -331,8 +339,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> CondSelectGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
@@ -361,8 +369,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
 
 /// Uses two bits to perform a lookup into a table
 /// `b` is little-endian: `b[0]` is LSB.
-impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> TwoBitLookupGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     type TableConstant = TargetField;
 
@@ -383,8 +391,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    ThreeBitCondNegLookupGadget<BaseField> for NonNativeFieldVar<TargetField, BaseField, P>
 {
     type TableConstant = TargetField;
 
@@ -418,8 +426,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> AllocVar<TargetField, BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     fn new_variable<T: Borrow<TargetField>>(
         cs: impl Into<Namespace<BaseField>>,
@@ -437,8 +445,8 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<BaseField>
-    for NonNativeFieldVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params> ToConstraintFieldGadget<BaseField>
+    for NonNativeFieldVar<TargetField, BaseField, P>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseField>>> {
@@ -447,31 +455,35 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
         // By default, the constant is converted in the weight-optimized type, because
         // it results in fewer elements.
         match self {
-            Self::Constant(c) => Ok(AllocatedNonNativeFieldVar::get_limbs_representations(
-                c,
-                OptimizationType::Weight,
-            )?
-            .into_iter()
-            .map(FpVar::constant)
-            .collect()),
+            Self::Constant(c) => Ok(
+                AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::get_limbs_representations(
+                    c,
+                    OptimizationType::Weight,
+                )?
+                .into_iter()
+                .map(FpVar::constant)
+                .collect(),
+            ),
             Self::Var(v) => v.to_constraint_field(),
         }
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetField, BaseField> {
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    NonNativeFieldVar<TargetField, BaseField, P>
+{
     /// The `mul_without_reduce` for `NonNativeFieldVar`
     #[tracing::instrument(target = "r1cs")]
     pub fn mul_without_reduce(
         &self,
         other: &Self,
-    ) -> R1CSResult<NonNativeFieldMulResultVar<TargetField, BaseField>> {
+    ) -> R1CSResult<NonNativeFieldMulResultVar<TargetField, BaseField, P>> {
         match self {
             Self::Constant(c) => match other {
                 Self::Constant(other_c) => Ok(NonNativeFieldMulResultVar::Constant(*c * other_c)),
                 Self::Var(other_v) => {
                     let self_v =
-                        AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_constant(
+                        AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::new_constant(
                             self.cs(),
                             c,
                         )?;
@@ -483,7 +495,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> NonNativeFieldVar<TargetFie
             Self::Var(v) => {
                 let other_v = match other {
                     Self::Constant(other_c) => {
-                        AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_constant(
+                        AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::new_constant(
                             self.cs(),
                             other_c,
                         )?
