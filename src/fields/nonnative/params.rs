@@ -14,7 +14,7 @@ pub trait Params: fmt::Debug + 'static {
     ) -> NonNativeFieldConfig;
 }
 
-/// Default parameters implementation based on [`find_parameters`].
+/// Default parameters implementation based on [`get_params`].
 #[derive(Debug)]
 pub struct DefaultParams;
 
