@@ -248,7 +248,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
 
         for (left_limb, right_limb) in left.iter().zip(right.iter()).rev() {
             // note: the `rev` operation is here, so that the first limb (and the first
-            // groupped limb) will be the least significant limb.
+            // grouped limb) will be the least significant limb.
             limb_pairs.push((left_limb.clone(), right_limb.clone()));
         }
 
