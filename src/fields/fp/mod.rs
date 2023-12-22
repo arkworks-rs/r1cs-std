@@ -332,7 +332,8 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This requires two constraints.
     #[tracing::instrument(target = "r1cs")]
     pub fn is_neq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        // We don't need to enforce `is_not_equal` to be boolean here
+        // We don't need to enforce `is_not_equal` to be boolean here;
+        // see the comments above the constraints below for why.
         let is_not_equal = Boolean::from(AllocatedBool::new_witness_without_booleanity_check(
             self.cs.clone(),
             || Ok(self.value.get()? != other.value.get()?),
@@ -384,6 +385,11 @@ impl<F: PrimeField> AllocatedFp<F> {
         //   constraint 1:
         //   (self - other) * multiplier = is_not_equal
         //   0 * multiplier = is_not_equal != 0 (unsatisfiable)
+        //
+        // That is, constraint 1 enforces that if self == other, then `is_not_equal = 0`
+        // and constraint 2 enforces that if self != other, then `is_not_equal = 1`.
+        // Since these are the only possible two cases, `is_not_equal` is always
+        // constrained to 0 or 1.
         self.cs.enforce_constraint(
             lc!() + self.variable - other.variable,
             lc!() + multiplier,
