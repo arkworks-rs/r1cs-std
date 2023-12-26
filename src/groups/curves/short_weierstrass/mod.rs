@@ -1,7 +1,5 @@
 use ark_ec::{
-    short_weierstrass::{
-        Affine as SWAffine, Projective as SWProjective, SWCurveConfig as SWModelParameters,
-    },
+    short_weierstrass::{Affine as SWAffine, Projective as SWProjective, SWCurveConfig},
     AffineRepr, CurveConfig, CurveGroup,
 };
 use ark_ff::{AdditiveGroup, BitIteratorBE, Field, One, PrimeField, Zero};
@@ -43,7 +41,7 @@ type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeFiel
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
 #[must_use]
-pub struct ProjectiveVar<P: SWModelParameters, F: FieldVar<P::BaseField, BasePrimeField<P>>>
+pub struct ProjectiveVar<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -61,7 +59,7 @@ where
 #[derive(Derivative)]
 #[derivative(Debug(bound = "F: ark_std::fmt::Debug"), Clone(bound = "F: Clone"))]
 #[must_use]
-pub struct AffineVar<P: SWModelParameters, F: FieldVar<P::BaseField, BasePrimeField<P>>>
+pub struct AffineVar<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -77,7 +75,7 @@ where
 
 impl<P, F> AffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -102,7 +100,7 @@ where
 
 impl<P, F> ToConstraintFieldGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
     F: ToConstraintFieldGadget<BasePrimeField<P>>,
@@ -120,7 +118,7 @@ where
 
 impl<P, F> R1CSVar<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -141,7 +139,7 @@ where
     }
 }
 
-impl<P: SWModelParameters, F: FieldVar<P::BaseField, BasePrimeField<P>>> ProjectiveVar<P, F>
+impl<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>> ProjectiveVar<P, F>
 where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -370,7 +368,7 @@ where
 
 impl<P, F> CurveVar<SWProjective<P>, BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -575,7 +573,7 @@ where
 
 impl<P, F> ToConstraintFieldGadget<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
     F: ToConstraintFieldGadget<BasePrimeField<P>>,
@@ -585,7 +583,7 @@ where
     }
 }
 
-fn mul_by_coeff_a<P: SWModelParameters, F: FieldVar<P::BaseField, BasePrimeField<P>>>(f: &F) -> F
+fn mul_by_coeff_a<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>(f: &F) -> F
 where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -670,7 +668,7 @@ impl_bounded_ops!(
     |this: &'a ProjectiveVar<P, F>, other: SWProjective<P>| {
         this + ProjectiveVar::constant(other)
     },
-    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWModelParameters),
+    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWCurveConfig),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 );
 
@@ -683,7 +681,7 @@ impl_bounded_ops!(
     sub_assign,
     |this: &'a ProjectiveVar<P, F>, other: &'a ProjectiveVar<P, F>| this + other.negate().unwrap(),
     |this: &'a ProjectiveVar<P, F>, other: SWProjective<P>| this - ProjectiveVar::constant(other),
-    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWModelParameters),
+    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWCurveConfig),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>
 );
 
@@ -706,13 +704,13 @@ impl_bounded_ops_diff!(
         }
     },
     |this: &'a ProjectiveVar<P, F>, other: P::ScalarField| this * NonNativeFieldVar::constant(other),
-    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWModelParameters),
+    (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWCurveConfig),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 );
 
 impl<'a, P, F> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P, F>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
@@ -720,7 +718,7 @@ where
 
 impl<'a, P, F> GroupOpsBounds<'a, SWProjective<P>, ProjectiveVar<P, F>> for &'a ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
@@ -728,7 +726,7 @@ where
 
 impl<P, F> CondSelectGadget<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -749,7 +747,7 @@ where
 
 impl<P, F> EqGadget<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -795,7 +793,7 @@ where
 
 impl<P, F> AllocVar<SWAffine<P>, BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -814,7 +812,7 @@ where
 
 impl<P, F> AllocVar<SWProjective<P>, BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -924,7 +922,7 @@ fn div2(limbs: &mut [u64]) {
 
 impl<P, F> ToBitsGadget<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -951,7 +949,7 @@ where
 
 impl<P, F> ToBytesGadget<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
