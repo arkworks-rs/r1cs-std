@@ -240,7 +240,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             let mut cur = BaseField::one().into_bigint();
             for _ in 0..num_limb_in_a_group {
                 array.push(BaseField::from_bigint(cur).unwrap());
-                cur.muln(shift_per_limb as u32);
+                cur <<= shift_per_limb as u32;
             }
 
             array
@@ -280,16 +280,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
         for (group_id, (left_total_limb, right_total_limb, num_limb_in_this_group)) in
             groupped_limb_pairs.iter().enumerate()
         {
-            let mut pad_limb_repr: <BaseField as PrimeField>::BigInt =
-                BaseField::one().into_bigint();
+            let mut pad_limb_repr = BaseField::ONE.into_bigint();
 
-            pad_limb_repr.muln(
-                (surfeit
-                    + (bits_per_limb - shift_per_limb)
-                    + shift_per_limb * num_limb_in_this_group
-                    + 1
-                    + 1) as u32,
-            );
+            pad_limb_repr <<= (surfeit
+                + (bits_per_limb - shift_per_limb)
+                + shift_per_limb * num_limb_in_this_group
+                + 1
+                + 1) as u32;
             let pad_limb = BaseField::from_bigint(pad_limb_repr).unwrap();
 
             let left_total_limb_value = left_total_limb.value().unwrap_or_default();
@@ -298,12 +295,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField> Reducer<TargetField, BaseFi
             let mut carry_value =
                 left_total_limb_value + carry_in_value + pad_limb - right_total_limb_value;
 
-            let mut carry_repr = carry_value.into_bigint();
-            carry_repr.divn((shift_per_limb * num_limb_in_this_group) as u32);
+            let carry_repr =
+                carry_value.into_bigint() >> (shift_per_limb * num_limb_in_this_group) as u32;
 
             carry_value = BaseField::from_bigint(carry_repr).unwrap();
 
-            let carry = FpVar::<BaseField>::new_witness(cs.clone(), || Ok(carry_value))?;
+            let carry = FpVar::new_witness(cs.clone(), || Ok(carry_value))?;
 
             accumulated_extra += limbs_to_bigint(bits_per_limb, &[pad_limb]);
 

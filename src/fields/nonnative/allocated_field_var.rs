@@ -57,14 +57,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             optimization_type,
         );
 
-        let mut base_repr: <TargetField as PrimeField>::BigInt = TargetField::one().into_bigint();
-
         // Convert 2^{(params.bits_per_limb - 1)} into the TargetField and then double
         // the base This is because 2^{(params.bits_per_limb)} might indeed be
         // larger than the target field's prime.
-        base_repr.muln((params.bits_per_limb - 1) as u32);
-        let mut base: TargetField = TargetField::from_bigint(base_repr).unwrap();
-        base = base + &base;
+        let base_repr = TargetField::ONE.into_bigint() >> (params.bits_per_limb - 1) as u32;
+
+        let mut base = TargetField::from_bigint(base_repr).unwrap();
+        base.double_in_place();
 
         let mut result = TargetField::zero();
         let mut power = TargetField::one();
@@ -210,18 +209,16 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         }
 
         // Step 2: construct the padding
-        let mut pad_non_top_limb_repr: <BaseField as PrimeField>::BigInt =
-            BaseField::one().into_bigint();
-        let mut pad_top_limb_repr: <BaseField as PrimeField>::BigInt = pad_non_top_limb_repr;
+        let mut pad_non_top_limb_repr = BaseField::one().into_bigint();
+        let mut pad_top_limb_repr = pad_non_top_limb_repr;
 
-        pad_non_top_limb_repr.muln((surfeit + params.bits_per_limb) as u32);
+        pad_non_top_limb_repr <<= (surfeit + params.bits_per_limb) as u32;
         let pad_non_top_limb = BaseField::from_bigint(pad_non_top_limb_repr).unwrap();
 
-        pad_top_limb_repr.muln(
-            (surfeit
-                + (TargetField::MODULUS_BIT_SIZE as usize
-                    - params.bits_per_limb * (params.num_limbs - 1))) as u32,
-        );
+        pad_top_limb_repr <<= (surfeit
+            + (TargetField::MODULUS_BIT_SIZE as usize
+                - params.bits_per_limb * (params.num_limbs - 1)))
+            as u32;
         let pad_top_limb = BaseField::from_bigint(pad_top_limb_repr).unwrap();
 
         let mut pad_limbs = Vec::new();
@@ -341,7 +338,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
                 &cur_bits[cur_bits.len() - params.bits_per_limb..],
             ); // therefore, the lowest `bits_per_non_top_limb` bits is what we want.
             limbs.push(BaseField::from_bigint(cur_mod_r).unwrap());
-            cur.divn(params.bits_per_limb as u32);
+            cur >>= params.bits_per_limb as u32;
         }
 
         // then we reserve, so that the limbs are ``big limb first''

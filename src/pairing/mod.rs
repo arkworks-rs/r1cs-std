@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use ark_ec::pairing::Pairing;
 use ark_ec::CurveGroup;
-use ark_ff::Field;
+use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
 
@@ -14,7 +14,10 @@ pub mod mnt6;
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: Pairing, ConstraintF: Field = <<E as Pairing>::G1 as CurveGroup>::BaseField>
+pub trait PairingVar<
+    E: Pairing,
+    ConstraintF: PrimeField = <<E as Pairing>::G1 as CurveGroup>::BaseField,
+>
 {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
