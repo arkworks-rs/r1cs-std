@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use ark_ec::pairing::Pairing;
-use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
 use core::fmt::Debug;
 
@@ -15,35 +14,35 @@ type BasePrimeField<E> = <<E as Pairing>::BaseField as ark_ff::Field>::BasePrime
 
 /// Specifies the constraints for computing a pairing in the yybilinear group
 /// `E`.
-pub trait PairingVar<E: Pairing, ConstraintF: PrimeField = BasePrimeField<E>> {
+pub trait PairingVar<E: Pairing> {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1, ConstraintF>
-        + AllocVar<E::G1, ConstraintF>
-        + AllocVar<E::G1Affine, ConstraintF>;
+    type G1Var: CurveVar<E::G1, BasePrimeField<E>>
+        + AllocVar<E::G1, BasePrimeField<E>>
+        + AllocVar<E::G1Affine, BasePrimeField<E>>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2, ConstraintF>
-        + AllocVar<E::G2, ConstraintF>
-        + AllocVar<E::G2Affine, ConstraintF>;
+    type G2Var: CurveVar<E::G2, BasePrimeField<E>>
+        + AllocVar<E::G2, BasePrimeField<E>>
+        + AllocVar<E::G2Affine, BasePrimeField<E>>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::TargetField, ConstraintF>;
+    type GTVar: FieldVar<E::TargetField, BasePrimeField<E>>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G1Prepared`.
-    type G1PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G1Prepared, ConstraintF>
+    type G1PreparedVar: ToBytesGadget<BasePrimeField<E>>
+        + AllocVar<E::G1Prepared, BasePrimeField<E>>
         + Clone
         + Debug;
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
     /// `E::G2Prepared`.
-    type G2PreparedVar: ToBytesGadget<ConstraintF>
-        + AllocVar<E::G2Prepared, ConstraintF>
+    type G2PreparedVar: ToBytesGadget<BasePrimeField<E>>
+        + AllocVar<E::G2Prepared, BasePrimeField<E>>
         + Clone
         + Debug;
 
