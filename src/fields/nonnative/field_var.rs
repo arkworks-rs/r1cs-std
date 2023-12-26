@@ -313,7 +313,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
     fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
-                c.into_bigint().to_bytes_be().as_slice(),
+                c.into_bigint().to_bytes_le().as_slice(),
             )),
 
             Self::Var(v) => v.to_bytes(),
@@ -324,7 +324,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
     fn to_non_unique_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
-                c.into_bigint().to_bytes_be().as_slice(),
+                c.into_bigint().to_bytes_le().as_slice(),
             )),
             Self::Var(v) => v.to_non_unique_bytes(),
         }

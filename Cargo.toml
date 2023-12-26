@@ -36,6 +36,7 @@ ark-mnt4-753 = { version = "0.4.0", features = ["curve"], default-features = fal
 ark-mnt6-298 = { version = "0.4.0", default-features = false  }
 ark-mnt6-753 = { version = "0.4.0", default-features = false  }
 ark-pallas = { version = "0.4.0", features = ["curve"],  default-features = false  }
+ark-bn254 = { version = "0.4.0", features = ["curve"], default-features = false  }
 
 [features]
 default = ["std"]
@@ -78,6 +79,7 @@ ark-ec = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-poly = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-serialize = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-test-curves = { git = "https://github.com/arkworks-rs/algebra/" }
+ark-bn254 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves/" }
