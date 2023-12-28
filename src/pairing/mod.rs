@@ -17,15 +17,11 @@ type BasePrimeField<E> = <<E as Pairing>::BaseField as ark_ff::Field>::BasePrime
 pub trait PairingVar<E: Pairing> {
     /// An variable representing an element of `G1`.
     /// This is the R1CS equivalent of `E::G1Projective`.
-    type G1Var: CurveVar<E::G1, BasePrimeField<E>>
-        + AllocVar<E::G1, BasePrimeField<E>>
-        + AllocVar<E::G1Affine, BasePrimeField<E>>;
+    type G1Var: CurveVar<E::G1, BasePrimeField<E>>;
 
     /// An variable representing an element of `G2`.
     /// This is the R1CS equivalent of `E::G2Projective`.
-    type G2Var: CurveVar<E::G2, BasePrimeField<E>>
-        + AllocVar<E::G2, BasePrimeField<E>>
-        + AllocVar<E::G2Affine, BasePrimeField<E>>;
+    type G2Var: CurveVar<E::G2, BasePrimeField<E>>;
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
