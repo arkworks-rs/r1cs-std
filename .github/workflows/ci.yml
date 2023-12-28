@@ -165,7 +165,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Change directory to curves
-        run: cd curves
+        run: ls; cd curves
 
       - name: Patch cargo.toml
         run: |
@@ -187,4 +187,4 @@ jobs:
           } >> Cargo.toml
           
       - name: Test on ${{ matrix.curve }}
-        run: "cd ${{ matrix.curve }} && cargo test --features 'r1cs'"
+        run: "ls; cd ${{ matrix.curve }} && cargo test --features 'r1cs'"
