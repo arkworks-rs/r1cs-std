@@ -1,9 +1,26 @@
 # CHANGELOG
 
 ## Pending
+
+### Breaking changes
+
+- [\#134](https://github.com/arkworks-rs/r1cs-std/pull/134) Add `Mul<NonnativeFieldVar>` bounds and impls for `CurveVar`.
+- [\#135](https://github.com/arkworks-rs/r1cs-std/pull/135)
+    - Rename `NonNativeFieldVar` to `EmulatedFpVar`.
+    - Rename `fields::nonnative` to `fields::emulated_fp`.
+    - Rename `fields::nonnative::{Allocated}NonNativeMulResultVar` to `fields::emulated_fp::{Allocated}MulResultVar`.
+
+### Features
+
+### Improvements
+
+### Bug Fixes
+
+## 0.4.0
+
 - [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
 - [\#124](https://github.com/arkworks-rs/r1cs-std/pull/124) Fix `scalar_mul_le` constraints unsatisfiability when short Weierstrass point is zero.
-- [\#127](https://github.com/arkworks-rs/r1cs-std/pull/127) Convert `EmulatedFpVar` constants to little-endian bytes instead of big-endian (`ToBytesGadget`).
+- [\#127](https://github.com/arkworks-rs/r1cs-std/pull/127) Convert `NonNativeFieldVar` constants to little-endian bytes instead of big-endian (`ToBytesGadget`).
 
 ### Breaking changes
 
@@ -13,7 +30,7 @@
 
 - [\#84](https://github.com/arkworks-rs/r1cs-std/pull/84) Expose `short_weierstrass::non_zero_affine` module
   and implement `EqGadget` for `NonZeroAffineVar`.
-- [\#79](https://github.com/arkworks-rs/r1cs-std/pull/79) Move `EmulatedFpVar` from `ark-nonnative` to `ark-r1cs-std`.
+- [\#79](https://github.com/arkworks-rs/r1cs-std/pull/79) Move `NonNativeFieldVar` from `ark-nonnative` to `ark-r1cs-std`.
 - [\#76](https://github.com/arkworks-rs/r1cs-std/pull/76) Implement `ToBytesGadget` for `Vec<UInt8>`.
 - [nonnative/\#45](https://github.com/arkworks-rs/nonnative/pull/45) Add `new_witness_with_le_bits` which returns the bits used during variable allocation.
 
