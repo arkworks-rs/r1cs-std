@@ -25,7 +25,7 @@ pub enum OptimizationType {
     Weight,
 }
 
-/// A function to search for parameters for nonnative field gadgets
+/// A function to search for parameters for emulated field gadgets
 pub const fn find_parameters(
     base_field_prime_length: usize,
     target_field_prime_bit_length: usize,

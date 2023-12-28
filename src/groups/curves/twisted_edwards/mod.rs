@@ -1,21 +1,24 @@
 use ark_ec::{
+    models::CurveConfig,
     twisted_edwards::{
-        Affine as TEAffine, MontCurveConfig as MontgomeryModelParameter,
-        Projective as TEProjective, TECurveConfig as TEModelParameters,
+        Affine as TEAffine, MontCurveConfig, Projective as TEProjective, TECurveConfig,
     },
-    AffineRepr, CurveGroup, Group,
+    AdditiveGroup, AffineRepr, CurveGroup,
 };
-use ark_ff::{BigInteger, BitIteratorBE, Field, One, PrimeField, Zero};
+use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     prelude::*,
+    fields::emulated_fp::EmulatedFpVar,
     Vec,
 };
 
 use crate::fields::fp::FpVar;
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+
+type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 
 /// An implementation of arithmetic for Montgomery curves that relies on
 /// incomplete addition formulae for the affine model, as outlined in the
@@ -26,10 +29,8 @@ use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
 #[must_use]
-pub struct MontgomeryAffineVar<
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
+pub struct MontgomeryAffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
+where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     /// The x-coordinate.
@@ -46,15 +47,15 @@ mod montgomery_affine_impl {
     use ark_ff::Field;
     use core::ops::Add;
 
-    impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for MontgomeryAffineVar<P, F>
+    impl<P, F> R1CSVar<BasePrimeField<P>> for MontgomeryAffineVar<P, F>
     where
-        P: TEModelParameters,
-        F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+        P: TECurveConfig,
+        F: FieldVar<P::BaseField, BasePrimeField<P>>,
         for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
     {
         type Value = (P::BaseField, P::BaseField);
 
-        fn cs(&self) -> ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField> {
+        fn cs(&self) -> ConstraintSystemRef<BasePrimeField<P>> {
             self.x.cs().or(self.y.cs())
         }
 
@@ -65,10 +66,7 @@ mod montgomery_affine_impl {
         }
     }
 
-    impl<
-            P: TEModelParameters,
-            F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-        > MontgomeryAffineVar<P, F>
+    impl<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>> MontgomeryAffineVar<P, F>
     where
         for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
     {
@@ -105,7 +103,7 @@ mod montgomery_affine_impl {
         /// corresponding affine Montgomery curve point.
         #[tracing::instrument(target = "r1cs")]
         pub fn new_witness_from_edwards(
-            cs: ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField>,
+            cs: ConstraintSystemRef<BasePrimeField<P>>,
             p: &TEAffine<P>,
         ) -> Result<Self, SynthesisError> {
             let montgomery_coords = Self::from_edwards_to_coords(p)?;
@@ -164,8 +162,8 @@ mod montgomery_affine_impl {
 
     impl<'a, P, F> Add<&'a MontgomeryAffineVar<P, F>> for MontgomeryAffineVar<P, F>
     where
-        P: TEModelParameters,
-        F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+        P: TECurveConfig,
+        F: FieldVar<P::BaseField, BasePrimeField<P>>,
         for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
     {
         type Output = MontgomeryAffineVar<P, F>;
@@ -238,10 +236,8 @@ mod montgomery_affine_impl {
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
 #[must_use]
-pub struct AffineVar<
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
-> where
+pub struct AffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
+where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     /// The x-coordinate.
@@ -252,8 +248,7 @@ pub struct AffineVar<
     _params: PhantomData<P>,
 }
 
-impl<P: TEModelParameters, F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>>
-    AffineVar<P, F>
+impl<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>> AffineVar<P, F>
 where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -271,7 +266,7 @@ where
     /// is a constant or is a public input).
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     pub fn new_variable_omit_on_curve_check<T: Into<TEAffine<P>>>(
-        cs: impl Into<Namespace<<P::BaseField as Field>::BasePrimeField>>,
+        cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
@@ -296,16 +291,12 @@ where
     }
 }
 
-impl<P: TEModelParameters, F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>>
-    AffineVar<P, F>
+impl<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>> AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>
-        + ThreeBitCondNegLookupGadget<
-            <P::BaseField as Field>::BasePrimeField,
-            TableConstant = P::BaseField,
-        >,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>
+        + ThreeBitCondNegLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     /// Compute a scalar multiplication of `bases` with respect to `scalars`,
@@ -319,7 +310,7 @@ where
         scalars: &[impl Borrow<[J]>],
     ) -> Result<Self, SynthesisError>
     where
-        J: Borrow<[Boolean<<P::BaseField as Field>::BasePrimeField>]>,
+        J: Borrow<[Boolean<BasePrimeField<P>>]>,
     {
         const CHUNK_SIZE: usize = 3;
         let mut ed_result: Option<AffineVar<P, F>> = None;
@@ -341,7 +332,6 @@ where
                 .iter()
                 .zip(segment_powers.borrow())
             {
-                let base_power = base_power.borrow();
                 let mut acc_power = *base_power;
                 let mut coords = vec![];
                 for _ in 0..4 {
@@ -390,15 +380,15 @@ where
     }
 }
 
-impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> R1CSVar<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     type Value = TEProjective<P>;
 
-    fn cs(&self) -> ConstraintSystemRef<<P::BaseField as Field>::BasePrimeField> {
+    fn cs(&self) -> ConstraintSystemRef<BasePrimeField<P>> {
         self.x.cs().or(self.y.cs())
     }
 
@@ -410,11 +400,11 @@ where
     }
 }
 
-impl<P, F> CurveVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> CurveVar<TEProjective<P>, BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     fn constant(g: TEProjective<P>) -> Self {
@@ -426,13 +416,13 @@ where
         Self::new(F::zero(), F::one())
     }
 
-    fn is_zero(&self) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
+    fn is_zero(&self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         Ok(self.x.is_zero()? & &self.y.is_one()?)
     }
 
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable_omit_prime_order_check(
-        cs: impl Into<Namespace<<P::BaseField as Field>::BasePrimeField>>,
+        cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<TEProjective<P>, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
@@ -536,7 +526,7 @@ where
     ) -> Result<(), SynthesisError>
     where
         I: Iterator<Item = (B, &'a TEProjective<P>)>,
-        B: Borrow<Boolean<<P::BaseField as Field>::BasePrimeField>>,
+        B: Borrow<Boolean<BasePrimeField<P>>>,
     {
         let (bits, multiples): (Vec<_>, Vec<_>) = scalar_bits_with_base_multiples
             .map(|(bit, base)| (bit.borrow().clone(), *base))
@@ -564,16 +554,16 @@ where
     }
 }
 
-impl<P, F> AllocVar<TEProjective<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> AllocVar<TEProjective<P>, BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEProjective<P>>>(
-        cs: impl Into<Namespace<<P::BaseField as Field>::BasePrimeField>>,
+        cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<Point, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
@@ -613,7 +603,7 @@ where
                 let (mut ge, iter) = if cofactor_weight < modulus_minus_1_weight {
                     let ge = Self::new_variable_omit_prime_order_check(
                         ark_relations::ns!(cs, "Witness without subgroup check with cofactor mul"),
-                        || f().map(|g| g.borrow().into_affine().mul_by_cofactor_inv().into()),
+                        || f().map(|g| g.into_affine().mul_by_cofactor_inv().into()),
                         mode,
                     )?;
                     (
@@ -626,8 +616,7 @@ where
                         || {
                             f().map(|g| {
                                 let g = g.into_affine();
-                                let mut power_of_two = P::ScalarField::one().into_bigint();
-                                power_of_two.muln(power_of_2);
+                                let power_of_two = P::ScalarField::ONE.into_bigint() << power_of_2;
                                 let power_of_two_inv = P::ScalarField::from_bigint(power_of_two)
                                     .and_then(|n| n.inverse())
                                     .unwrap();
@@ -665,16 +654,16 @@ where
     }
 }
 
-impl<P, F> AllocVar<TEAffine<P>, <P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> AllocVar<TEAffine<P>, BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEAffine<P>>>(
-        cs: impl Into<Namespace<<P::BaseField as Field>::BasePrimeField>>,
+        cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<Point, SynthesisError>,
         mode: AllocationMode,
     ) -> Result<Self, SynthesisError> {
@@ -686,16 +675,14 @@ where
     }
 }
 
-impl<P, F> ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> ToConstraintFieldGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
-    F: ToConstraintFieldGadget<<P::BaseField as Field>::BasePrimeField>,
+    F: ToConstraintFieldGadget<BasePrimeField<P>>,
 {
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<FpVar<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+    fn to_constraint_field(&self) -> Result<Vec<FpVar<BasePrimeField<P>>>, SynthesisError> {
         let mut res = Vec::new();
 
         res.extend_from_slice(&self.x.to_constraint_field()?);
@@ -777,9 +764,9 @@ impl_bounded_ops!(
     },
     |this: &'a AffineVar<P, F>, other: TEProjective<P>| this + AffineVar::constant(other),
     (
-        F :FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-            + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-        P: TEModelParameters,
+        F :FieldVar<P::BaseField, BasePrimeField<P>>
+            + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
+        P: TECurveConfig,
     ),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 );
@@ -794,41 +781,68 @@ impl_bounded_ops!(
     |this: &'a AffineVar<P, F>, other: &'a AffineVar<P, F>| this + other.negate().unwrap(),
     |this: &'a AffineVar<P, F>, other: TEProjective<P>| this - AffineVar::constant(other),
     (
-        F :FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-            + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
-        P: TEModelParameters,
+        F :FieldVar<P::BaseField, BasePrimeField<P>>
+            + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
+        P: TECurveConfig,
     ),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>
 );
 
+impl_bounded_ops_diff!(
+    AffineVar<P, F>,
+    TEProjective<P>,
+    EmulatedFpVar<P::ScalarField, BasePrimeField<P>>,
+    P::ScalarField,
+    Mul,
+    mul,
+    MulAssign,
+    mul_assign,
+    |this: &'a AffineVar<P, F>, other: &'a EmulatedFpVar<P::ScalarField, BasePrimeField<P>>| {
+        if this.is_constant() && other.is_constant() {
+            assert!(this.is_constant() && other.is_constant());
+            AffineVar::constant(this.value().unwrap() * &other.value().unwrap())
+        } else {
+            let bits = other.to_bits_le().unwrap();
+            this.scalar_mul_le(bits.iter()).unwrap()
+        }
+    },
+    |this: &'a AffineVar<P, F>, other: P::ScalarField| this * EmulatedFpVar::constant(other),
+    (
+        F :FieldVar<P::BaseField, BasePrimeField<P>>
+            + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
+        P: TECurveConfig,
+    ),
+    for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
+);
+
 impl<'a, P, F> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P, F>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
 }
 
 impl<'a, P, F> GroupOpsBounds<'a, TEProjective<P>, AffineVar<P, F>> for &'a AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>
-        + TwoBitLookupGadget<<P::BaseField as Field>::BasePrimeField, TableConstant = P::BaseField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>
+        + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
 }
 
-impl<P, F> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> CondSelectGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
-        cond: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        cond: &Boolean<BasePrimeField<P>>,
         true_value: &Self,
         false_value: &Self,
     ) -> Result<Self, SynthesisError> {
@@ -839,17 +853,14 @@ where
     }
 }
 
-impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> EqGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn is_eq(
-        &self,
-        other: &Self,
-    ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
         Ok(x_equal & y_equal)
@@ -860,7 +871,7 @@ where
     fn conditional_enforce_equal(
         &self,
         other: &Self,
-        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        condition: &Boolean<BasePrimeField<P>>,
     ) -> Result<(), SynthesisError> {
         self.x.conditional_enforce_equal(&other.x, condition)?;
         self.y.conditional_enforce_equal(&other.y, condition)?;
@@ -872,22 +883,20 @@ where
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
-        condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        condition: &Boolean<BasePrimeField<P>>,
     ) -> Result<(), SynthesisError> {
         (self.is_eq(other)? & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 
-impl<P, F> ToBitsGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> ToBitsGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_bits_le()?;
         let y_bits = self.y.to_bits_le()?;
         x_bits.extend_from_slice(&y_bits);
@@ -895,9 +904,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bits_le(
-        &self,
-    ) -> Result<Vec<Boolean<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+    fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_non_unique_bits_le()?;
         let y_bits = self.y.to_non_unique_bits_le()?;
         x_bits.extend_from_slice(&y_bits);
@@ -906,16 +913,14 @@ where
     }
 }
 
-impl<P, F> ToBytesGadget<<P::BaseField as Field>::BasePrimeField> for AffineVar<P, F>
+impl<P, F> ToBytesGadget<BasePrimeField<P>> for AffineVar<P, F>
 where
-    P: TEModelParameters,
-    F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
+    P: TECurveConfig,
+    F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+    fn to_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_bytes()?;
         let y_bytes = self.y.to_bytes()?;
         x_bytes.extend_from_slice(&y_bytes);
@@ -923,9 +928,7 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(
-        &self,
-    ) -> Result<Vec<UInt8<<P::BaseField as Field>::BasePrimeField>>, SynthesisError> {
+    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_non_unique_bytes()?;
         let y_bytes = self.y.to_non_unique_bytes()?;
         x_bytes.extend_from_slice(&y_bytes);
