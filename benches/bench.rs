@@ -2,7 +2,7 @@ use ark_ff::PrimeField;
 use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
-    fields::{nonnative::EmulatedFpVar, FieldVar},
+    fields::{emulated_fp::EmulatedFpVar, FieldVar},
 };
 use ark_relations::{
     ns,
