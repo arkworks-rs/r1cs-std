@@ -28,7 +28,7 @@
 //! # use ark_std::UniformRand;
 //! # use ark_relations::{ns, r1cs::ConstraintSystem};
 //! # use ark_r1cs_std::prelude::*;
-//! use ark_r1cs_std::fields::nonnative::EmulatedFpVar;
+//! use ark_r1cs_std::fields::emulated_fp::EmulatedFpVar;
 //! use ark_bls12_377::{Fr, Fq};
 //!
 //! # let mut rng = ark_std::test_rng();
@@ -122,8 +122,8 @@
 //!
 //! \[OWWB20\]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
 //!
-//! [`EmulatedFpVar`]: crate::fields::nonnative::EmulatedFpVar
-//! [`MulResultVar`]: crate::fields::nonnative::MulResultVar
+//! [`EmulatedFpVar`]: crate::fields::emulated_fp::EmulatedFpVar
+//! [`MulResultVar`]: crate::fields::emulated_fp::MulResultVar
 //! [`FpVar`]: crate::fields::fp::FpVar
 
 #![allow(

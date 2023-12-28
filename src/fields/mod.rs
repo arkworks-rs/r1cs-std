@@ -20,7 +20,7 @@ pub mod quadratic_extension;
 /// That is, it implements the R1CS equivalent of `ark_ff::Fp*`.
 pub mod fp;
 
-/// This module contains a generic implementation of "nonnative" prime field
+/// This module contains a generic implementation of "emulated" prime field
 /// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p != q`.
 pub mod emulated_fp;
 

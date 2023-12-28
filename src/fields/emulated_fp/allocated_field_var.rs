@@ -81,7 +81,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         result
     }
 
-    /// Obtain the value of a nonnative field element
+    /// Obtain the value of a emulated field element
     pub fn value(&self) -> R1CSResult<TargetF> {
         let mut limbs = Vec::new();
         for limb in self.limbs.iter() {
@@ -91,7 +91,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         Ok(Self::limbs_to_value(limbs, self.get_optimization_type()))
     }
 
-    /// Obtain the nonnative field element of a constant value
+    /// Obtain the emulated field element of a constant value
     pub fn constant(cs: ConstraintSystemRef<BaseF>, value: TargetF) -> R1CSResult<Self> {
         let optimization_type = match cs.optimization_goal() {
             OptimizationGoal::None => OptimizationType::Constraints,
@@ -116,17 +116,17 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         })
     }
 
-    /// Obtain the nonnative field element of one
+    /// Obtain the emulated field element of one
     pub fn one(cs: ConstraintSystemRef<BaseF>) -> R1CSResult<Self> {
         Self::constant(cs, TargetF::one())
     }
 
-    /// Obtain the nonnative field element of zero
+    /// Obtain the emulated field element of zero
     pub fn zero(cs: ConstraintSystemRef<BaseF>) -> R1CSResult<Self> {
         Self::constant(cs, TargetF::zero())
     }
 
-    /// Add a nonnative field element
+    /// Add a emulated field element
     #[tracing::instrument(target = "r1cs")]
     pub fn add(&self, other: &Self) -> R1CSResult<Self> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
@@ -176,7 +176,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         Ok(res)
     }
 
-    /// Subtract a nonnative field element, without the final reduction step
+    /// Subtract a emulated field element, without the final reduction step
     #[tracing::instrument(target = "r1cs")]
     pub fn sub_without_reduce(&self, other: &Self) -> R1CSResult<Self> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
@@ -251,7 +251,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         Ok(result)
     }
 
-    /// Subtract a nonnative field element
+    /// Subtract a emulated field element
     #[tracing::instrument(target = "r1cs")]
     pub fn sub(&self, other: &Self) -> R1CSResult<Self> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
@@ -267,7 +267,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         self.sub(&Self::constant(self.cs(), *other)?)
     }
 
-    /// Multiply a nonnative field element
+    /// Multiply a emulated field element
     #[tracing::instrument(target = "r1cs")]
     pub fn mul(&self, other: &Self) -> R1CSResult<Self> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
@@ -280,13 +280,13 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         self.mul(&Self::constant(self.cs(), *other)?)
     }
 
-    /// Compute the negate of a nonnative field element
+    /// Compute the negate of a emulated field element
     #[tracing::instrument(target = "r1cs")]
     pub fn negate(&self) -> R1CSResult<Self> {
         Self::zero(self.cs())?.sub(self)
     }
 
-    /// Compute the inverse of a nonnative field element
+    /// Compute the inverse of a emulated field element
     #[tracing::instrument(target = "r1cs")]
     pub fn inverse(&self) -> R1CSResult<Self> {
         let inverse = Self::new_witness(self.cs(), || {
@@ -867,7 +867,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToConstraintFieldGadget<BaseF>
     for AllocatedEmulatedFpVar<TargetF, BaseF>
 {
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseF>>> {
-        // provide a unique representation of the nonnative variable
+        // provide a unique representation of the emulated variable
         // step 1: convert it into a bit sequence
         let bits = self.to_bits_le()?;
 
