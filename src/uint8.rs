@@ -75,7 +75,7 @@ impl<F: Field> UInt8<F> {
 /// `ConstraintF::MODULUS_BIT_SIZE - 1` chunks and converts each chunk, which is
 /// assumed to be little-endian, to its `FpVar<ConstraintF>` representation.
 /// This is the gadget counterpart to the `[u8]` implementation of
-/// [ToConstraintField](ark_ff::ToConstraintField).
+/// [`ToConstraintField``].
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
     #[tracing::instrument(target = "r1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
