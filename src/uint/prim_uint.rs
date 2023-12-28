@@ -19,7 +19,7 @@ pub trait PrimUInt:
     /// ```
     /// use ark_r1cs_std::uint::PrimUInt;
     ///
-    /// let bytes = ToBytes::to_le_bytes(&0x12345678u32);
+    /// let bytes = PrimUInt::to_le_bytes(&0x12345678u32);
     /// assert_eq!(bytes, [0x78, 0x56, 0x34, 0x12]);
     /// ```
     fn to_le_bytes(&self) -> Self::Bytes;
@@ -31,7 +31,7 @@ pub trait PrimUInt:
     /// ```
     /// use ark_r1cs_std::uint::PrimUInt;
     ///
-    /// let bytes = ToBytes::to_be_bytes(&0x12345678u32);
+    /// let bytes = PrimUInt::to_be_bytes(&0x12345678u32);
     /// assert_eq!(bytes, [0x12, 0x34, 0x56, 0x78]);
     /// ```
     fn to_be_bytes(&self) -> Self::Bytes;
