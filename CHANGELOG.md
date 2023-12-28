@@ -21,6 +21,7 @@
 - [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
 - [\#124](https://github.com/arkworks-rs/r1cs-std/pull/124) Fix `scalar_mul_le` constraints unsatisfiability when short Weierstrass point is zero.
 - [\#127](https://github.com/arkworks-rs/r1cs-std/pull/127) Convert `NonNativeFieldVar` constants to little-endian bytes instead of big-endian (`ToBytesGadget`).
+- [\#133](https://github.com/arkworks-rs/r1cs-std/pull/133) Save 1 constraint in `FpVar::{is_eq, is_neq}` by removing the unnecessary booleanity check.
 
 ### Breaking changes
 

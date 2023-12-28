@@ -6,6 +6,7 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{
+    boolean::AllocatedBool,
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{FieldOpsBounds, FieldVar},
     prelude::*,
@@ -354,7 +355,7 @@ impl<F: PrimeField> AllocatedFp<F> {
 
     /// Outputs the bit `self == other`.
     ///
-    /// This requires three constraints.
+    /// This requires two constraints.
     #[tracing::instrument(target = "r1cs")]
     pub fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         Ok(!self.is_neq(other)?)
@@ -362,12 +363,15 @@ impl<F: PrimeField> AllocatedFp<F> {
 
     /// Outputs the bit `self != other`.
     ///
-    /// This requires three constraints.
+    /// This requires two constraints.
     #[tracing::instrument(target = "r1cs")]
     pub fn is_neq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        let is_not_equal = Boolean::new_witness(self.cs.clone(), || {
-            Ok(self.value.get()? != other.value.get()?)
-        })?;
+        // We don't need to enforce `is_not_equal` to be boolean here;
+        // see the comments above the constraints below for why.
+        let is_not_equal = Boolean::from(AllocatedBool::new_witness_without_booleanity_check(
+            self.cs.clone(),
+            || Ok(self.value.get()? != other.value.get()?),
+        )?);
         let multiplier = self.cs.new_witness_variable(|| {
             if is_not_equal.value()? {
                 (self.value.get()? - other.value.get()?).inverse().get()
@@ -403,21 +407,23 @@ impl<F: PrimeField> AllocatedFp<F> {
         // --------------------------------------------------------------------
         //
         // Soundness:
-        // Case 1: self != other, but is_not_equal = 0.
+        // Case 1: self != other, but is_not_equal != 1.
         // --------------------------------------------
-        //   constraint 1:
-        //   (self - other) * multiplier = is_not_equal
-        //   => non_zero * multiplier = 0 (only satisfiable if multiplier == 0)
-        //
         //   constraint 2:
         //   (self - other) * not(is_not_equal) = 0
-        //   => (non_zero) * 1 = 0 (impossible)
+        //   => (non_zero) * (1 - is_not_equal) = 0
+        //   => non_zero = 0 (contradiction) || 1 - is_not_equal = 0 (contradiction)
         //
-        // Case 2: self == other, but is_not_equal = 1.
+        // Case 2: self == other, but is_not_equal != 0.
         // --------------------------------------------
         //   constraint 1:
         //   (self - other) * multiplier = is_not_equal
-        //   0 * multiplier = 1 (unsatisfiable)
+        //   0 * multiplier = is_not_equal != 0 (unsatisfiable)
+        //
+        // That is, constraint 1 enforces that if self == other, then `is_not_equal = 0`
+        // and constraint 2 enforces that if self != other, then `is_not_equal = 1`.
+        // Since these are the only possible two cases, `is_not_equal` is always
+        // constrained to 0 or 1.
         self.cs.enforce_constraint(
             lc!() + self.variable - other.variable,
             lc!() + multiplier,
