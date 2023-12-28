@@ -22,7 +22,7 @@ pub mod fp;
 
 /// This module contains a generic implementation of "nonnative" prime field
 /// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p != q`.
-pub mod nonnative;
+pub mod emulated_fp;
 
 /// This module contains a generic implementation of the degree-12 tower
 /// extension field. That is, it implements the R1CS equivalent of

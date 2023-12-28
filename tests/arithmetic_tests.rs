@@ -10,7 +10,7 @@ use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
     fields::{
-        nonnative::{AllocatedEmulatedFpVar, EmulatedFpVar},
+        emulated_fp::{AllocatedEmulatedFpVar, EmulatedFpVar},
         FieldVar,
     },
     R1CSVar,

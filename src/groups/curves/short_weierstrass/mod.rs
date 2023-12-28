@@ -7,7 +7,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
-use crate::fields::nonnative::EmulatedFpVar;
+use crate::fields::emulated_fp::EmulatedFpVar;
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 /// This module provides a generic implementation of G1 and G2 for
@@ -981,7 +981,7 @@ mod test_sw_curve {
     use crate::{
         alloc::AllocVar,
         eq::EqGadget,
-        fields::{fp::FpVar, nonnative::EmulatedFpVar},
+        fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
         groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
         ToBitsGadget,
     };

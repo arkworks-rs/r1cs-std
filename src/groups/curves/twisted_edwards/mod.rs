@@ -8,7 +8,7 @@ use ark_ec::{
 use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::fields::nonnative::EmulatedFpVar;
+use crate::fields::emulated_fp::EmulatedFpVar;
 use crate::{prelude::*, ToConstraintFieldGadget, Vec};
 
 use crate::fields::fp::FpVar;
