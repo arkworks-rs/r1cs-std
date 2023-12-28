@@ -9,7 +9,7 @@ use non_zero_affine::NonZeroAffineVar;
 
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::{fp::FpVar, emulated_fp::EmulatedFpVar},
+    fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
     prelude::*,
     Vec,
 };
@@ -979,10 +979,10 @@ where
 mod test_sw_curve {
     use crate::{
         alloc::AllocVar,
+        convert::ToBitsGadget,
         eq::EqGadget,
         fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
         groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
-        ToBitsGadget,
     };
     use ark_ec::{
         short_weierstrass::{Projective, SWCurveConfig},

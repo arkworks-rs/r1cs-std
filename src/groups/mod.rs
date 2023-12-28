@@ -1,6 +1,6 @@
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget},
-    fields::emulated_fp::EmulatedFpVar, 
+    fields::emulated_fp::EmulatedFpVar,
     prelude::*,
 };
 use ark_ff::PrimeField;

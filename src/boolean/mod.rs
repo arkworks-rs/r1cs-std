@@ -204,7 +204,9 @@ mod test {
     use super::Boolean;
     use crate::convert::ToBytesGadget;
     use crate::prelude::*;
-    use ark_ff::{BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand};
+    use ark_ff::{
+        AdditiveGroup, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand,
+    };
     use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
     use ark_test_curves::bls12_381::Fr;
 

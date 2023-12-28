@@ -10,8 +10,8 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    prelude::*,
     fields::emulated_fp::EmulatedFpVar,
+    prelude::*,
     Vec,
 };
 
