@@ -164,11 +164,10 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Change directory to curves
-        run: ls; cd curves
-
       - name: Patch cargo.toml
         run: |
+          ls
+          cd curves
           if  grep -q "\[patch.crates-io\]" Cargo.toml ; then
               MATCH=$(awk '/\[patch.crates-io\]/{ print NR; exit }' Cargo.toml); 
               sed -i "$MATCH,\$d" Cargo.toml
@@ -176,15 +175,13 @@ jobs:
           {
             echo "[patch.crates-io]"
             echo "ark-std = { git = 'https://github.com/arkworks-rs/std' }"
-            echo "ark-ec = { git = 'https://github.com/arkworks-rs/algebra' }"
-            echo "ark-ff = { git = 'https://github.com/arkworks-rs/algebra' }"
-            echo "ark-poly = { git = 'https://github.com/arkworks-rs/algebra' }"
+            echo "ark-ec = { path = '../ec' }"
+            echo "ark-ff = { path = '../ff' }"
+            echo "ark-poly = { git = '../poly' }"
             echo "ark-relations = { git = 'https://github.com/arkworks-rs/snark' }"
-            echo "ark-serialize = { git = 'https://github.com/arkworks-rs/algebra' }"
-            echo "ark-algebra-bench-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
-            echo "ark-algebra-test-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
+            echo "ark-serialize = { path = '../serialize' }"
+            echo "ark-algebra-bench-templates = { path = '../bench-templates' }"
+            echo "ark-algebra-test-templates = { path = '../test-templates' }"
             echo "ark-r1cs-std = { path = '../r1cs-std' }"
           } >> Cargo.toml
-          
-      - name: Test on ${{ matrix.curve }}
-        run: "ls; cd ${{ matrix.curve }} && cargo test --features 'r1cs'"
+          cd ${{ matrix.curve }} && cargo test --features 'r1cs'
