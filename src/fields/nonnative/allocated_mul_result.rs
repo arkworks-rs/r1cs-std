@@ -1,5 +1,5 @@
 use super::{
-    params::{get_params, OptimizationType},
+    params::{DefaultParams, OptimizationType, Params},
     reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
     AllocatedNonNativeFieldVar,
 };
@@ -15,7 +15,11 @@ use num_bigint::BigUint;
 /// The allocated form of `NonNativeFieldMulResultVar` (introduced below)
 #[derive(Debug)]
 #[must_use]
-pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub struct AllocatedNonNativeFieldMulResultVar<
+    TargetField: PrimeField,
+    BaseField: PrimeField,
+    P: Params = DefaultParams,
+> {
     /// Constraint system reference
     pub cs: ConstraintSystemRef<BaseField>,
     /// Limbs of the intermediate representations
@@ -24,18 +28,16 @@ pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseFiel
     pub prod_of_num_of_additions: BaseField,
     #[doc(hidden)]
     pub target_phantom: PhantomData<TargetField>,
+    #[doc(hidden)]
+    pub params_phantom: PhantomData<P>,
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField>
-    From<&AllocatedNonNativeFieldVar<TargetField, BaseField>>
-    for AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    From<&AllocatedNonNativeFieldVar<TargetField, BaseField, P>>
+    for AllocatedNonNativeFieldMulResultVar<TargetField, BaseField, P>
 {
-    fn from(src: &AllocatedNonNativeFieldVar<TargetField, BaseField>) -> Self {
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            src.get_optimization_type(),
-        );
+    fn from(src: &AllocatedNonNativeFieldVar<TargetField, BaseField, P>) -> Self {
+        let params = <P as Params>::get::<TargetField, BaseField>(src.get_optimization_type());
 
         let mut limbs = src.limbs.clone();
         limbs.reverse();
@@ -49,12 +51,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             limbs,
             prod_of_num_of_additions,
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         }
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField>
-    AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
+impl<TargetField: PrimeField, BaseField: PrimeField, P: Params>
+    AllocatedNonNativeFieldMulResultVar<TargetField, BaseField, P>
 {
     /// Get the CS
     pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
@@ -63,14 +66,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
     /// Get the value of the multiplication result
     pub fn value(&self) -> R1CSResult<TargetField> {
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            self.get_optimization_type(),
-        );
+        let params = <P as Params>::get::<TargetField, BaseField>(self.get_optimization_type());
 
         let p_representations =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
+            AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
@@ -88,16 +87,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
     /// Constraints for reducing the result of a multiplication mod p, to get an
     /// original representation.
-    pub fn reduce(&self) -> R1CSResult<AllocatedNonNativeFieldVar<TargetField, BaseField>> {
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            self.get_optimization_type(),
-        );
+    pub fn reduce(&self) -> R1CSResult<AllocatedNonNativeFieldVar<TargetField, BaseField, P>> {
+        let params = <P as Params>::get::<TargetField, BaseField>(self.get_optimization_type());
 
         // Step 1: get p
         let p_representations =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
+            AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
@@ -107,12 +102,13 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         for limb in p_representations.iter() {
             p_gadget_limbs.push(FpVar::<BaseField>::new_constant(self.cs(), limb)?);
         }
-        let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField, P> {
             cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseField::one(),
             is_in_the_normal_form: false,
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         };
 
         // Step 2: compute surfeit
@@ -171,26 +167,23 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             limbs
         };
 
-        let k_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let k_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField, P> {
             cs: self.cs(),
             limbs: k_limbs,
             num_of_additions_over_normal_form: self.prod_of_num_of_additions,
             is_in_the_normal_form: false,
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         };
 
         let cs = self.cs();
 
-        let r_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_witness(
+        let r_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::new_witness(
             ns!(cs, "r"),
             || Ok(self.value()?),
         )?;
 
-        let params = get_params(
-            TargetField::MODULUS_BIT_SIZE as usize,
-            BaseField::MODULUS_BIT_SIZE as usize,
-            self.get_optimization_type(),
-        );
+        let params = <P as Params>::get::<TargetField, BaseField>(self.get_optimization_type());
 
         // Step 1: reduce `self` and `other` if neceessary
         let mut prod_limbs = Vec::new();
@@ -213,6 +206,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
                 + BaseField::one())
                 * (k_gadget.num_of_additions_over_normal_form + BaseField::one()),
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         };
 
         let kp_plus_r_limbs_len = kp_plus_r_gadget.limbs.len();
@@ -220,7 +214,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             kp_plus_r_gadget.limbs[kp_plus_r_limbs_len - 1 - i] += limb;
         }
 
-        Reducer::<TargetField, BaseField>::group_and_check_equality(
+        Reducer::<TargetField, BaseField, P>::group_and_check_equality(
             surfeit,
             2 * params.bits_per_limb,
             params.bits_per_limb,
@@ -249,6 +243,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             prod_of_num_of_additions: self.prod_of_num_of_additions
                 + other.prod_of_num_of_additions,
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         })
     }
 
@@ -256,7 +251,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     #[tracing::instrument(target = "r1cs")]
     pub fn add_constant(&self, other: &TargetField) -> R1CSResult<Self> {
         let mut other_limbs =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
+            AllocatedNonNativeFieldVar::<TargetField, BaseField, P>::get_limbs_representations(
                 other,
                 self.get_optimization_type(),
             )?;
@@ -279,6 +274,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             limbs: new_limbs,
             prod_of_num_of_additions: self.prod_of_num_of_additions + BaseField::one(),
             target_phantom: PhantomData,
+            params_phantom: PhantomData,
         })
     }
 

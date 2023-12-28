@@ -1,4 +1,34 @@
+use ark_ff::PrimeField;
+use ark_std::fmt;
+
 use super::NonNativeFieldConfig;
+
+/// Type that provides non native arithmetic configuration for a given pair of fields
+/// and optimization goal.
+pub trait Params: fmt::Debug + 'static {
+    /// Provide non native parameters.
+    ///
+    /// This function should be pure -- return the same config for the same input.
+    fn get<TargetField: PrimeField, BaseField: PrimeField>(
+        optimization_type: OptimizationType,
+    ) -> NonNativeFieldConfig;
+}
+
+/// Default parameters implementation based on [`get_params`].
+#[derive(Debug)]
+pub struct DefaultParams;
+
+impl Params for DefaultParams {
+    fn get<TargetField: PrimeField, BaseField: PrimeField>(
+        optimization_type: OptimizationType,
+    ) -> NonNativeFieldConfig {
+        get_params(
+            TargetField::MODULUS_BIT_SIZE as usize,
+            BaseField::MODULUS_BIT_SIZE as usize,
+            optimization_type,
+        )
+    }
+}
 
 /// Obtain the parameters from a `ConstraintSystem`'s cache or generate a new
 /// one

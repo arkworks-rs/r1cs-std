@@ -1015,7 +1015,10 @@ mod test_sw_curve {
             ProjectiveVar::<G::Config, FpVar<G::BaseField>>::new_input(cs.clone(), || {
                 Ok(point_out)
             })?;
-        let scalar = NonNativeFieldVar::new_input(cs.clone(), || Ok(scalar))?;
+        let scalar =
+            NonNativeFieldVar::<G::ScalarField, G::BaseField>::new_input(cs.clone(), || {
+                Ok(scalar)
+            })?;
 
         let mul = point_in.scalar_mul_le(scalar.to_bits_le().unwrap().iter())?;
 

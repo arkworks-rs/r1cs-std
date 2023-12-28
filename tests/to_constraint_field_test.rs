@@ -10,8 +10,8 @@ fn to_constraint_field_test() {
 
     let cs = ConstraintSystem::<CF>::new_ref();
 
-    let a = NonNativeFieldVar::Constant(F::from(12u8));
-    let b = NonNativeFieldVar::new_input(cs.clone(), || Ok(F::from(6u8))).unwrap();
+    let a = NonNativeFieldVar::<F, CF>::Constant(F::from(12u8));
+    let b = NonNativeFieldVar::<F, CF>::new_input(cs.clone(), || Ok(F::from(6u8))).unwrap();
 
     let b2 = &b + &b;
 
