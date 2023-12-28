@@ -177,7 +177,7 @@ jobs:
             echo "ark-std = { git = 'https://github.com/arkworks-rs/std' }"
             echo "ark-ec = { path = '../ec' }"
             echo "ark-ff = { path = '../ff' }"
-            echo "ark-poly = { git = '../poly' }"
+            echo "ark-poly = { path = '../poly' }"
             echo "ark-relations = { git = 'https://github.com/arkworks-rs/snark' }"
             echo "ark-serialize = { path = '../serialize' }"
             echo "ark-algebra-bench-templates = { path = '../bench-templates' }"
