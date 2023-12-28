@@ -46,7 +46,7 @@ impl<F: Field> AllocatedBool<F> {
     }
 
     /// Allocate a witness variable without a booleanity check.
-    fn new_witness_without_booleanity_check<T: Borrow<bool>>(
+    pub(crate) fn new_witness_without_booleanity_check<T: Borrow<bool>>(
         cs: ConstraintSystemRef<F>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
     ) -> Result<Self, SynthesisError> {
