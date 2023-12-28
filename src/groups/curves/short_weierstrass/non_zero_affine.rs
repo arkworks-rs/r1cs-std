@@ -8,7 +8,7 @@ use ark_std::ops::Add;
 #[derivative(Debug, Clone)]
 #[must_use]
 pub struct NonZeroAffineVar<
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
 > where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
@@ -23,7 +23,7 @@ pub struct NonZeroAffineVar<
 
 impl<P, F> NonZeroAffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -140,7 +140,7 @@ where
 
 impl<P, F> R1CSVar<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -157,7 +157,7 @@ where
 
 impl<P, F> CondSelectGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
@@ -177,7 +177,7 @@ where
 
 impl<P, F> EqGadget<<P::BaseField as Field>::BasePrimeField> for NonZeroAffineVar<P, F>
 where
-    P: SWModelParameters,
+    P: SWCurveConfig,
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {

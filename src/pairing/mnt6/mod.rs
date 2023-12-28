@@ -191,7 +191,7 @@ impl<P: MNT6Config> PairingVar<P> {
     }
 }
 
-impl<P: MNT6Config> PG<MNT6<P>, P::Fp> for PairingVar<P> {
+impl<P: MNT6Config> PG<MNT6<P>> for PairingVar<P> {
     type G1Var = G1Var<P>;
     type G2Var = G2Var<P>;
     type G1PreparedVar = G1PreparedVar<P>;

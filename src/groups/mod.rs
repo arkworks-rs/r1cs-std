@@ -1,7 +1,7 @@
-use crate::prelude::*;
-use ark_ff::Field;
+use crate::{fields::nonnative::NonNativeFieldVar, prelude::*};
+use ark_ff::PrimeField;
 use ark_relations::r1cs::{Namespace, SynthesisError};
-use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use ark_ec::CurveGroup;
 use core::{borrow::Borrow, fmt::Debug};
@@ -12,20 +12,20 @@ pub mod curves;
 pub use self::curves::short_weierstrass::{bls12, mnt4, mnt6};
 
 /// A hack used to work around the lack of implied bounds.
-pub trait GroupOpsBounds<'a, F, T: 'a>:
+pub trait GroupOpsBounds<'a, G, T: 'a>:
     Sized
     + Add<&'a T, Output = T>
     + Sub<&'a T, Output = T>
     + Add<T, Output = T>
     + Sub<T, Output = T>
-    + Add<F, Output = T>
-    + Sub<F, Output = T>
+    + Add<G, Output = T>
+    + Sub<G, Output = T>
 {
 }
 
 /// A variable that represents a curve point for
 /// the curve `C`.
-pub trait CurveVar<C: CurveGroup, ConstraintF: Field>:
+pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     'static
     + Sized
     + Clone
@@ -44,6 +44,9 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: Field>:
     + SubAssign<C>
     + AddAssign<Self>
     + SubAssign<Self>
+    + Mul<NonNativeFieldVar<C::ScalarField, ConstraintF>, Output = Self>
+    + for<'a> Mul<&'a NonNativeFieldVar<C::ScalarField, ConstraintF>, Output = Self>
+    + MulAssign<NonNativeFieldVar<C::ScalarField, ConstraintF>>
 {
     /// Returns the constant `F::zero()`. This is the identity
     /// of the group.
