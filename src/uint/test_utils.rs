@@ -111,8 +111,6 @@ where
     Ok(())
 }
 
-
-
 pub(crate) fn run_unary_random<const ITERATIONS: usize, const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>

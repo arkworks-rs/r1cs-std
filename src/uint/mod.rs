@@ -12,10 +12,10 @@ mod convert;
 mod eq;
 mod not;
 mod or;
-mod shl;
-mod shr;
 mod rotate;
 mod select;
+mod shl;
+mod shr;
 mod xor;
 
 #[doc(hidden)]

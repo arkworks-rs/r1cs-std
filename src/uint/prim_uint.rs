@@ -1,5 +1,5 @@
-use core::usize;
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
+use core::usize;
 
 #[doc(hidden)]
 // Adapted from <https://github.com/rust-num/num-traits/pull/224>
@@ -163,7 +163,6 @@ pub trait NumBytes:
 
 #[doc(hidden)]
 impl<const N: usize> NumBytes for [u8; N] {}
-
 
 mod _private {
     pub trait Sealed {}

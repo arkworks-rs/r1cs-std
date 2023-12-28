@@ -13,12 +13,9 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
             for (a, b) in bits.iter_mut().zip(&self.bits[other as usize..]) {
                 *a = b.clone();
             }
-            
+
             let value = self.value.and_then(|a| Some(a >> other));
-            Ok(Self {
-                bits,
-                value,
-            })
+            Ok(Self { bits, value })
         } else {
             panic!("attempt to shift right with overflow")
         }
@@ -42,7 +39,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> Shr<T2> for UInt<
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = 1;
+    /// let b = 1u8;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(16 >> 1))?;
     ///
     /// (a >> 1).enforce_equal(&c)?;
@@ -80,10 +77,10 @@ impl<const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> ShrAssign<T2> for
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let mut a = UInt8::new_witness(cs.clone(), || Ok(16))?;
-    /// let b = 1;
+    /// let b = 1u8;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(16 >> 1))?;
     ///
-    /// a >> b;
+    /// a >>= b;
     /// a.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
@@ -120,11 +117,8 @@ mod tests {
         } else {
             AllocationMode::Witness
         };
-        let expected = UInt::<N, T, F>::new_variable(
-            cs.clone(),
-            || Ok(a.value()? >> b),
-            expected_mode,
-        )?;
+        let expected =
+            UInt::<N, T, F>::new_variable(cs.clone(), || Ok(a.value()? >> b), expected_mode)?;
         assert_eq!(expected.value(), computed.value());
         expected.enforce_equal(&computed)?;
         if !a.is_constant() {
