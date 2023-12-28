@@ -98,11 +98,11 @@
 //!
 //! This implementation employs the standard idea of using multiple **limbs** to
 //! represent an element of the target field. For example, an element in the
-//! TargetField may be represented by three BaseField elements (i.e., the
+//! TargetF may be represented by three BaseF elements (i.e., the
 //! limbs).
 //!
 //! ```text
-//! TargetField -> limb 1, limb 2, and limb 3 (each is a BaseField element)
+//! TargetF -> limb 1, limb 2, and limb 3 (each is a BaseF element)
 //! ```
 //!
 //! After some computation, the limbs become saturated and need to be
@@ -138,8 +138,8 @@ use ark_std::fmt::Debug;
 
 /// Utilities for sampling parameters for non-native field gadgets
 ///
-/// - `BaseField`:              the constraint field
-/// - `TargetField`:            the field being simulated
+/// - `BaseF`:              the constraint field
+/// - `TargetF`:            the field being simulated
 /// - `num_limbs`:              how many limbs are used
 /// - `bits_per_limb`:          the size of the limbs
 pub mod params;
@@ -181,8 +181,8 @@ pub(crate) use overhead;
 /// Parameters for a specific `EmulatedFpVar` instantiation
 #[derive(Clone, Debug)]
 pub struct NonNativeFieldConfig {
-    /// The number of limbs (`BaseField` elements) used to represent a
-    /// `TargetField` element. Highest limb first.
+    /// The number of limbs (`BaseF` elements) used to represent a
+    /// `TargetF` element. Highest limb first.
     pub num_limbs: usize,
 
     /// The number of bits of the limb

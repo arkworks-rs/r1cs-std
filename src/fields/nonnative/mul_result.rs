@@ -12,29 +12,27 @@ use ark_relations::r1cs::Result as R1CSResult;
 /// This may help cut the number of reduce operations.
 #[derive(Debug)]
 #[must_use]
-pub enum MulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub enum MulResultVar<TargetF: PrimeField, BaseF: PrimeField> {
     /// as a constant
-    Constant(TargetField),
+    Constant(TargetF),
     /// as an allocated gadget
-    Var(AllocatedMulResultVar<TargetField, BaseField>),
+    Var(AllocatedMulResultVar<TargetF, BaseF>),
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField>
-    MulResultVar<TargetField, BaseField>
-{
+impl<TargetF: PrimeField, BaseF: PrimeField> MulResultVar<TargetF, BaseF> {
     /// Create a zero `MulResultVar` (used for additions)
     pub fn zero() -> Self {
-        Self::Constant(TargetField::zero())
+        Self::Constant(TargetF::zero())
     }
 
     /// Create an `MulResultVar` from a constant
-    pub fn constant(v: TargetField) -> Self {
+    pub fn constant(v: TargetF) -> Self {
         Self::Constant(v)
     }
 
     /// Reduce the `MulResultVar` back to EmulatedFpVar
     #[tracing::instrument(target = "r1cs")]
-    pub fn reduce(&self) -> R1CSResult<EmulatedFpVar<TargetField, BaseField>> {
+    pub fn reduce(&self) -> R1CSResult<EmulatedFpVar<TargetF, BaseF>> {
         match self {
             Self::Constant(c) => Ok(EmulatedFpVar::Constant(*c)),
             Self::Var(v) => Ok(EmulatedFpVar::Var(v.reduce()?)),
@@ -42,31 +40,27 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     }
 }
 
-impl<TargetField: PrimeField, BaseField: PrimeField>
-    From<&EmulatedFpVar<TargetField, BaseField>>
-    for MulResultVar<TargetField, BaseField>
+impl<TargetF: PrimeField, BaseF: PrimeField> From<&EmulatedFpVar<TargetF, BaseF>>
+    for MulResultVar<TargetF, BaseF>
 {
-    fn from(src: &EmulatedFpVar<TargetField, BaseField>) -> Self {
+    fn from(src: &EmulatedFpVar<TargetF, BaseF>) -> Self {
         match src {
             EmulatedFpVar::Constant(c) => MulResultVar::Constant(*c),
             EmulatedFpVar::Var(v) => {
-                MulResultVar::Var(AllocatedMulResultVar::<
-                    TargetField,
-                    BaseField,
-                >::from(v))
+                MulResultVar::Var(AllocatedMulResultVar::<TargetF, BaseF>::from(v))
             },
         }
     }
 }
 
 impl_bounded_ops!(
-    MulResultVar<TargetField, BaseField>,
-    TargetField,
+    MulResultVar<TargetF, BaseF>,
+    TargetF,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a MulResultVar<TargetField, BaseField>, other: &'a MulResultVar<TargetField, BaseField>| {
+    |this: &'a MulResultVar<TargetF, BaseF>, other: &'a MulResultVar<TargetF, BaseF>| {
         use MulResultVar::*;
         match (this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 + c2),
@@ -74,6 +68,6 @@ impl_bounded_ops!(
             (Var(v1), Var(v2)) => Var(v1.add(v2).unwrap()),
         }
     },
-    |this: &'a MulResultVar<TargetField, BaseField>, other: TargetField| { this + &MulResultVar::Constant(other) },
-    (TargetField: PrimeField, BaseField: PrimeField),
+    |this: &'a MulResultVar<TargetF, BaseF>, other: TargetF| { this + &MulResultVar::Constant(other) },
+    (TargetF: PrimeField, BaseF: PrimeField),
 );

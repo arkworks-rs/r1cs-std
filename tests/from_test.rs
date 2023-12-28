@@ -1,6 +1,6 @@
 use ark_r1cs_std::{
     alloc::AllocVar,
-    fields::nonnative::{MulResultVar, EmulatedFpVar},
+    fields::nonnative::{EmulatedFpVar, MulResultVar},
     R1CSVar,
 };
 use ark_relations::r1cs::ConstraintSystem;

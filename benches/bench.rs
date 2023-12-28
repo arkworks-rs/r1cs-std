@@ -26,20 +26,18 @@ fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> us
     }
 }
 
-fn allocation<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
+fn allocation<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
 ) -> (usize, usize) {
-    let a_native = TargetField::rand(rng);
+    let a_native = TargetF::rand(rng);
 
     let constraints_before = cs.num_constraints();
     let nonzeros_before = get_density(&cs);
 
     // There will be a check that ensures it has the reasonable number of bits
-    let _ = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
-        Ok(a_native)
-    })
-    .unwrap();
+    let _ = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc a"), || Ok(a_native))
+        .unwrap();
 
     let constraints_after = cs.num_constraints();
     let nonzeros_after = get_density(&cs);
@@ -50,21 +48,17 @@ fn allocation<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
-fn addition<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
+fn addition<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
 ) -> (usize, usize) {
-    let a_native = TargetField::rand(rng);
-    let a = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
-        Ok(a_native)
-    })
-    .unwrap();
+    let a_native = TargetF::rand(rng);
+    let a = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc a"), || Ok(a_native))
+        .unwrap();
 
-    let b_native = TargetField::rand(rng);
-    let b = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc b"), || {
-        Ok(b_native)
-    })
-    .unwrap();
+    let b_native = TargetF::rand(rng);
+    let b = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc b"), || Ok(b_native))
+        .unwrap();
 
     let constraints_before = cs.num_constraints();
     let nonzeros_before = get_density(&cs);
@@ -80,19 +74,15 @@ fn addition<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
-fn equality<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
+fn equality<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
 ) -> (usize, usize) {
-    let a_native = TargetField::rand(rng);
-    let a1 = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a1"), || {
-        Ok(a_native)
-    })
-    .unwrap();
-    let a2 = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a2"), || {
-        Ok(a_native)
-    })
-    .unwrap();
+    let a_native = TargetF::rand(rng);
+    let a1 = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc a1"), || Ok(a_native))
+        .unwrap();
+    let a2 = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc a2"), || Ok(a_native))
+        .unwrap();
 
     let constraints_before = cs.num_constraints();
     let nonzeros_before = get_density(&cs);
@@ -108,21 +98,17 @@ fn equality<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
-fn multiplication<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
+fn multiplication<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
 ) -> (usize, usize) {
-    let a_native = TargetField::rand(rng);
-    let a = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial a"), || {
-        Ok(a_native)
-    })
-    .unwrap();
+    let a_native = TargetF::rand(rng);
+    let a = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "initial a"), || Ok(a_native))
+        .unwrap();
 
-    let b_native = TargetField::rand(rng);
-    let b = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial b"), || {
-        Ok(b_native)
-    })
-    .unwrap();
+    let b_native = TargetF::rand(rng);
+    let b = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "initial b"), || Ok(b_native))
+        .unwrap();
 
     let constraints_before = cs.num_constraints();
     let nonzeros_before = get_density(&cs);
@@ -138,15 +124,13 @@ fn multiplication<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     );
 }
 
-fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
+fn inverse<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     cs: ConstraintSystemRef<BaseField>,
     rng: &mut R,
 ) -> (usize, usize) {
-    let num_native = TargetField::rand(rng);
-    let num = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc"), || {
-        Ok(num_native)
-    })
-    .unwrap();
+    let num_native = TargetF::rand(rng);
+    let num = EmulatedFpVar::<TargetF, BaseField>::new_witness(ns!(cs, "alloc"), || Ok(num_native))
+        .unwrap();
 
     let constraints_before = cs.num_constraints();
     let nonzeros_before = get_density(&cs);

@@ -25,7 +25,7 @@ pub trait PairingVar<E: Pairing> {
 
     /// An variable representing an element of `GT`.
     /// This is the R1CS equivalent of `E::GT`.
-    type GTVar: FieldVar<E::TargetField, BasePrimeField<E>>;
+    type GTVar: FieldVar<E::TargetF, BasePrimeField<E>>;
 
     /// An variable representing cached precomputation  that can speed up
     /// pairings computations. This is the R1CS equivalent of
