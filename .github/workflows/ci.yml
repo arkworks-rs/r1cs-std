@@ -155,7 +155,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: arkworks-rs/algebra
-          ref: curve-constraint-test-fix
 
       - name: Checkout r1cs-std
         uses: actions/checkout@v4
