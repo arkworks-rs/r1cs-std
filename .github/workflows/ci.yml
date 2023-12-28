@@ -154,7 +154,7 @@ jobs:
       - name: Checkout curves
         uses: actions/checkout@v2
         with:
-          repository: arkworks-rs/curves
+          repository: arkworks-rs/algebra
 
       - name: Checkout r1cs-std
         uses: actions/checkout@v2
@@ -163,6 +163,10 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Change directory to curves
+        run: cd algebra
+
 
       - name: Patch cargo.toml
         run: |
@@ -180,7 +184,7 @@ jobs:
             echo "ark-serialize = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-algebra-bench-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
             echo "ark-algebra-test-templates = { git = 'https://github.com/arkworks-rs/algebra' }"
-            echo "ark-r1cs-std = { path = 'r1cs-std' }"
+            echo "ark-r1cs-std = { path = '../r1cs-std' }"
           } >> Cargo.toml
           
       - name: Test on ${{ matrix.curve }}
