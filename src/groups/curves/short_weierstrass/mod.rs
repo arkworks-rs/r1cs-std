@@ -7,7 +7,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
-use crate::fields::nonnative::NonNativeFieldVar;
+use crate::fields::emulated_fp::EmulatedFpVar;
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
 
 /// This module provides a generic implementation of G1 and G2 for
@@ -688,13 +688,13 @@ impl_bounded_ops!(
 impl_bounded_ops_diff!(
     ProjectiveVar<P, F>,
     SWProjective<P>,
-    NonNativeFieldVar<P::ScalarField, BasePrimeField<P>>,
+    EmulatedFpVar<P::ScalarField, BasePrimeField<P>>,
     P::ScalarField,
     Mul,
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a ProjectiveVar<P, F>, other: &'a NonNativeFieldVar<P::ScalarField, BasePrimeField<P>>| {
+    |this: &'a ProjectiveVar<P, F>, other: &'a EmulatedFpVar<P::ScalarField, BasePrimeField<P>>| {
         if this.is_constant() && other.is_constant() {
             assert!(this.is_constant() && other.is_constant());
             ProjectiveVar::constant(this.value().unwrap() * &other.value().unwrap())
@@ -703,7 +703,7 @@ impl_bounded_ops_diff!(
             this.scalar_mul_le(bits.iter()).unwrap()
         }
     },
-    |this: &'a ProjectiveVar<P, F>, other: P::ScalarField| this * NonNativeFieldVar::constant(other),
+    |this: &'a ProjectiveVar<P, F>, other: P::ScalarField| this * EmulatedFpVar::constant(other),
     (F: FieldVar<P::BaseField, BasePrimeField<P>>, P: SWCurveConfig),
     for <'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 );
@@ -981,7 +981,7 @@ mod test_sw_curve {
     use crate::{
         alloc::AllocVar,
         eq::EqGadget,
-        fields::{fp::FpVar, nonnative::NonNativeFieldVar},
+        fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
         groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
         ToBitsGadget,
     };
@@ -1015,7 +1015,7 @@ mod test_sw_curve {
             ProjectiveVar::<G::Config, FpVar<G::BaseField>>::new_input(cs.clone(), || {
                 Ok(point_out)
             })?;
-        let scalar = NonNativeFieldVar::new_input(cs.clone(), || Ok(scalar))?;
+        let scalar = EmulatedFpVar::new_input(cs.clone(), || Ok(scalar))?;
 
         let mul = point_in.scalar_mul_le(scalar.to_bits_le().unwrap().iter())?;
 

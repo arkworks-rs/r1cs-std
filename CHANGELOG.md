@@ -1,6 +1,23 @@
 # CHANGELOG
 
 ## Pending
+
+### Breaking changes
+
+- [\#134](https://github.com/arkworks-rs/r1cs-std/pull/134) Add `Mul<NonnativeFieldVar>` bounds and impls for `CurveVar`.
+- [\#135](https://github.com/arkworks-rs/r1cs-std/pull/135)
+    - Rename `NonNativeFieldVar` to `EmulatedFpVar`.
+    - Rename `fields::nonnative` to `fields::emulated_fp`.
+    - Rename `fields::nonnative::{Allocated}NonNativeMulResultVar` to `fields::emulated_fp::{Allocated}MulResultVar`.
+
+### Features
+
+### Improvements
+
+### Bug Fixes
+
+## 0.4.0
+
 - [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
 - [\#124](https://github.com/arkworks-rs/r1cs-std/pull/124) Fix `scalar_mul_le` constraints unsatisfiability when short Weierstrass point is zero.
 - [\#127](https://github.com/arkworks-rs/r1cs-std/pull/127) Convert `NonNativeFieldVar` constants to little-endian bytes instead of big-endian (`ToBytesGadget`).
