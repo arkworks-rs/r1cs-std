@@ -2,7 +2,7 @@ use ark_ff::PrimeField;
 use ark_r1cs_std::{
     alloc::AllocVar,
     eq::EqGadget,
-    fields::{nonnative::NonNativeFieldVar, FieldVar},
+    fields::{nonnative::EmulatedFpVar, FieldVar},
 };
 use ark_relations::{
     ns,
@@ -36,7 +36,7 @@ fn allocation<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     let nonzeros_before = get_density(&cs);
 
     // There will be a check that ensures it has the reasonable number of bits
-    let _ = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
+    let _ = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
         Ok(a_native)
     })
     .unwrap();
@@ -55,13 +55,13 @@ fn addition<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     rng: &mut R,
 ) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
+    let a = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a"), || {
         Ok(a_native)
     })
     .unwrap();
 
     let b_native = TargetField::rand(rng);
-    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc b"), || {
+    let b = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc b"), || {
         Ok(b_native)
     })
     .unwrap();
@@ -85,11 +85,11 @@ fn equality<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     rng: &mut R,
 ) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a1 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a1"), || {
+    let a1 = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a1"), || {
         Ok(a_native)
     })
     .unwrap();
-    let a2 = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a2"), || {
+    let a2 = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc a2"), || {
         Ok(a_native)
     })
     .unwrap();
@@ -113,13 +113,13 @@ fn multiplication<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     rng: &mut R,
 ) -> (usize, usize) {
     let a_native = TargetField::rand(rng);
-    let a = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial a"), || {
+    let a = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial a"), || {
         Ok(a_native)
     })
     .unwrap();
 
     let b_native = TargetField::rand(rng);
-    let b = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial b"), || {
+    let b = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "initial b"), || {
         Ok(b_native)
     })
     .unwrap();
@@ -143,7 +143,7 @@ fn inverse<TargetField: PrimeField, BaseField: PrimeField, R: RngCore>(
     rng: &mut R,
 ) -> (usize, usize) {
     let num_native = TargetField::rand(rng);
-    let num = NonNativeFieldVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc"), || {
+    let num = EmulatedFpVar::<TargetField, BaseField>::new_witness(ns!(cs, "alloc"), || {
         Ok(num_native)
     })
     .unwrap();

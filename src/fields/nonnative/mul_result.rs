@@ -1,4 +1,4 @@
-use super::{AllocatedNonNativeFieldMulResultVar, NonNativeFieldVar};
+use super::{AllocatedMulResultVar, EmulatedFpVar};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::Result as R1CSResult;
 
@@ -8,49 +8,49 @@ use ark_relations::r1cs::Result as R1CSResult;
 ///
 /// That is, instead of calling `mul`, one can call `mul_without_reduce` to
 /// obtain this intermediate representation, which can still be added.
-/// Then, one can call `reduce` to reduce it back to `NonNativeFieldVar`.
+/// Then, one can call `reduce` to reduce it back to `EmulatedFpVar`.
 /// This may help cut the number of reduce operations.
 #[derive(Debug)]
 #[must_use]
-pub enum NonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub enum MulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// as a constant
     Constant(TargetField),
     /// as an allocated gadget
-    Var(AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>),
+    Var(AllocatedMulResultVar<TargetField, BaseField>),
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
-    NonNativeFieldMulResultVar<TargetField, BaseField>
+    MulResultVar<TargetField, BaseField>
 {
-    /// Create a zero `NonNativeFieldMulResultVar` (used for additions)
+    /// Create a zero `MulResultVar` (used for additions)
     pub fn zero() -> Self {
         Self::Constant(TargetField::zero())
     }
 
-    /// Create an `NonNativeFieldMulResultVar` from a constant
+    /// Create an `MulResultVar` from a constant
     pub fn constant(v: TargetField) -> Self {
         Self::Constant(v)
     }
 
-    /// Reduce the `NonNativeFieldMulResultVar` back to NonNativeFieldVar
+    /// Reduce the `MulResultVar` back to EmulatedFpVar
     #[tracing::instrument(target = "r1cs")]
-    pub fn reduce(&self) -> R1CSResult<NonNativeFieldVar<TargetField, BaseField>> {
+    pub fn reduce(&self) -> R1CSResult<EmulatedFpVar<TargetField, BaseField>> {
         match self {
-            Self::Constant(c) => Ok(NonNativeFieldVar::Constant(*c)),
-            Self::Var(v) => Ok(NonNativeFieldVar::Var(v.reduce()?)),
+            Self::Constant(c) => Ok(EmulatedFpVar::Constant(*c)),
+            Self::Var(v) => Ok(EmulatedFpVar::Var(v.reduce()?)),
         }
     }
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
-    From<&NonNativeFieldVar<TargetField, BaseField>>
-    for NonNativeFieldMulResultVar<TargetField, BaseField>
+    From<&EmulatedFpVar<TargetField, BaseField>>
+    for MulResultVar<TargetField, BaseField>
 {
-    fn from(src: &NonNativeFieldVar<TargetField, BaseField>) -> Self {
+    fn from(src: &EmulatedFpVar<TargetField, BaseField>) -> Self {
         match src {
-            NonNativeFieldVar::Constant(c) => NonNativeFieldMulResultVar::Constant(*c),
-            NonNativeFieldVar::Var(v) => {
-                NonNativeFieldMulResultVar::Var(AllocatedNonNativeFieldMulResultVar::<
+            EmulatedFpVar::Constant(c) => MulResultVar::Constant(*c),
+            EmulatedFpVar::Var(v) => {
+                MulResultVar::Var(AllocatedMulResultVar::<
                     TargetField,
                     BaseField,
                 >::from(v))
@@ -60,20 +60,20 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 }
 
 impl_bounded_ops!(
-    NonNativeFieldMulResultVar<TargetField, BaseField>,
+    MulResultVar<TargetField, BaseField>,
     TargetField,
     Add,
     add,
     AddAssign,
     add_assign,
-    |this: &'a NonNativeFieldMulResultVar<TargetField, BaseField>, other: &'a NonNativeFieldMulResultVar<TargetField, BaseField>| {
-        use NonNativeFieldMulResultVar::*;
+    |this: &'a MulResultVar<TargetField, BaseField>, other: &'a MulResultVar<TargetField, BaseField>| {
+        use MulResultVar::*;
         match (this, other) {
             (Constant(c1), Constant(c2)) => Constant(*c1 + c2),
             (Constant(c), Var(v)) | (Var(v), Constant(c)) => Var(v.add_constant(c).unwrap()),
             (Var(v1), Var(v2)) => Var(v1.add(v2).unwrap()),
         }
     },
-    |this: &'a NonNativeFieldMulResultVar<TargetField, BaseField>, other: TargetField| { this + &NonNativeFieldMulResultVar::Constant(other) },
+    |this: &'a MulResultVar<TargetField, BaseField>, other: TargetField| { this + &MulResultVar::Constant(other) },
     (TargetField: PrimeField, BaseField: PrimeField),
 );

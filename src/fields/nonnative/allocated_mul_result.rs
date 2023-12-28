@@ -1,7 +1,7 @@
 use super::{
     params::{get_params, OptimizationType},
     reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
-    AllocatedNonNativeFieldVar,
+    AllocatedEmulatedFpVar,
 };
 use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
@@ -12,10 +12,10 @@ use ark_relations::{
 use ark_std::{marker::PhantomData, vec::Vec};
 use num_bigint::BigUint;
 
-/// The allocated form of `NonNativeFieldMulResultVar` (introduced below)
+/// The allocated form of `MulResultVar` (introduced below)
 #[derive(Debug)]
 #[must_use]
-pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub struct AllocatedMulResultVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// Constraint system reference
     pub cs: ConstraintSystemRef<BaseField>,
     /// Limbs of the intermediate representations
@@ -27,10 +27,10 @@ pub struct AllocatedNonNativeFieldMulResultVar<TargetField: PrimeField, BaseFiel
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
-    From<&AllocatedNonNativeFieldVar<TargetField, BaseField>>
-    for AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
+    From<&AllocatedEmulatedFpVar<TargetField, BaseField>>
+    for AllocatedMulResultVar<TargetField, BaseField>
 {
-    fn from(src: &AllocatedNonNativeFieldVar<TargetField, BaseField>) -> Self {
+    fn from(src: &AllocatedEmulatedFpVar<TargetField, BaseField>) -> Self {
         let params = get_params(
             TargetField::MODULUS_BIT_SIZE as usize,
             BaseField::MODULUS_BIT_SIZE as usize,
@@ -54,7 +54,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
-    AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>
+    AllocatedMulResultVar<TargetField, BaseField>
 {
     /// Get the CS
     pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
@@ -70,7 +70,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         );
 
         let p_representations =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
+            AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
@@ -88,7 +88,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
     /// Constraints for reducing the result of a multiplication mod p, to get an
     /// original representation.
-    pub fn reduce(&self) -> R1CSResult<AllocatedNonNativeFieldVar<TargetField, BaseField>> {
+    pub fn reduce(&self) -> R1CSResult<AllocatedEmulatedFpVar<TargetField, BaseField>> {
         let params = get_params(
             TargetField::MODULUS_BIT_SIZE as usize,
             BaseField::MODULUS_BIT_SIZE as usize,
@@ -97,7 +97,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         // Step 1: get p
         let p_representations =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
+            AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
@@ -107,7 +107,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         for limb in p_representations.iter() {
             p_gadget_limbs.push(FpVar::<BaseField>::new_constant(self.cs(), limb)?);
         }
-        let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let p_gadget = AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseField::one(),
@@ -171,7 +171,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             limbs
         };
 
-        let k_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let k_gadget = AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs: self.cs(),
             limbs: k_limbs,
             num_of_additions_over_normal_form: self.prod_of_num_of_additions,
@@ -181,7 +181,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         let cs = self.cs();
 
-        let r_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField>::new_witness(
+        let r_gadget = AllocatedEmulatedFpVar::<TargetField, BaseField>::new_witness(
             ns!(cs, "r"),
             || Ok(self.value()?),
         )?;
@@ -256,7 +256,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     #[tracing::instrument(target = "r1cs")]
     pub fn add_constant(&self, other: &TargetField) -> R1CSResult<Self> {
         let mut other_limbs =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
+            AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations(
                 other,
                 self.get_optimization_type(),
             )?;

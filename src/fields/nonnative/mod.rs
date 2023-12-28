@@ -17,8 +17,8 @@
 //!
 //! ## Usage
 //!
-//! Because [`NonNativeFieldVar`] implements the [`FieldVar`] trait in arkworks,
-//! we can treat it like a native field variable ([`FpVar`]).
+//! Because [`EmulatedFpVar`] implements the [`FieldVar`] trait in arkworks,
+//! we can treat it like a native prime field variable ([`FpVar`]).
 //!
 //! We can do the standard field operations, such as `+`, `-`, and `*`. See the
 //! following example:
@@ -28,7 +28,7 @@
 //! # use ark_std::UniformRand;
 //! # use ark_relations::{ns, r1cs::ConstraintSystem};
 //! # use ark_r1cs_std::prelude::*;
-//! use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
+//! use ark_r1cs_std::fields::nonnative::EmulatedFpVar;
 //! use ark_bls12_377::{Fr, Fq};
 //!
 //! # let mut rng = ark_std::test_rng();
@@ -36,8 +36,8 @@
 //! # let b_value = Fr::rand(&mut rng);
 //! # let cs = ConstraintSystem::<Fq>::new_ref();
 //!
-//! let a = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "a"), || Ok(a_value))?;
-//! let b = NonNativeFieldVar::<Fr, Fq>::new_witness(ns!(cs, "b"), || Ok(b_value))?;
+//! let a = EmulatedFpVar::<Fr, Fq>::new_witness(ns!(cs, "a"), || Ok(a_value))?;
+//! let b = EmulatedFpVar::<Fr, Fq>::new_witness(ns!(cs, "b"), || Ok(b_value))?;
 //!
 //! // add
 //! let a_plus_b = &a + &b;
@@ -57,15 +57,15 @@
 //! ## Advanced optimization
 //!
 //! After each multiplication, our library internally performs a *reduce*
-//! operation, which reduces an intermediate type [`NonNativeFieldMulResultVar`]
-//! to the normalized type [`NonNativeFieldVar`]. This enables a user to
+//! operation, which reduces an intermediate type [`MulResultVar`]
+//! to the normalized type [`EmulatedFpVar`]. This enables a user to
 //! seamlessly perform a sequence of operations without worrying about the
 //! underlying details.
 //!
 //! However, this operation is expensive and is sometimes avoidable. We can
 //! reduce the number of constraints by using this intermediate type, which only
 //! supports additions. To multiply, it must be reduced back to
-//! [`NonNativeFieldVar`]. See below for a skeleton example.
+//! [`EmulatedFpVar`]. See below for a skeleton example.
 //!
 //! ---
 //!
@@ -82,7 +82,7 @@
 //!
 //! ---
 //!
-//! We can save one reduction by using the [`NonNativeFieldMulResultVar`], as
+//! We can save one reduction by using [`MulResultVar`], as
 //! follows:
 //!
 //! ```ignore
@@ -122,8 +122,8 @@
 //!
 //! \[OWWB20\]: A. Ozdemir, R. S. Wahby, B. Whitehat, and D. Boneh. "Scaling verifiable computation using efficient set accumulators," in *Proceedings of the 29th USENIX Security Symposium*, ser. Security ’20, 2020.
 //!
-//! [`NonNativeFieldVar`]: crate::fields::nonnative::NonNativeFieldVar
-//! [`NonNativeFieldMulResultVar`]: crate::fields::nonnative::NonNativeFieldMulResultVar
+//! [`EmulatedFpVar`]: crate::fields::nonnative::EmulatedFpVar
+//! [`MulResultVar`]: crate::fields::nonnative::MulResultVar
 //! [`FpVar`]: crate::fields::fp::FpVar
 
 #![allow(
@@ -178,7 +178,7 @@ macro_rules! overhead {
 
 pub(crate) use overhead;
 
-/// Parameters for a specific `NonNativeFieldVar` instantiation
+/// Parameters for a specific `EmulatedFpVar` instantiation
 #[derive(Clone, Debug)]
 pub struct NonNativeFieldConfig {
     /// The number of limbs (`BaseField` elements) used to represent a

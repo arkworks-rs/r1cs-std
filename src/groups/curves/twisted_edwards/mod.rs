@@ -8,7 +8,7 @@ use ark_ec::{
 use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::fields::nonnative::NonNativeFieldVar;
+use crate::fields::nonnative::EmulatedFpVar;
 use crate::{prelude::*, ToConstraintFieldGadget, Vec};
 
 use crate::fields::fp::FpVar;
@@ -787,13 +787,13 @@ impl_bounded_ops!(
 impl_bounded_ops_diff!(
     AffineVar<P, F>,
     TEProjective<P>,
-    NonNativeFieldVar<P::ScalarField, BasePrimeField<P>>,
+    EmulatedFpVar<P::ScalarField, BasePrimeField<P>>,
     P::ScalarField,
     Mul,
     mul,
     MulAssign,
     mul_assign,
-    |this: &'a AffineVar<P, F>, other: &'a NonNativeFieldVar<P::ScalarField, BasePrimeField<P>>| {
+    |this: &'a AffineVar<P, F>, other: &'a EmulatedFpVar<P::ScalarField, BasePrimeField<P>>| {
         if this.is_constant() && other.is_constant() {
             assert!(this.is_constant() && other.is_constant());
             AffineVar::constant(this.value().unwrap() * &other.value().unwrap())
@@ -802,7 +802,7 @@ impl_bounded_ops_diff!(
             this.scalar_mul_le(bits.iter()).unwrap()
         }
     },
-    |this: &'a AffineVar<P, F>, other: P::ScalarField| this * NonNativeFieldVar::constant(other),
+    |this: &'a AffineVar<P, F>, other: P::ScalarField| this * EmulatedFpVar::constant(other),
     (
         F :FieldVar<P::BaseField, BasePrimeField<P>>
             + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,

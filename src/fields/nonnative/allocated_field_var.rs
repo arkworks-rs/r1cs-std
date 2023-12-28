@@ -1,7 +1,7 @@
 use super::{
     params::{get_params, OptimizationType},
     reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
-    AllocatedNonNativeFieldMulResultVar,
+    AllocatedMulResultVar,
 };
 use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget};
 use ark_ff::{BigInteger, PrimeField};
@@ -19,10 +19,10 @@ use ark_std::{
     vec::Vec,
 };
 
-/// The allocated version of `NonNativeFieldVar` (introduced below)
+/// The allocated version of `EmulatedFpVar` (introduced below)
 #[derive(Debug)]
 #[must_use]
-pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeField> {
+pub struct AllocatedEmulatedFpVar<TargetField: PrimeField, BaseField: PrimeField> {
     /// Constraint system reference
     pub cs: ConstraintSystemRef<BaseField>,
     /// The limbs, each of which is a BaseField gadget.
@@ -39,7 +39,7 @@ pub struct AllocatedNonNativeFieldVar<TargetField: PrimeField, BaseField: PrimeF
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField>
-    AllocatedNonNativeFieldVar<TargetField, BaseField>
+    AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     /// Return cs
     pub fn cs(&self) -> ConstraintSystemRef<BaseField> {
@@ -246,7 +246,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             }
         }
 
-        let result = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let result = AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs: self.cs(),
             limbs,
             num_of_additions_over_normal_form: self.num_of_additions_over_normal_form
@@ -348,12 +348,12 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
     /// for advanced use, multiply and output the intermediate representations
     /// (without reduction) This intermediate representations can be added
     /// with each other, and they can later be reduced back to the
-    /// `NonNativeFieldVar`.
+    /// `EmulatedFpVar`.
     #[tracing::instrument(target = "r1cs")]
     pub fn mul_without_reduce(
         &self,
         other: &Self,
-    ) -> R1CSResult<AllocatedNonNativeFieldMulResultVar<TargetField, BaseField>> {
+    ) -> R1CSResult<AllocatedMulResultVar<TargetField, BaseField>> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
 
         let params = get_params(
@@ -429,7 +429,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
             }
         }
 
-        Ok(AllocatedNonNativeFieldMulResultVar {
+        Ok(AllocatedMulResultVar {
             cs: self.cs(),
             limbs: prod_limbs,
             prod_of_num_of_additions: (self_reduced.num_of_additions_over_normal_form
@@ -458,7 +458,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 
         // Get p
         let p_representations =
-            AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
+            AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations_from_big_integer(
                 &<TargetField as PrimeField>::MODULUS,
                 self.get_optimization_type()
             )?;
@@ -468,7 +468,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
         for limb in p_representations.iter() {
             p_gadget_limbs.push(FpVar::<BaseField>::Constant(*limb));
         }
-        let p_gadget = AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        let p_gadget = AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseField::one(),
@@ -646,7 +646,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField>
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseField>>> {
@@ -686,7 +686,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBitsGadget<BaseField>
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     #[tracing::instrument(target = "r1cs")]
     fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseField>>> {
@@ -702,7 +702,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToBytesGadget<BaseField>
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     #[tracing::instrument(target = "r1cs")]
     fn conditionally_select(
@@ -736,7 +736,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> CondSelectGadget<BaseField>
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     type TableConstant = TargetField;
 
@@ -768,7 +768,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
 
         for constant in constants.iter() {
             let representations =
-                AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
+                AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations(
                     constant,
                     optimization_type,
                 )?;
@@ -783,7 +783,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
             limbs.push(FpVar::<BaseField>::two_bit_lookup(bits, limbs_constant)?);
         }
 
-        Ok(AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        Ok(AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs,
             limbs,
             num_of_additions_over_normal_form: BaseField::zero(),
@@ -794,7 +794,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> TwoBitLookupGadget<BaseFiel
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     type TableConstant = TargetField;
 
@@ -828,7 +828,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
 
         for constant in constants.iter() {
             let representations =
-                AllocatedNonNativeFieldVar::<TargetField, BaseField>::get_limbs_representations(
+                AllocatedEmulatedFpVar::<TargetField, BaseField>::get_limbs_representations(
                     constant,
                     optimization_type,
                 )?;
@@ -847,7 +847,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
             )?);
         }
 
-        Ok(AllocatedNonNativeFieldVar::<TargetField, BaseField> {
+        Ok(AllocatedEmulatedFpVar::<TargetField, BaseField> {
             cs,
             limbs,
             num_of_additions_over_normal_form: BaseField::zero(),
@@ -858,7 +858,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ThreeBitCondNegLookupGadget
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     fn new_variable<T: Borrow<TargetField>>(
         cs: impl Into<Namespace<BaseField>>,
@@ -876,7 +876,7 @@ impl<TargetField: PrimeField, BaseField: PrimeField> AllocVar<TargetField, BaseF
 }
 
 impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<BaseField>
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseField>>> {
         // provide a unique representation of the nonnative variable
@@ -914,10 +914,10 @@ impl<TargetField: PrimeField, BaseField: PrimeField> ToConstraintFieldGadget<Bas
 // Implementation of a few traits
 
 impl<TargetField: PrimeField, BaseField: PrimeField> Clone
-    for AllocatedNonNativeFieldVar<TargetField, BaseField>
+    for AllocatedEmulatedFpVar<TargetField, BaseField>
 {
     fn clone(&self) -> Self {
-        AllocatedNonNativeFieldVar {
+        AllocatedEmulatedFpVar {
             cs: self.cs(),
             limbs: self.limbs.clone(),
             num_of_additions_over_normal_form: self.num_of_additions_over_normal_form,

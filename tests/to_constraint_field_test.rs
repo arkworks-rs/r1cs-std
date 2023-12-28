@@ -1,5 +1,5 @@
 use ark_r1cs_std::{
-    alloc::AllocVar, fields::nonnative::NonNativeFieldVar, R1CSVar, ToConstraintFieldGadget,
+    alloc::AllocVar, fields::nonnative::EmulatedFpVar, R1CSVar, ToConstraintFieldGadget,
 };
 use ark_relations::r1cs::ConstraintSystem;
 
@@ -10,8 +10,8 @@ fn to_constraint_field_test() {
 
     let cs = ConstraintSystem::<CF>::new_ref();
 
-    let a = NonNativeFieldVar::Constant(F::from(12u8));
-    let b = NonNativeFieldVar::new_input(cs.clone(), || Ok(F::from(6u8))).unwrap();
+    let a = EmulatedFpVar::Constant(F::from(12u8));
+    let b = EmulatedFpVar::new_input(cs.clone(), || Ok(F::from(6u8))).unwrap();
 
     let b2 = &b + &b;
 

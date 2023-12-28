@@ -1,6 +1,6 @@
 use ark_r1cs_std::{
     alloc::AllocVar,
-    fields::nonnative::{NonNativeFieldMulResultVar, NonNativeFieldVar},
+    fields::nonnative::{MulResultVar, EmulatedFpVar},
     R1CSVar,
 };
 use ark_relations::r1cs::ConstraintSystem;
@@ -15,8 +15,8 @@ fn from_test() {
     let cs = ConstraintSystem::<CF>::new_ref();
     let f = F::rand(&mut rng);
 
-    let f_var = NonNativeFieldVar::<F, CF>::new_input(cs.clone(), || Ok(f)).unwrap();
-    let f_var_converted = NonNativeFieldMulResultVar::<F, CF>::from(&f_var);
+    let f_var = EmulatedFpVar::<F, CF>::new_input(cs.clone(), || Ok(f)).unwrap();
+    let f_var_converted = MulResultVar::<F, CF>::from(&f_var);
     let f_var_converted_reduced = f_var_converted.reduce().unwrap();
 
     let f_var_value = f_var.value().unwrap();

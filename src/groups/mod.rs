@@ -1,4 +1,4 @@
-use crate::{fields::nonnative::NonNativeFieldVar, prelude::*};
+use crate::{fields::nonnative::EmulatedFpVar, prelude::*};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
@@ -44,9 +44,9 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     + SubAssign<C>
     + AddAssign<Self>
     + SubAssign<Self>
-    + Mul<NonNativeFieldVar<C::ScalarField, ConstraintF>, Output = Self>
-    + for<'a> Mul<&'a NonNativeFieldVar<C::ScalarField, ConstraintF>, Output = Self>
-    + MulAssign<NonNativeFieldVar<C::ScalarField, ConstraintF>>
+    + Mul<EmulatedFpVar<C::ScalarField, ConstraintF>, Output = Self>
+    + for<'a> Mul<&'a EmulatedFpVar<C::ScalarField, ConstraintF>, Output = Self>
+    + MulAssign<EmulatedFpVar<C::ScalarField, ConstraintF>>
 {
     /// Returns the constant `F::zero()`. This is the identity
     /// of the group.
