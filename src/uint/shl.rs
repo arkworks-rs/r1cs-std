@@ -42,7 +42,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> Shl<T2> for UInt<
     /// let b = 1u8;
     /// let c = UInt8::new_witness(cs.clone(), || Ok(16 << 1))?;
     ///
-    /// (a << 1).enforce_equal(&c)?;
+    /// (a << b).enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
     /// # }
