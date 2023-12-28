@@ -28,6 +28,17 @@ pub(crate) fn test_binary_op<T: PrimUInt, const N: usize, F: PrimeField>(
     test(a, b)
 }
 
+pub(crate) fn test_binary_op_with_native<T: PrimUInt, const N: usize, F: PrimeField>(
+    a: T,
+    b: T,
+    mode_a: AllocationMode,
+    test: impl FnOnce(UInt<N, T, F>, T) -> Result<(), SynthesisError>,
+) -> Result<(), SynthesisError> {
+    let cs = ConstraintSystem::<F>::new_ref();
+    let a = UInt::<N, T, F>::new_variable(cs.clone(), || Ok(a), mode_a)?;
+    test(a, b)
+}
+
 pub(crate) fn run_binary_random<const ITERATIONS: usize, const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>, UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,
 ) -> Result<(), SynthesisError>
@@ -64,6 +75,43 @@ where
     }
     Ok(())
 }
+
+pub(crate) fn run_binary_random_with_native<const ITERATIONS: usize, const N: usize, T, F>(
+    test: impl Fn(UInt<N, T, F>, T) -> Result<(), SynthesisError> + Copy,
+) -> Result<(), SynthesisError>
+where
+    T: PrimUInt,
+    F: PrimeField,
+{
+    let mut rng = ark_std::test_rng();
+
+    for _ in 0..ITERATIONS {
+        for mode_a in modes() {
+            let a = T::rand(&mut rng);
+            let b = T::rand(&mut rng);
+            test_binary_op_with_native(a, b, mode_a, test)?;
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn run_binary_exhaustive_with_native<const N: usize, T, F>(
+    test: impl Fn(UInt<N, T, F>, T) -> Result<(), SynthesisError> + Copy,
+) -> Result<(), SynthesisError>
+where
+    T: PrimUInt,
+    F: PrimeField,
+    RangeInclusive<T>: Iterator<Item = T>,
+{
+    for (mode_a, a) in test_utils::combination(T::min_value()..=T::max_value()) {
+        for b in T::min_value()..=T::max_value() {
+            test_binary_op_with_native(a, b, mode_a, test)?;
+        }
+    }
+    Ok(())
+}
+
+
 
 pub(crate) fn run_unary_random<const ITERATIONS: usize, const N: usize, T, F>(
     test: impl Fn(UInt<N, T, F>) -> Result<(), SynthesisError> + Copy,

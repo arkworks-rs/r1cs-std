@@ -12,6 +12,8 @@ mod convert;
 mod eq;
 mod not;
 mod or;
+mod shl;
+mod shr;
 mod rotate;
 mod select;
 mod xor;
@@ -81,7 +83,7 @@ impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
 
         for i in 0..N {
             bits[i] = Boolean::constant((bit_values & T::one()) == T::one());
-            bit_values = bit_values >> 1;
+            bit_values = bit_values >> 1u8;
         }
 
         Self {

@@ -1,3 +1,6 @@
+use core::usize;
+use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
+
 #[doc(hidden)]
 // Adapted from <https://github.com/rust-num/num-traits/pull/224>
 pub trait PrimUInt:
@@ -5,6 +8,32 @@ pub trait PrimUInt:
     + num_traits::PrimInt
     + num_traits::WrappingAdd
     + num_traits::SaturatingAdd
+    + Shl<usize, Output = Self>
+    + Shl<u8, Output = Self>
+    + Shl<u16, Output = Self>
+    + Shl<u32, Output = Self>
+    + Shl<u64, Output = Self>
+    + Shl<u128, Output = Self>
+    + Shr<usize, Output = Self>
+    + Shr<u8, Output = Self>
+    + Shr<u16, Output = Self>
+    + Shr<u32, Output = Self>
+    + Shr<u64, Output = Self>
+    + Shr<u128, Output = Self>
+    + ShlAssign<usize>
+    + ShlAssign<u8>
+    + ShlAssign<u16>
+    + ShlAssign<u32>
+    + ShlAssign<u64>
+    + ShlAssign<u128>
+    + ShrAssign<usize>
+    + ShrAssign<u8>
+    + ShrAssign<u16>
+    + ShrAssign<u32>
+    + ShrAssign<u64>
+    + ShrAssign<u128>
+    + Into<u128>
+    + _private::Sealed
     + ark_std::UniformRand
 {
     type Bytes: NumBytes;
@@ -134,3 +163,14 @@ pub trait NumBytes:
 
 #[doc(hidden)]
 impl<const N: usize> NumBytes for [u8; N] {}
+
+
+mod _private {
+    pub trait Sealed {}
+
+    impl Sealed for u8 {}
+    impl Sealed for u16 {}
+    impl Sealed for u32 {}
+    impl Sealed for u64 {}
+    impl Sealed for u128 {}
+}
