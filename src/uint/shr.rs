@@ -99,7 +99,7 @@ mod tests {
     use crate::{
         alloc::{AllocVar, AllocationMode},
         prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive_with_native, run_binary_random_with_native},
+        uint::test_utils::{run_binary_exhaustive_native_only, run_binary_random_native_only},
         R1CSVar,
     };
     use ark_ff::PrimeField;
@@ -129,26 +129,26 @@ mod tests {
 
     #[test]
     fn u8_shr() {
-        run_binary_exhaustive_with_native(uint_shr::<u8, 8, Fr>).unwrap()
+        run_binary_exhaustive_native_only(uint_shr::<u8, 8, Fr>).unwrap()
     }
 
     #[test]
     fn u16_shr() {
-        run_binary_random_with_native::<1000, 16, _, _>(uint_shr::<u16, 16, Fr>).unwrap()
+        run_binary_random_native_only::<1000, 16, _, _>(uint_shr::<u16, 16, Fr>).unwrap()
     }
 
     #[test]
     fn u32_shr() {
-        run_binary_random_with_native::<1000, 32, _, _>(uint_shr::<u32, 32, Fr>).unwrap()
+        run_binary_random_native_only::<1000, 32, _, _>(uint_shr::<u32, 32, Fr>).unwrap()
     }
 
     #[test]
     fn u64_shr() {
-        run_binary_random_with_native::<1000, 64, _, _>(uint_shr::<u64, 64, Fr>).unwrap()
+        run_binary_random_native_only::<1000, 64, _, _>(uint_shr::<u64, 64, Fr>).unwrap()
     }
 
     #[test]
     fn u128_shr() {
-        run_binary_random_with_native::<1000, 128, _, _>(uint_shr::<u128, 128, Fr>).unwrap()
+        run_binary_random_native_only::<1000, 128, _, _>(uint_shr::<u128, 128, Fr>).unwrap()
     }
 }
