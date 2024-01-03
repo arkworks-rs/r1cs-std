@@ -5,6 +5,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
+use crate::convert::{ToBitsGadget, ToBytesGadget};
 use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field
@@ -65,7 +66,7 @@ pub trait FieldOpsBounds<'a, F, T: 'a>:
 }
 
 /// A variable representing a field. Corresponds to the native type `F`.
-pub trait FieldVar<F: Field, ConstraintF: Field>:
+pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
     'static
     + Clone
     + From<Boolean<ConstraintF>>

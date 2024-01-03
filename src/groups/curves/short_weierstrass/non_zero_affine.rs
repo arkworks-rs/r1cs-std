@@ -188,7 +188,7 @@ where
     ) -> Result<Boolean<<P::BaseField as Field>::BasePrimeField>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
-        x_equal.and(&y_equal)
+        Ok(x_equal & y_equal)
     }
 
     #[inline]
@@ -200,8 +200,8 @@ where
     ) -> Result<(), SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
-        let coordinates_equal = x_equal.and(&y_equal)?;
-        coordinates_equal.conditional_enforce_equal(&Boolean::Constant(true), condition)?;
+        let coordinates_equal = x_equal & y_equal;
+        coordinates_equal.conditional_enforce_equal(&Boolean::TRUE, condition)?;
         Ok(())
     }
 
@@ -221,9 +221,7 @@ where
         condition: &Boolean<<P::BaseField as Field>::BasePrimeField>,
     ) -> Result<(), SynthesisError> {
         let is_equal = self.is_eq(other)?;
-        is_equal
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (is_equal & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 

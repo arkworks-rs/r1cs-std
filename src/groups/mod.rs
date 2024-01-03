@@ -1,4 +1,8 @@
-use crate::{fields::emulated_fp::EmulatedFpVar, prelude::*};
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget},
+    fields::emulated_fp::EmulatedFpVar,
+    prelude::*,
+};
 use ark_ff::PrimeField;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};

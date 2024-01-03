@@ -7,8 +7,12 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
-use crate::fields::emulated_fp::EmulatedFpVar;
-use crate::{fields::fp::FpVar, prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
+    prelude::*,
+    Vec,
+};
 
 /// This module provides a generic implementation of G1 and G2 for
 /// the [\[BLS12]\](<https://eprint.iacr.org/2002/088.pdf>) family of bilinear groups.
@@ -178,7 +182,7 @@ where
             //                 `z_inv * self.z = 0` if `self.is_zero()`.
             //
             // Thus, `z_inv * self.z = !self.is_zero()`.
-            z_inv.mul_equals(&self.z, &F::from(infinity.not()))?;
+            z_inv.mul_equals(&self.z, &F::from(!&infinity))?;
 
             let non_zero_x = &self.x * &z_inv;
             let non_zero_y = &self.y * &z_inv;
@@ -755,9 +759,9 @@ where
     fn is_eq(&self, other: &Self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         let x_equal = (&self.x * &other.z).is_eq(&(&other.x * &self.z))?;
         let y_equal = (&self.y * &other.z).is_eq(&(&other.y * &self.z))?;
-        let coordinates_equal = x_equal.and(&y_equal)?;
-        let both_are_zero = self.is_zero()?.and(&other.is_zero()?)?;
-        both_are_zero.or(&coordinates_equal)
+        let coordinates_equal = x_equal & y_equal;
+        let both_are_zero = self.is_zero()? & other.is_zero()?;
+        Ok(both_are_zero | coordinates_equal)
     }
 
     #[inline]
@@ -769,12 +773,9 @@ where
     ) -> Result<(), SynthesisError> {
         let x_equal = (&self.x * &other.z).is_eq(&(&other.x * &self.z))?;
         let y_equal = (&self.y * &other.z).is_eq(&(&other.y * &self.z))?;
-        let coordinates_equal = x_equal.and(&y_equal)?;
-        let both_are_zero = self.is_zero()?.and(&other.is_zero()?)?;
-        both_are_zero
-            .or(&coordinates_equal)?
-            .conditional_enforce_equal(&Boolean::Constant(true), condition)?;
-        Ok(())
+        let coordinates_equal = x_equal & y_equal;
+        let both_are_zero = self.is_zero()? & other.is_zero()?;
+        (both_are_zero | coordinates_equal).conditional_enforce_equal(&Boolean::TRUE, condition)
     }
 
     #[inline]
@@ -785,9 +786,7 @@ where
         condition: &Boolean<BasePrimeField<P>>,
     ) -> Result<(), SynthesisError> {
         let is_equal = self.is_eq(other)?;
-        is_equal
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (is_equal & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 
@@ -980,10 +979,10 @@ where
 mod test_sw_curve {
     use crate::{
         alloc::AllocVar,
+        convert::ToBitsGadget,
         eq::EqGadget,
         fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
         groups::{curves::short_weierstrass::ProjectiveVar, CurveVar},
-        ToBitsGadget,
     };
     use ark_ec::{
         short_weierstrass::{Projective, SWCurveConfig},

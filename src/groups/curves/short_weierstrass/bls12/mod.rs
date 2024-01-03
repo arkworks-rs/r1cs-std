@@ -201,7 +201,7 @@ impl<P: Bls12Config> G2PreparedVar<P> {
         let q = q.to_affine()?;
         let two_inv = P::Fp::one().double().inverse().unwrap();
         // Enforce that `q` is not the point at infinity.
-        q.infinity.enforce_not_equal(&Boolean::Constant(true))?;
+        q.infinity.enforce_not_equal(&Boolean::TRUE)?;
         let mut ell_coeffs = vec![];
         let mut r = q.clone();
 
