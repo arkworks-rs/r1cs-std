@@ -85,13 +85,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let var = UInt16::new_witness(cs.clone(), || Ok(2 * (u8::MAX as u16)))?;
     ///
-    /// let f = Boolean::FALSE;
-    /// let t = Boolean::TRUE;
-    ///
     /// // Construct u8::MAX * 2
-    /// let bytes = UInt16::constant_vec(&(2 * (u8::MAX as u16)).to_be_bytes());
+    /// let bytes = UInt8::constant_vec(&(2 * (u8::MAX as u16)).to_be_bytes());
     ///
-    /// let c = UInt16::from_bytes_be(&bits);
+    /// let c = UInt16::from_bytes_be(&bytes)?;
     /// var.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
@@ -118,13 +115,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// let cs = ConstraintSystem::<Fr>::new_ref();
     /// let var = UInt16::new_witness(cs.clone(), || Ok(2 * (u8::MAX as u16)))?;
     ///
-    /// let f = Boolean::FALSE;
-    /// let t = Boolean::TRUE;
-    ///
     /// // Construct u8::MAX * 2
-    /// let bytes = UInt16::constant_vec(&(2 * (u8::MAX as u16)).to_le_bytes());
+    /// let bytes = UInt8::constant_vec(&(2 * (u8::MAX as u16)).to_le_bytes());
     ///
-    /// let c = UInt16::from_bytes_le(&bits);
+    /// let c = UInt16::from_bytes_le(&bytes)?;
     /// var.enforce_equal(&c)?;
     /// assert!(cs.is_satisfied().unwrap());
     /// # Ok(())
