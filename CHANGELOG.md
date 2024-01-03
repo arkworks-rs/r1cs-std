@@ -4,13 +4,25 @@
 
 ### Breaking changes
 
+- [\#121](https://github.com/arkworks-rs/r1cs-std/pull/121)
+    - Refactor `UInt{8,16,64,128}` into one struct `UInt`.
+    - Remove `bits` module.
+    - Use `std::ops` traits for `UInt` and `Boolean`.
 - [\#134](https://github.com/arkworks-rs/r1cs-std/pull/134) Add `Mul<NonnativeFieldVar>` bounds and impls for `CurveVar`.
 - [\#135](https://github.com/arkworks-rs/r1cs-std/pull/135)
     - Rename `NonNativeFieldVar` to `EmulatedFpVar`.
     - Rename `fields::nonnative` to `fields::emulated_fp`.
     - Rename `fields::nonnative::{Allocated}NonNativeMulResultVar` to `fields::emulated_fp::{Allocated}MulResultVar`.
+- [\#136](https://github.com/arkworks-rs/r1cs-std/pull/136)
+    - Rename `ToBytesGadget::to_{non_unique_}bytes` → `ToBytesGadget::to_{non_unique_}bytes_in_le`.
 
 ### Features
+
+- [\#136](https://github.com/arkworks-rs/r1cs-std/pull/136)
+    - Add `{BitAnd,BitOr,BitXor,BitAndAssign,BitOrAssign,BitXorAssign}<T> for UInt<N, T, F>`.
+    - Add `UInt::rotate_{left,right}_in_place`.
+    - Add `{Boolean,UInt}::not_in_place`.
+    - Add `UInt::{from_bytes_le, from_bytes_be, to_bytes_be}`.
 
 ### Improvements
 
