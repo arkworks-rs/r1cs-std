@@ -73,6 +73,43 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
     }
 }
 
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitor(self, other: T) -> Self::Output {
+        self._or(&UInt::constant(other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitor(self, other: &'a T) -> Self::Output {
+        self._or(&Self::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitor(self, other: &'a T) -> Self::Output {
+        self._or(&UInt::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitor(self, other: T) -> Self::Output {
+        self._or(&UInt::constant(other)).unwrap()
+    }
+}
+
+
 impl<const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self | other`.
     ///

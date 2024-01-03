@@ -72,6 +72,42 @@ impl<const N: usize, T: PrimUInt, F: Field> BitXor<Self> for UInt<N, T, F> {
     }
 }
 
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitxor(self, other: T) -> Self::Output {
+        self._xor(&UInt::constant(other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<&'a T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitxor(self, other: &'a T) -> Self::Output {
+        self._xor(&Self::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<&'a T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitxor(self, other: &'a T) -> Self::Output {
+        self._xor(&UInt::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitxor(self, other: T) -> Self::Output {
+        self._xor(&UInt::constant(other)).unwrap()
+    }
+}
+
 impl<const N: usize, T: PrimUInt, F: Field> BitXorAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self ^ other`.
     ///

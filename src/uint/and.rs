@@ -137,6 +137,43 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for UInt<N, T, F> {
     }
 }
 
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitand(self, other: T) -> Self::Output {
+        self._and(&UInt::constant(other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitand(self, other: &'a T) -> Self::Output {
+        self._and(&Self::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitand(self, other: &'a T) -> Self::Output {
+        self._and(&UInt::constant(*other)).unwrap()
+    }
+}
+
+impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<T> for &'a UInt<N, T, F> {
+    type Output = UInt<N, T, F>;
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn bitand(self, other: T) -> Self::Output {
+        self._and(&UInt::constant(other)).unwrap()
+    }
+}
+
+
 impl<const N: usize, T: PrimUInt, F: Field> BitAndAssign<Self> for UInt<N, T, F> {
     /// Sets `self = self & other`.
     ///
