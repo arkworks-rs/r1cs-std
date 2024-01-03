@@ -105,11 +105,11 @@ impl<P: MNT4Config> G1PreparedVar<P> {
 impl<P: MNT4Config> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut x = self.x.to_bytes()?;
-        let mut y = self.y.to_bytes()?;
-        let mut x_twist = self.x_twist.to_bytes()?;
-        let mut y_twist = self.y_twist.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut x = self.x.to_bytes_le()?;
+        let mut y = self.y.to_bytes_le()?;
+        let mut x_twist = self.x_twist.to_bytes_le()?;
+        let mut y_twist = self.y_twist.to_bytes_le()?;
 
         x.append(&mut y);
         x.append(&mut x_twist);
@@ -118,11 +118,11 @@ impl<P: MNT4Config> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut x = self.x.to_non_unique_bytes()?;
-        let mut y = self.y.to_non_unique_bytes()?;
-        let mut x_twist = self.x_twist.to_non_unique_bytes()?;
-        let mut y_twist = self.y_twist.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut x = self.x.to_non_unique_bytes_le()?;
+        let mut y = self.y.to_non_unique_bytes_le()?;
+        let mut x_twist = self.x_twist.to_non_unique_bytes_le()?;
+        let mut y_twist = self.y_twist.to_non_unique_bytes_le()?;
 
         x.append(&mut y);
         x.append(&mut x_twist);
@@ -201,41 +201,41 @@ impl<P: MNT4Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
 impl<P: MNT4Config> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut x = self.x.to_bytes()?;
-        let mut y = self.y.to_bytes()?;
-        let mut x_over_twist = self.x_over_twist.to_bytes()?;
-        let mut y_over_twist = self.y_over_twist.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut x = self.x.to_bytes_le()?;
+        let mut y = self.y.to_bytes_le()?;
+        let mut x_over_twist = self.x_over_twist.to_bytes_le()?;
+        let mut y_over_twist = self.y_over_twist.to_bytes_le()?;
 
         x.append(&mut y);
         x.append(&mut x_over_twist);
         x.append(&mut y_over_twist);
 
         for coeff in &self.double_coefficients {
-            x.extend_from_slice(&coeff.to_bytes()?);
+            x.extend_from_slice(&coeff.to_bytes_le()?);
         }
         for coeff in &self.addition_coefficients {
-            x.extend_from_slice(&coeff.to_bytes()?);
+            x.extend_from_slice(&coeff.to_bytes_le()?);
         }
         Ok(x)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut x = self.x.to_non_unique_bytes()?;
-        let mut y = self.y.to_non_unique_bytes()?;
-        let mut x_over_twist = self.x_over_twist.to_non_unique_bytes()?;
-        let mut y_over_twist = self.y_over_twist.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut x = self.x.to_non_unique_bytes_le()?;
+        let mut y = self.y.to_non_unique_bytes_le()?;
+        let mut x_over_twist = self.x_over_twist.to_non_unique_bytes_le()?;
+        let mut y_over_twist = self.y_over_twist.to_non_unique_bytes_le()?;
 
         x.append(&mut y);
         x.append(&mut x_over_twist);
         x.append(&mut y_over_twist);
 
         for coeff in &self.double_coefficients {
-            x.extend_from_slice(&coeff.to_non_unique_bytes()?);
+            x.extend_from_slice(&coeff.to_non_unique_bytes_le()?);
         }
         for coeff in &self.addition_coefficients {
-            x.extend_from_slice(&coeff.to_non_unique_bytes()?);
+            x.extend_from_slice(&coeff.to_non_unique_bytes_le()?);
         }
         Ok(x)
     }
@@ -379,11 +379,11 @@ impl<P: MNT4Config> AllocVar<AteDoubleCoefficients<P>, P::Fp> for AteDoubleCoeff
 impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut c_h = self.c_h.to_bytes()?;
-        let mut c_4c = self.c_4c.to_bytes()?;
-        let mut c_j = self.c_j.to_bytes()?;
-        let mut c_l = self.c_l.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut c_h = self.c_h.to_bytes_le()?;
+        let mut c_4c = self.c_4c.to_bytes_le()?;
+        let mut c_j = self.c_j.to_bytes_le()?;
+        let mut c_l = self.c_l.to_bytes_le()?;
 
         c_h.append(&mut c_4c);
         c_h.append(&mut c_j);
@@ -392,11 +392,11 @@ impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteDoubleCoefficientsVar<P> {
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut c_h = self.c_h.to_non_unique_bytes()?;
-        let mut c_4c = self.c_4c.to_non_unique_bytes()?;
-        let mut c_j = self.c_j.to_non_unique_bytes()?;
-        let mut c_l = self.c_l.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut c_h = self.c_h.to_non_unique_bytes_le()?;
+        let mut c_4c = self.c_4c.to_non_unique_bytes_le()?;
+        let mut c_j = self.c_j.to_non_unique_bytes_le()?;
+        let mut c_l = self.c_l.to_non_unique_bytes_le()?;
 
         c_h.append(&mut c_4c);
         c_h.append(&mut c_j);
@@ -456,18 +456,18 @@ impl<P: MNT4Config> AllocVar<AteAdditionCoefficients<P>, P::Fp> for AteAdditionC
 impl<P: MNT4Config> ToBytesGadget<P::Fp> for AteAdditionCoefficientsVar<P> {
     #[inline]
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut c_l1 = self.c_l1.to_bytes()?;
-        let mut c_rz = self.c_rz.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut c_l1 = self.c_l1.to_bytes_le()?;
+        let mut c_rz = self.c_rz.to_bytes_le()?;
 
         c_l1.append(&mut c_rz);
         Ok(c_l1)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
-        let mut c_l1 = self.c_l1.to_non_unique_bytes()?;
-        let mut c_rz = self.c_rz.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
+        let mut c_l1 = self.c_l1.to_non_unique_bytes_le()?;
+        let mut c_rz = self.c_rz.to_non_unique_bytes_le()?;
 
         c_l1.append(&mut c_rz);
         Ok(c_l1)

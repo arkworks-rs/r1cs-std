@@ -97,7 +97,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
     #[tracing::instrument(target = "r1cs", skip(self))]
-    fn to_bytes(&self) -> Result<Vec<UInt8<ConstraintF>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<ConstraintF>>, SynthesisError> {
         Ok(self
             .to_bits_le()?
             .chunks(8)
@@ -107,23 +107,23 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
 }
 
 impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for [UInt<N, T, F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let mut bytes = Vec::with_capacity(self.len() * (N / 8));
         for elem in self {
-            bytes.extend_from_slice(&elem.to_bytes()?);
+            bytes.extend_from_slice(&elem.to_bytes_le()?);
         }
         Ok(bytes)
     }
 }
 
 impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for Vec<UInt<N, T, F>> {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        self.as_slice().to_bytes()
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.as_slice().to_bytes_le()
     }
 }
 
 impl<'a, const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for &'a [UInt<N, T, F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        (*self).to_bytes()
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        (*self).to_bytes_le()
     }
 }

@@ -69,20 +69,24 @@ pub trait ToBytesGadget<F: Field> {
     /// Outputs a canonical, little-endian, byte decomposition of `self`.
     ///
     /// This is the correct default for 99% of use cases.
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError>;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError>;
 
     /// Outputs a possibly non-unique byte decomposition of `self`.
     ///
     /// If you're not absolutely certain that your usecase can get away with a
-    /// non-canonical representation, please use `self.to_bytes(cs)` instead.
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        self.to_bytes()
+    /// non-canonical representation, please use `self.to_bytes_le(cs)` instead.
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.to_bytes_le()
     }
 }
 
 impl<'a, F: Field, T: 'a + ToBytesGadget<F>> ToBytesGadget<F> for &'a T {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        (*self).to_bytes()
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        (*self).to_bytes_le()
+    }
+
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        (*self).to_non_unique_bytes_le()
     }
 }
 

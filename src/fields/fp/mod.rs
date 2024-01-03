@@ -552,7 +552,7 @@ impl<F: PrimeField> ToBytesGadget<F> for AllocatedFp<F> {
     /// This method enforces that the decomposition represents
     /// an integer that is less than `F::MODULUS`.
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let num_bits = F::BigInt::NUM_LIMBS * 64;
         let mut bits = self.to_bits_le()?;
         let remainder = core::iter::repeat(Boolean::constant(false)).take(num_bits - bits.len());
@@ -565,7 +565,7 @@ impl<F: PrimeField> ToBytesGadget<F> for AllocatedFp<F> {
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let num_bits = F::BigInt::NUM_LIMBS * 64;
         let mut bits = self.to_non_unique_bits_le()?;
         let remainder = core::iter::repeat(Boolean::constant(false)).take(num_bits - bits.len());
@@ -957,22 +957,22 @@ impl<F: PrimeField> ToBytesGadget<F> for FpVar<F> {
     /// Outputs the unique byte decomposition of `self` in *little-endian*
     /// form.
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
                 c.into_bigint().to_bytes_le().as_slice(),
             )),
-            Self::Var(v) => v.to_bytes(),
+            Self::Var(v) => v.to_bytes_le(),
         }
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
                 c.into_bigint().to_bytes_le().as_slice(),
             )),
-            Self::Var(v) => v.to_non_unique_bytes(),
+            Self::Var(v) => v.to_non_unique_bytes_le(),
         }
     }
 }

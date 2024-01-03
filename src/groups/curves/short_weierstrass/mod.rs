@@ -953,22 +953,22 @@ where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
-        let mut bytes = g.x.to_bytes()?;
-        let y_bytes = g.y.to_bytes()?;
-        let inf_bytes = g.infinity.to_bytes()?;
+        let mut bytes = g.x.to_bytes_le()?;
+        let y_bytes = g.y.to_bytes_le()?;
+        let inf_bytes = g.infinity.to_bytes_le()?;
         bytes.extend_from_slice(&y_bytes);
         bytes.extend_from_slice(&inf_bytes);
         Ok(bytes)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
-        let mut bytes = g.x.to_non_unique_bytes()?;
-        let y_bytes = g.y.to_non_unique_bytes()?;
-        let inf_bytes = g.infinity.to_non_unique_bytes()?;
+        let mut bytes = g.x.to_non_unique_bytes_le()?;
+        let y_bytes = g.y.to_non_unique_bytes_le()?;
+        let inf_bytes = g.infinity.to_non_unique_bytes_le()?;
         bytes.extend_from_slice(&y_bytes);
         bytes.extend_from_slice(&inf_bytes);
         Ok(bytes)

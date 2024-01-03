@@ -215,7 +215,7 @@ mod test {
         for val in [true, false].iter() {
             let cs = ConstraintSystem::<Fr>::new_ref();
             let a = Boolean::new_witness(cs.clone(), || Ok(*val))?;
-            let bytes = a.to_bytes()?;
+            let bytes = a.to_bytes_le()?;
             assert_eq!(bytes.len(), 1);
             let byte = &bytes[0];
             assert_eq!(byte.value()?, *val as u8);
