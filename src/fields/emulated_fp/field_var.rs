@@ -1,9 +1,10 @@
 use super::{params::OptimizationType, AllocatedEmulatedFpVar, MulResultVar};
 use crate::{
     boolean::Boolean,
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldVar},
     prelude::*,
-    R1CSVar, ToConstraintFieldGadget,
+    R1CSVar,
 };
 use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};
@@ -217,7 +218,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> EqGadget<BaseF> for EmulatedFpVar<T
                 Boolean::new_witness(cs, || Ok(self.value()? == other.value()?))?;
 
             self.conditional_enforce_equal(other, &should_enforce_equal)?;
-            self.conditional_enforce_not_equal(other, &should_enforce_equal.not())?;
+            self.conditional_enforce_not_equal(other, &!&should_enforce_equal)?;
 
             Ok(should_enforce_equal)
         }
@@ -327,8 +328,8 @@ impl<TargetF: PrimeField, BaseF: PrimeField> CondSelectGadget<BaseF>
         false_value: &Self,
     ) -> R1CSResult<Self> {
         match cond {
-            Boolean::Constant(true) => Ok(true_value.clone()),
-            Boolean::Constant(false) => Ok(false_value.clone()),
+            &Boolean::Constant(true) => Ok(true_value.clone()),
+            &Boolean::Constant(false) => Ok(false_value.clone()),
             _ => {
                 let cs = cond.cs();
                 let true_value = match true_value {

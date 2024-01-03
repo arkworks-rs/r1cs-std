@@ -8,8 +8,12 @@ use ark_ec::{
 use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::fields::emulated_fp::EmulatedFpVar;
-use crate::{prelude::*, ToConstraintFieldGadget, Vec};
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    fields::emulated_fp::EmulatedFpVar,
+    prelude::*,
+    Vec,
+};
 
 use crate::fields::fp::FpVar;
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
@@ -348,7 +352,7 @@ where
                 let x_coeffs = coords.iter().map(|p| p.0).collect::<Vec<_>>();
                 let y_coeffs = coords.iter().map(|p| p.1).collect::<Vec<_>>();
 
-                let precomp = bits[0].and(&bits[1])?;
+                let precomp = &bits[0] & &bits[1];
 
                 let x = F::zero()
                     + x_coeffs[0]
@@ -413,7 +417,7 @@ where
     }
 
     fn is_zero(&self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
-        self.x.is_zero()?.and(&self.y.is_one()?)
+        Ok(self.x.is_zero()? & &self.y.is_one()?)
     }
 
     #[tracing::instrument(target = "r1cs", skip(cs, f))]
@@ -859,7 +863,7 @@ where
     fn is_eq(&self, other: &Self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
-        x_equal.and(&y_equal)
+        Ok(x_equal & y_equal)
     }
 
     #[inline]
@@ -881,9 +885,7 @@ where
         other: &Self,
         condition: &Boolean<BasePrimeField<P>>,
     ) -> Result<(), SynthesisError> {
-        self.is_eq(other)?
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (self.is_eq(other)? & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 

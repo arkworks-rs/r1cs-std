@@ -31,44 +31,75 @@ pub(crate) use ark_std::vec::Vec;
 
 use ark_ff::Field;
 
-/// This module implements gadgets related to bit manipulation, such as
-/// `Boolean` and `UInt`s.
-pub mod bits;
-pub use self::bits::*;
+/// This module contains `Boolean`, an R1CS equivalent of the `bool` type.
+pub mod boolean;
 
-/// This module implements gadgets related to field arithmetic.
+/// Finite field arithmetic.
 pub mod fields;
 
-/// This module implements gadgets related to group arithmetic, and specifically
-/// elliptic curve arithmetic.
+/// Implementations of elliptic curve group arithmetic for popular curve models.
 pub mod groups;
 
-/// This module implements gadgets related to computing pairings in bilinear
-/// groups.
+/// Gadgets for computing pairings in bilinear groups.
 pub mod pairing;
 
-/// This module describes a trait for allocating new variables in a constraint
-/// system.
+/// Utilities for allocating new variables in a constraint system.
 pub mod alloc;
-/// This module describes a trait for checking equality of variables.
+
+/// Utilities for comparing  variables.
+pub mod cmp;
+
+/// Utilities for converting variables to other kinds of variables.
+pub mod convert;
+
+/// Utilities for checking equality of variables.
 pub mod eq;
-/// This module implements functions for manipulating polynomial variables over
-/// finite fields.
+
+/// Definitions of polynomial variables over finite fields.
 pub mod poly;
-/// This module describes traits for conditionally selecting a variable from a
+
+/// Contains traits for conditionally selecting a variable from a
 /// list of variables.
 pub mod select;
+
+#[cfg(test)]
+pub(crate) mod test_utils;
+
+/// This module contains `UInt8`, a R1CS equivalent of the `u8` type.
+pub mod uint8;
+/// This module contains a macro for generating `UIntN` types, which are R1CS
+/// equivalents of `N`-bit unsigned integers.
+#[macro_use]
+pub mod uint;
+
+pub mod uint16 {
+    pub type UInt16<F> = super::uint::UInt<16, u16, F>;
+}
+pub mod uint32 {
+    pub type UInt32<F> = super::uint::UInt<32, u32, F>;
+}
+pub mod uint64 {
+    pub type UInt64<F> = super::uint::UInt<64, u64, F>;
+}
+pub mod uint128 {
+    pub type UInt128<F> = super::uint::UInt<128, u128, F>;
+}
 
 #[allow(missing_docs)]
 pub mod prelude {
     pub use crate::{
         alloc::*,
-        bits::{boolean::Boolean, uint32::UInt32, uint8::UInt8, ToBitsGadget, ToBytesGadget},
+        boolean::Boolean,
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
         pairing::PairingVar,
         select::*,
+        uint128::UInt128,
+        uint16::UInt16,
+        uint32::UInt32,
+        uint64::UInt64,
+        uint8::UInt8,
         R1CSVar,
     };
 }
@@ -138,13 +169,4 @@ impl<T> Assignment<T> for Option<T> {
     fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError> {
         self.ok_or(ark_relations::r1cs::SynthesisError::AssignmentMissing)
     }
-}
-
-/// Specifies how to convert a variable of type `Self` to variables of
-/// type `FpVar<ConstraintF>`
-pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {
-    /// Converts `self` to `FpVar<ConstraintF>` variables.
-    fn to_constraint_field(
-        &self,
-    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::r1cs::SynthesisError>;
 }

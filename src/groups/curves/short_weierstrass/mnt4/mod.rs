@@ -6,6 +6,7 @@ use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
+    convert::ToBytesGadget,
     fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
     groups::curves::short_weierstrass::ProjectiveVar,
     pairing::mnt4::PairingVar,

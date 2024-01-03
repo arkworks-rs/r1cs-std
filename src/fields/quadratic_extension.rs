@@ -6,9 +6,10 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 
 use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldOpsBounds, FieldVar},
     prelude::*,
-    ToConstraintFieldGadget, Vec,
+    Vec,
 };
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
@@ -377,7 +378,7 @@ where
     fn is_eq(&self, other: &Self) -> Result<Boolean<P::BasePrimeField>, SynthesisError> {
         let b0 = self.c0.is_eq(&other.c0)?;
         let b1 = self.c1.is_eq(&other.c1)?;
-        b0.and(&b1)
+        Ok(b0 & b1)
     }
 
     #[inline]
@@ -400,9 +401,7 @@ where
         condition: &Boolean<P::BasePrimeField>,
     ) -> Result<(), SynthesisError> {
         let is_equal = self.is_eq(other)?;
-        is_equal
-            .and(condition)?
-            .enforce_equal(&Boolean::Constant(false))
+        (is_equal & condition).enforce_equal(&Boolean::FALSE)
     }
 }
 

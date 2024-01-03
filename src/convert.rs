@@ -1,23 +1,8 @@
-use crate::{
-    bits::{boolean::Boolean, uint8::UInt8},
-    Vec,
-};
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
+use ark_std::vec::Vec;
 
-/// This module contains `Boolean`, a R1CS equivalent of the `bool` type.
-pub mod boolean;
-/// This module contains `UInt8`, a R1CS equivalent of the `u8` type.
-pub mod uint8;
-/// This module contains a macro for generating `UIntN` types, which are R1CS
-/// equivalents of `N`-bit unsigned integers.
-#[macro_use]
-pub mod uint;
-
-make_uint!(UInt16, 16, u16, uint16, "`U16`", "`u16`", "16");
-make_uint!(UInt32, 32, u32, uint32, "`U32`", "`u32`", "32");
-make_uint!(UInt64, 64, u64, uint64, "`U64`", "`u64`", "64");
-make_uint!(UInt128, 128, u128, uint128, "`U128`", "`u128`", "128");
+use crate::{boolean::Boolean, uint8::UInt8};
 
 /// Specifies constraints for conversion to a little-endian bit representation
 /// of `self`.
@@ -65,21 +50,6 @@ impl<F: Field> ToBitsGadget<F> for [Boolean<F>] {
     }
 }
 
-impl<F: Field> ToBitsGadget<F> for UInt8<F> {
-    fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        Ok(self.bits.to_vec())
-    }
-}
-
-impl<F: Field> ToBitsGadget<F> for [UInt8<F>] {
-    /// Interprets `self` as an integer, and outputs the little-endian
-    /// bit-wise decomposition of that integer.
-    fn to_bits_le(&self) -> Result<Vec<Boolean<F>>, SynthesisError> {
-        let bits = self.iter().flat_map(|b| &b.bits).cloned().collect();
-        Ok(bits)
-    }
-}
-
 impl<F: Field, T> ToBitsGadget<F> for Vec<T>
 where
     [T]: ToBitsGadget<F>,
@@ -110,26 +80,17 @@ pub trait ToBytesGadget<F: Field> {
     }
 }
 
-impl<F: Field> ToBytesGadget<F> for [UInt8<F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.to_vec())
-    }
-}
-
-impl<F: Field> ToBytesGadget<F> for Vec<UInt8<F>> {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.clone())
-    }
-}
-
 impl<'a, F: Field, T: 'a + ToBytesGadget<F>> ToBytesGadget<F> for &'a T {
     fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         (*self).to_bytes()
     }
 }
 
-impl<'a, F: Field> ToBytesGadget<F> for &'a [UInt8<F>] {
-    fn to_bytes(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        Ok(self.to_vec())
-    }
+/// Specifies how to convert a variable of type `Self` to variables of
+/// type `FpVar<ConstraintF>`
+pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {
+    /// Converts `self` to `FpVar<ConstraintF>` variables.
+    fn to_constraint_field(
+        &self,
+    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::r1cs::SynthesisError>;
 }

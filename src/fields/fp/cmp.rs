@@ -1,8 +1,8 @@
 use crate::{
     boolean::Boolean,
+    convert::ToBitsGadget,
     fields::{fp::FpVar, FieldVar},
     prelude::*,
-    ToBitsGadget,
 };
 use ark_ff::PrimeField;
 use ark_relations::r1cs::{SynthesisError, Variable};
