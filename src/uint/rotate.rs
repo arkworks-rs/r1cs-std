@@ -37,7 +37,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
+    /// let mut a = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
     /// let b = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
     ///
     /// a.rotate_right_in_place(8);
@@ -46,7 +46,6 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// # Ok(())
     /// # }
     /// ```
-
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn rotate_right_in_place(&mut self, by: usize) {
         let by = by % N;
@@ -92,7 +91,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
-    /// let a = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
+    /// let mut a = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
     /// let b = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
     ///
     /// a.rotate_left_in_place(8);
