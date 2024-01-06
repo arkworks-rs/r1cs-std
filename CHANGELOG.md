@@ -2,6 +2,8 @@
 
 ## Pending
 
+* [\#93](https://github.com/arkworks-rs/r1cs-std/pull/93) Implement `EqGadget`, `CondSelectGadget`, and `R1CSVar` for `Vec<T>`
+
 ### Breaking changes
 
 - [\#121](https://github.com/arkworks-rs/r1cs-std/pull/121)
