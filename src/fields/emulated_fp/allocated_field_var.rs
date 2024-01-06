@@ -681,7 +681,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToBytesGadget<BaseF>
     for AllocatedEmulatedFpVar<TargetF, BaseF>
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> R1CSResult<Vec<UInt8<BaseF>>> {
+    fn to_bytes_le(&self) -> R1CSResult<Vec<UInt8<BaseF>>> {
         let mut bits = self.to_bits_le()?;
 
         let num_bits = TargetF::BigInt::NUM_LIMBS * 64;

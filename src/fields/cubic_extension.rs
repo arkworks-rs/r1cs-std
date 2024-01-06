@@ -435,10 +435,10 @@ where
     P: CubicExtVarConfig<BF>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
-        let mut c0 = self.c0.to_bytes()?;
-        let mut c1 = self.c1.to_bytes()?;
-        let mut c2 = self.c2.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
+        let mut c0 = self.c0.to_bytes_le()?;
+        let mut c1 = self.c1.to_bytes_le()?;
+        let mut c2 = self.c2.to_bytes_le()?;
         c0.append(&mut c1);
         c0.append(&mut c2);
 
@@ -446,10 +446,10 @@ where
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
-        let mut c0 = self.c0.to_non_unique_bytes()?;
-        let mut c1 = self.c1.to_non_unique_bytes()?;
-        let mut c2 = self.c2.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
+        let mut c0 = self.c0.to_non_unique_bytes_le()?;
+        let mut c1 = self.c1.to_non_unique_bytes_le()?;
+        let mut c2 = self.c2.to_non_unique_bytes_le()?;
 
         c0.append(&mut c1);
         c0.append(&mut c2);

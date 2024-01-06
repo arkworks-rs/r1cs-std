@@ -920,17 +920,17 @@ where
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[tracing::instrument(target = "r1cs")]
-    fn to_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
-        let mut x_bytes = self.x.to_bytes()?;
-        let y_bytes = self.y.to_bytes()?;
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
+        let mut x_bytes = self.x.to_bytes_le()?;
+        let y_bytes = self.y.to_bytes_le()?;
         x_bytes.extend_from_slice(&y_bytes);
         Ok(x_bytes)
     }
 
     #[tracing::instrument(target = "r1cs")]
-    fn to_non_unique_bytes(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
-        let mut x_bytes = self.x.to_non_unique_bytes()?;
-        let y_bytes = self.y.to_non_unique_bytes()?;
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
+        let mut x_bytes = self.x.to_non_unique_bytes_le()?;
+        let y_bytes = self.y.to_non_unique_bytes_le()?;
         x_bytes.extend_from_slice(&y_bytes);
 
         Ok(x_bytes)

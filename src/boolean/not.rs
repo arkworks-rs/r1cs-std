@@ -6,10 +6,17 @@ use super::Boolean;
 
 impl<F: Field> Boolean<F> {
     fn _not(&self) -> Result<Self, SynthesisError> {
+        let mut result = self.clone();
+        result.not_in_place()?;
+        Ok(result)
+    }
+
+    pub fn not_in_place(&mut self) -> Result<(), SynthesisError> {
         match *self {
-            Boolean::Constant(c) => Ok(Boolean::Constant(!c)),
-            Boolean::Var(ref v) => Ok(Boolean::Var(v.not().unwrap())),
+            Boolean::Constant(ref mut c) => *c = !*c,
+            Boolean::Var(ref mut v) => *v = v.not()?,
         }
+        Ok(())
     }
 }
 

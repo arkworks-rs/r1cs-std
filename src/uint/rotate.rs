@@ -22,12 +22,36 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// ```
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn rotate_right(&self, by: usize) -> Self {
-        let by = by % N;
         let mut result = self.clone();
-        // `[T]::rotate_left` corresponds to a `rotate_right` of the bits.
-        result.bits.rotate_left(by);
-        result.value = self.value.map(|v| v.rotate_right(by as u32));
+        result.rotate_right_in_place(by);
         result
+    }
+    /// Rotates `self` to the right *in place* by `by` steps, wrapping around.
+    ///
+    /// # Examples
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    /// let mut a = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
+    /// let b = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
+    ///
+    /// a.rotate_right_in_place(8);
+    /// a.enforce_equal(&b)?;
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(target = "r1cs", skip(self))]
+    pub fn rotate_right_in_place(&mut self, by: usize) {
+        let by = by % N;
+        // `[T]::rotate_left` corresponds to a `rotate_right` of the bits.
+        self.bits.rotate_left(by);
+        self.value = self.value.map(|v| v.rotate_right(by as u32));
     }
 
     /// Rotates `self` to the left by `by` steps, wrapping around.
@@ -51,12 +75,36 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// ```
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn rotate_left(&self, by: usize) -> Self {
-        let by = by % N;
         let mut result = self.clone();
-        // `[T]::rotate_right` corresponds to a `rotate_left` of the bits.
-        result.bits.rotate_right(by);
-        result.value = self.value.map(|v| v.rotate_left(by as u32));
+        result.rotate_left_in_place(by);
         result
+    }
+
+    /// Rotates `self` to the left *in place* by `by` steps, wrapping around.
+    ///
+    /// # Examples
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::r1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    /// let mut a = UInt32::new_witness(cs.clone(), || Ok(0x10000b3))?;
+    /// let b = UInt32::new_witness(cs.clone(), || Ok(0xb301u32))?;
+    ///
+    /// a.rotate_left_in_place(8);
+    /// a.enforce_equal(&b)?;
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn rotate_left_in_place(&mut self, by: usize) {
+        let by = by % N;
+        // `[T]::rotate_right` corresponds to a `rotate_left` of the bits.
+        self.bits.rotate_right(by);
+        self.value = self.value.map(|v| v.rotate_left(by as u32));
     }
 }
 

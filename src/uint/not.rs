@@ -7,11 +7,16 @@ use super::*;
 impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
     fn _not(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
-        for a in &mut result.bits {
-            *a = !&*a
-        }
-        result.value = self.value.map(Not::not);
+        result._not_in_place()?;
         Ok(result)
+    }
+
+    fn _not_in_place(&mut self) -> Result<(), SynthesisError> {
+        for a in &mut self.bits {
+            a.not_in_place()?;
+        }
+        self.value = self.value.map(Not::not);
+        Ok(())
     }
 }
 
@@ -67,8 +72,9 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
     /// # }
     /// ```
     #[tracing::instrument(target = "r1cs", skip(self))]
-    fn not(self) -> Self::Output {
-        self._not().unwrap()
+    fn not(mut self) -> Self::Output {
+        self._not_in_place().unwrap();
+        self
     }
 }
 

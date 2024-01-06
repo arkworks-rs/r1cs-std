@@ -90,6 +90,7 @@ pub mod prelude {
     pub use crate::{
         alloc::*,
         boolean::Boolean,
+        convert::{ToBitsGadget, ToBytesGadget},
         eq::*,
         fields::{FieldOpsBounds, FieldVar},
         groups::{CurveVar, GroupOpsBounds},
