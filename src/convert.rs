@@ -134,6 +134,16 @@ impl<T: ToBytesGadget<F>, F: Field, const N: usize> ToBytesGadget<F> for [T; N] 
     }
 }
 
+impl<F: Field> ToBytesGadget<F> for () {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        Ok(Vec::new())
+    }
+
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        Ok(Vec::new())
+    }
+}
+
 /// Specifies how to convert a variable of type `Self` to variables of
 /// type `FpVar<ConstraintF>`
 pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {

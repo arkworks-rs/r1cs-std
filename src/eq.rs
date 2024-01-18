@@ -86,7 +86,7 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         assert_eq!(self.len(), other.len());
-        if self.is_empty() {
+        if self.is_empty() & other.is_empty() {
             Ok(Boolean::TRUE)
         } else {
             let mut results = Vec::with_capacity(self.len());
