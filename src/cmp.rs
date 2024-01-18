@@ -1,7 +1,7 @@
 use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 
-use crate::{boolean::Boolean, R1CSVar, eq::EqGadget};
+use crate::{boolean::Boolean, eq::EqGadget, R1CSVar};
 
 /// Specifies how to generate constraints for comparing two variables.
 pub trait CmpGadget<F: Field>: R1CSVar<F> + EqGadget<F> {

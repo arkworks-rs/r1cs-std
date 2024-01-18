@@ -171,8 +171,6 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

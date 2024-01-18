@@ -146,7 +146,8 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for Vec<T> {
         other: &Self,
         condition: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
-        self.as_slice().conditional_enforce_equal(other.as_slice(), condition)
+        self.as_slice()
+            .conditional_enforce_equal(other.as_slice(), condition)
     }
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -155,7 +156,8 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for Vec<T> {
         other: &Self,
         should_enforce: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
-        self.as_slice().conditional_enforce_not_equal(other.as_slice(), should_enforce)
+        self.as_slice()
+            .conditional_enforce_not_equal(other.as_slice(), should_enforce)
     }
 }
 
@@ -205,7 +207,8 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField, const N: usize> EqGadget<F> for
         other: &Self,
         condition: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
-        self.as_slice().conditional_enforce_equal(other.as_slice(), condition)
+        self.as_slice()
+            .conditional_enforce_equal(other.as_slice(), condition)
     }
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -214,6 +217,7 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField, const N: usize> EqGadget<F> for
         other: &Self,
         should_enforce: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
-        self.as_slice().conditional_enforce_not_equal(other.as_slice(), should_enforce)
+        self.as_slice()
+            .conditional_enforce_not_equal(other.as_slice(), should_enforce)
     }
 }
