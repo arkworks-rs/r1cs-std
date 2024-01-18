@@ -29,7 +29,9 @@ pub mod macros;
 
 pub(crate) use ark_std::vec::Vec;
 
-use ark_ff::Field;
+#[doc(hidden)]
+pub mod r1cs_var;
+pub use r1cs_var::*;
 
 /// This module contains `Boolean`, an R1CS equivalent of the `bool` type.
 pub mod boolean;
@@ -103,61 +105,6 @@ pub mod prelude {
         uint8::UInt8,
         R1CSVar,
     };
-}
-
-/// This trait describes some core functionality that is common to high-level
-/// variables, such as `Boolean`s, `FieldVar`s, `GroupVar`s, etc.
-pub trait R1CSVar<F: Field> {
-    /// The type of the "native" value that `Self` represents in the constraint
-    /// system.
-    type Value: core::fmt::Debug + Eq + Clone;
-
-    /// Returns the underlying `ConstraintSystemRef`.
-    ///
-    /// If `self` is a constant value, then this *must* return
-    /// `ark_relations::r1cs::ConstraintSystemRef::None`.
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F>;
-
-    /// Returns `true` if `self` is a circuit-generation-time constant.
-    fn is_constant(&self) -> bool {
-        self.cs().is_none()
-    }
-
-    /// Returns the value that is assigned to `self` in the underlying
-    /// `ConstraintSystem`.
-    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError>;
-}
-
-impl<F: Field, T: R1CSVar<F>> R1CSVar<F> for [T] {
-    type Value = Vec<T::Value>;
-
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
-        let mut result = ark_relations::r1cs::ConstraintSystemRef::None;
-        for var in self {
-            result = var.cs().or(result);
-        }
-        result
-    }
-
-    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
-        let mut result = Vec::new();
-        for var in self {
-            result.push(var.value()?);
-        }
-        Ok(result)
-    }
-}
-
-impl<'a, F: Field, T: 'a + R1CSVar<F>> R1CSVar<F> for &'a T {
-    type Value = T::Value;
-
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
-        (*self).cs()
-    }
-
-    fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
-        (*self).value()
-    }
 }
 
 /// A utility trait to convert `Self` to `Result<T, SynthesisErrorA`.>

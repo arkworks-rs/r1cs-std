@@ -90,6 +90,50 @@ impl<'a, F: Field, T: 'a + ToBytesGadget<F>> ToBytesGadget<F> for &'a T {
     }
 }
 
+impl<T: ToBytesGadget<F>, F: Field> ToBytesGadget<F> for [T] {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        let mut bytes = Vec::new();
+        for elem in self {
+            let elem = elem.to_bytes_le()?;
+            bytes.extend_from_slice(&elem);
+            // Make sure that there's enough capcity to avoid reallocations.
+            bytes.reserve(elem.len() * (self.len() - 1));
+        }
+        Ok(bytes)
+    }
+
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        let mut bytes = Vec::new();
+        for elem in self {
+            let elem = elem.to_non_unique_bytes_le()?;
+            bytes.extend_from_slice(&elem);
+            // Make sure that there's enough capcity to avoid reallocations.
+            bytes.reserve(elem.len() * (self.len() - 1));
+        }
+        Ok(bytes)
+    }
+}
+
+impl<T: ToBytesGadget<F>, F: Field> ToBytesGadget<F> for Vec<T> {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.as_slice().to_bytes_le()
+    }
+
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.as_slice().to_non_unique_bytes_le()
+    }
+}
+
+impl<T: ToBytesGadget<F>, F: Field, const N: usize> ToBytesGadget<F> for [T; N] {
+    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.as_slice().to_bytes_le()
+    }
+
+    fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
+        self.as_slice().to_non_unique_bytes_le()
+    }
+}
+
 /// Specifies how to convert a variable of type `Self` to variables of
 /// type `FpVar<ConstraintF>`
 pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {

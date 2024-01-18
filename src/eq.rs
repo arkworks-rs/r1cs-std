@@ -33,7 +33,7 @@ pub trait EqGadget<F: Field> {
         should_enforce: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
         self.is_eq(&other)?
-            .conditional_enforce_equal(&Boolean::constant(true), should_enforce)
+            .conditional_enforce_equal(&Boolean::TRUE, should_enforce)
     }
 
     /// Enforce that `self` and `other` are equal.
@@ -46,7 +46,7 @@ pub trait EqGadget<F: Field> {
     /// are encouraged to carefully analyze the efficiency and safety of these.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn enforce_equal(&self, other: &Self) -> Result<(), SynthesisError> {
-        self.conditional_enforce_equal(other, &Boolean::constant(true))
+        self.conditional_enforce_equal(other, &Boolean::TRUE)
     }
 
     /// If `should_enforce == true`, enforce that `self` and `other` are *not*
@@ -65,7 +65,7 @@ pub trait EqGadget<F: Field> {
         should_enforce: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
         self.is_neq(&other)?
-            .conditional_enforce_equal(&Boolean::constant(true), should_enforce)
+            .conditional_enforce_equal(&Boolean::TRUE, should_enforce)
     }
 
     /// Enforce that `self` and `other` are *not* equal.
@@ -78,7 +78,7 @@ pub trait EqGadget<F: Field> {
     /// are encouraged to carefully analyze the efficiency and safety of these.
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn enforce_not_equal(&self, other: &Self) -> Result<(), SynthesisError> {
-        self.conditional_enforce_not_equal(other, &Boolean::constant(true))
+        self.conditional_enforce_not_equal(other, &Boolean::TRUE)
     }
 }
 
@@ -86,12 +86,15 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         assert_eq!(self.len(), other.len());
-        assert!(!self.is_empty());
-        let mut results = Vec::with_capacity(self.len());
-        for (a, b) in self.iter().zip(other) {
-            results.push(a.is_eq(b)?);
+        if self.is_empty() {
+            Ok(Boolean::TRUE)
+        } else {
+            let mut results = Vec::with_capacity(self.len());
+            for (a, b) in self.iter().zip(other) {
+                results.push(a.is_eq(b)?);
+            }
+            Boolean::kary_and(&results)
         }
-        Boolean::kary_and(&results)
     }
 
     #[tracing::instrument(target = "r1cs", skip(self, other))]
@@ -126,5 +129,91 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
                 should_enforce.lc(),
             )
         }
+    }
+}
+
+/// This blanket implementation just allocates variables in `Self`
+/// element by element.
+impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for Vec<T> {
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        self.as_slice().is_eq(other.as_slice())
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice().conditional_enforce_equal(other.as_slice(), condition)
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice().conditional_enforce_not_equal(other.as_slice(), should_enforce)
+    }
+}
+
+/// Dummy impl for `()`.
+impl<F: Field> EqGadget<F> for () {
+    /// Output a `Boolean` value representing whether `self.value() ==
+    /// other.value()`.
+    #[inline]
+    fn is_eq(&self, _other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        Ok(Boolean::TRUE)
+    }
+
+    /// If `should_enforce == true`, enforce that `self` and `other` are equal;
+    /// else, enforce a vacuously true statement.
+    ///
+    /// This is a no-op as `self.is_eq(other)?` is always `true`.
+    #[tracing::instrument(target = "r1cs", skip(self, _other))]
+    fn conditional_enforce_equal(
+        &self,
+        _other: &Self,
+        _should_enforce: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        Ok(())
+    }
+
+    /// Enforce that `self` and `other` are equal.
+    ///
+    /// This does not generate any constraints as `self.is_eq(other)?` is always
+    /// `true`.
+    #[tracing::instrument(target = "r1cs", skip(self, _other))]
+    fn enforce_equal(&self, _other: &Self) -> Result<(), SynthesisError> {
+        Ok(())
+    }
+}
+
+/// This blanket implementation just allocates variables in `Self`
+/// element by element.
+impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField, const N: usize> EqGadget<F> for [T; N] {
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
+        self.as_slice().is_eq(other.as_slice())
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_equal(
+        &self,
+        other: &Self,
+        condition: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice().conditional_enforce_equal(other.as_slice(), condition)
+    }
+
+    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    fn conditional_enforce_not_equal(
+        &self,
+        other: &Self,
+        should_enforce: &Boolean<F>,
+    ) -> Result<(), SynthesisError> {
+        self.as_slice().conditional_enforce_not_equal(other.as_slice(), should_enforce)
     }
 }

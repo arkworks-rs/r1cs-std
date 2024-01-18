@@ -555,7 +555,7 @@ impl<F: PrimeField> ToBytesGadget<F> for AllocatedFp<F> {
     fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let num_bits = F::BigInt::NUM_LIMBS * 64;
         let mut bits = self.to_bits_le()?;
-        let remainder = core::iter::repeat(Boolean::constant(false)).take(num_bits - bits.len());
+        let remainder = core::iter::repeat(Boolean::FALSE).take(num_bits - bits.len());
         bits.extend(remainder);
         let bytes = bits
             .chunks(8)
@@ -568,7 +568,7 @@ impl<F: PrimeField> ToBytesGadget<F> for AllocatedFp<F> {
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let num_bits = F::BigInt::NUM_LIMBS * 64;
         let mut bits = self.to_non_unique_bits_le()?;
-        let remainder = core::iter::repeat(Boolean::constant(false)).take(num_bits - bits.len());
+        let remainder = core::iter::repeat(Boolean::FALSE).take(num_bits - bits.len());
         bits.extend(remainder);
         let bytes = bits
             .chunks(8)
