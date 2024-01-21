@@ -1,4 +1,3 @@
-#![feature(iterator_try_reduce)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! This crate implements common "gadgets" that make
 //! programming rank-1 constraint systems easier.
