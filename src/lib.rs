@@ -131,12 +131,31 @@ pub trait R1CSVar<F: Field> {
 impl<F: Field, T: R1CSVar<F>> R1CSVar<F> for [T] {
     type Value = Vec<T::Value>;
 
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<F> {
-        let mut result = ark_relations::r1cs::ConstraintSystemRef::None;
-        for var in self {
-            result = var.cs().or(result);
+    fn cs(&self) -> Result<ark_relations::r1cs::ConstraintSystemRef<F>, &str> {
+        if let Some(Ok(result)) = self.iter().map(|x| Ok(x.cs())).reduce(
+            |x: Result<ark_relations::r1cs::ConstraintSystemRef<F>, _>, y| {
+                if let Ok(x) = x {
+                    let y = y?;
+                    if x != y {
+                        if x.is_none() {
+                            return Ok(y);
+                        }
+                        if y.is_none() {
+                            return Ok(x);
+                        }
+                        Err("todo!(CSs are not reducible to one)")
+                    } else {
+                        return Ok(x);
+                    }
+                } else {
+                    x
+                }
+            },
+        ) {
+            Ok(result.to_owned())
+        } else {
+            Err("empty input")
         }
-        result
     }
 
     fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
