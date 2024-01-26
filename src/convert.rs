@@ -96,7 +96,7 @@ impl<T: ToBytesGadget<F>, F: Field> ToBytesGadget<F> for [T] {
         for elem in self {
             let elem = elem.to_bytes_le()?;
             bytes.extend_from_slice(&elem);
-            // Make sure that there's enough capcity to avoid reallocations.
+            // Make sure that there's enough capacity to avoid reallocations.
             bytes.reserve(elem.len() * (self.len() - 1));
         }
         Ok(bytes)
@@ -107,7 +107,7 @@ impl<T: ToBytesGadget<F>, F: Field> ToBytesGadget<F> for [T] {
         for elem in self {
             let elem = elem.to_non_unique_bytes_le()?;
             bytes.extend_from_slice(&elem);
-            // Make sure that there's enough capcity to avoid reallocations.
+            // Make sure that there's enough capacity to avoid reallocations.
             bytes.reserve(elem.len() * (self.len() - 1));
         }
         Ok(bytes)

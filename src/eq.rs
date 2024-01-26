@@ -132,7 +132,7 @@ impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
     }
 }
 
-/// This blanket implementation just forwards to the impl on [`[T]`]. 
+/// This blanket implementation just forwards to the impl on [`[T]`].
 impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField> EqGadget<F> for Vec<T> {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
@@ -192,7 +192,7 @@ impl<F: Field> EqGadget<F> for () {
     }
 }
 
-/// This blanket implementation just forwards to the impl on [`[T]`]. 
+/// This blanket implementation just forwards to the impl on [`[T]`].
 impl<T: EqGadget<F> + R1CSVar<F>, F: PrimeField, const N: usize> EqGadget<F> for [T; N] {
     #[tracing::instrument(target = "r1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
