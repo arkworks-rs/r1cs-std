@@ -171,28 +171,6 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     }
 }
 
-impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for [UInt<N, T, F>] {
-    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        let mut bytes = Vec::with_capacity(self.len() * (N / 8));
-        for elem in self {
-            bytes.extend_from_slice(&elem.to_bytes_le()?);
-        }
-        Ok(bytes)
-    }
-}
-
-impl<const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for Vec<UInt<N, T, F>> {
-    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        self.as_slice().to_bytes_le()
-    }
-}
-
-impl<'a, const N: usize, T: PrimUInt, F: Field> ToBytesGadget<F> for &'a [UInt<N, T, F>] {
-    fn to_bytes_le(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
-        (*self).to_bytes_le()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

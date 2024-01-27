@@ -44,7 +44,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
 impl<F: PrimeField> EqGadget<F> for Radix2DomainVar<F> {
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         if self.gen != other.gen || self.dim != other.dim {
-            Ok(Boolean::constant(false))
+            Ok(Boolean::FALSE)
         } else {
             self.offset.is_eq(&other.offset)
         }

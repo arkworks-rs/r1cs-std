@@ -100,7 +100,7 @@ impl<F: Field> Boolean<F> {
     /// let true_var = Boolean::<Fr>::TRUE;
     /// let false_var = Boolean::<Fr>::FALSE;
     ///
-    /// true_var.enforce_equal(&Boolean::constant(true))?;
+    /// true_var.enforce_equal(&Boolean::TRUE)?;
     /// false_var.enforce_equal(&Boolean::constant(false))?;
     /// # Ok(())
     /// # }

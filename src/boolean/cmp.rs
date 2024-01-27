@@ -48,7 +48,7 @@ impl<F: PrimeField> Boolean<F> {
         let mut bits_iter = bits.iter().rev(); // Iterate in big-endian
 
         // Runs of ones in r
-        let mut last_run = Boolean::constant(true);
+        let mut last_run = Boolean::TRUE;
         let mut current_run = vec![];
 
         let mut element_num_bits = 0;
@@ -57,12 +57,12 @@ impl<F: PrimeField> Boolean<F> {
         }
 
         if bits.len() > element_num_bits {
-            let mut or_result = Boolean::constant(false);
+            let mut or_result = Boolean::FALSE;
             for should_be_zero in &bits[element_num_bits..] {
                 or_result |= should_be_zero;
                 let _ = bits_iter.next().unwrap();
             }
-            or_result.enforce_equal(&Boolean::constant(false))?;
+            or_result.enforce_equal(&Boolean::FALSE)?;
         }
 
         for (b, a) in BitIteratorBE::without_leading_zeros(b).zip(bits_iter.by_ref()) {

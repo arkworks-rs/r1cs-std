@@ -37,11 +37,7 @@ impl AllocationMode {
 
 /// Specifies how variables of type `Self` should be allocated in a
 /// `ConstraintSystem`.
-pub trait AllocVar<V, F: Field>
-where
-    Self: Sized,
-    V: ?Sized,
-{
+pub trait AllocVar<V: ?Sized, F: Field>: Sized {
     /// Allocates a new variable of type `Self` in the `ConstraintSystem` `cs`.
     /// The mode of allocation is decided by `mode`.
     fn new_variable<T: Borrow<V>>(
@@ -92,10 +88,56 @@ impl<I, F: Field, A: AllocVar<I, F>> AllocVar<[I], F> for Vec<A> {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let mut vec = Vec::new();
-        for value in f()?.borrow().iter() {
-            vec.push(A::new_variable(cs.clone(), || Ok(value), mode)?);
-        }
-        Ok(vec)
+        f().and_then(|v| {
+            v.borrow()
+                .iter()
+                .map(|e| A::new_variable(cs.clone(), || Ok(e), mode))
+                .collect()
+        })
+    }
+}
+
+/// Dummy impl for `()`.
+impl<F: Field> AllocVar<(), F> for () {
+    fn new_variable<T: Borrow<()>>(
+        _cs: impl Into<Namespace<F>>,
+        _f: impl FnOnce() -> Result<T, SynthesisError>,
+        _mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        Ok(())
+    }
+}
+
+/// This blanket implementation just allocates variables in `Self`
+/// element by element.
+impl<I, F: Field, A: AllocVar<I, F>, const N: usize> AllocVar<[I; N], F> for [A; N] {
+    fn new_variable<T: Borrow<[I; N]>>(
+        cs: impl Into<Namespace<F>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        f().map(|v| {
+            let v = v.borrow();
+            core::array::from_fn(|i| A::new_variable(cs.clone(), || Ok(&v[i]), mode).unwrap())
+        })
+    }
+}
+
+/// This blanket implementation just allocates variables in `Self`
+/// element by element.
+impl<I, F: Field, A: AllocVar<I, F>, const N: usize> AllocVar<[I], F> for [A; N] {
+    fn new_variable<T: Borrow<[I]>>(
+        cs: impl Into<Namespace<F>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        f().map(|v| {
+            let v = v.borrow();
+            core::array::from_fn(|i| A::new_variable(cs.clone(), || Ok(&v[i]), mode).unwrap())
+        })
     }
 }

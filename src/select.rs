@@ -3,11 +3,7 @@ use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
 use ark_std::vec::Vec;
 /// Generates constraints for selecting between one of two values.
-pub trait CondSelectGadget<ConstraintF: Field>
-where
-    Self: Sized,
-    Self: Clone,
-{
+pub trait CondSelectGadget<ConstraintF: Field>: Sized + Clone {
     /// If `cond == &Boolean::TRUE`, then this returns `true_value`; else,
     /// returns `false_value`.
     ///
@@ -68,10 +64,7 @@ where
 }
 
 /// Performs a lookup in a 4-element table using two bits.
-pub trait TwoBitLookupGadget<ConstraintF: Field>
-where
-    Self: Sized,
-{
+pub trait TwoBitLookupGadget<ConstraintF: Field>: Sized {
     /// The type of values being looked up.
     type TableConstant;
 
@@ -92,10 +85,7 @@ where
 
 /// Uses three bits to perform a lookup into a table, where the last bit
 /// conditionally negates the looked-up value.
-pub trait ThreeBitCondNegLookupGadget<ConstraintF: Field>
-where
-    Self: Sized,
-{
+pub trait ThreeBitCondNegLookupGadget<ConstraintF: Field>: Sized {
     /// The type of values being looked up.
     type TableConstant;
 
