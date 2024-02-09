@@ -303,9 +303,9 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
     }
 
     /// Convert a `TargetF` element into limbs (not constraints).
-    /// This is an internal function that would be reused by a number of other
-    /// functions.
-    pub(super) fn get_limbs_representations(
+    /// This is an utility function intended
+    /// to be reused by a number of other functions.
+    pub fn get_limbs_representations(
         elem: &TargetF,
         optimization_type: OptimizationType,
     ) -> R1CSResult<Vec<BaseF>> {
@@ -453,11 +453,10 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         );
 
         // Get p
-        let p_representations =
-            AllocatedEmulatedFpVar::<TargetF, BaseF>::get_limbs_representations_from_big_integer(
-                &<TargetF as PrimeField>::MODULUS,
-                self.get_optimization_type(),
-            )?;
+        let p_representations = Self::get_limbs_representations_from_big_integer(
+            &<TargetF as PrimeField>::MODULUS,
+            self.get_optimization_type(),
+        )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
 
         let mut p_gadget_limbs = Vec::new();
@@ -474,8 +473,8 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
 
         // Get delta = self - other
         let cs = self.cs().or(other.cs()).or(should_enforce.cs());
-        let mut delta = self.sub_without_reduce(other)?;
-        delta = should_enforce.select(&delta, &Self::zero(cs.clone())?)?;
+        let delta = self.sub_without_reduce(other)?;
+        let delta = should_enforce.select(&delta, &Self::zero(cs.clone())?)?;
 
         // Allocate k = delta / p
         let k_gadget = FpVar::<BaseF>::new_witness(ns!(cs, "k"), || {
