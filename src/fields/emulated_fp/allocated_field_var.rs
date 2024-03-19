@@ -303,7 +303,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
     }
 
     /// Convert a `TargetF` element into limbs (not constraints).
-    /// This is an utility function intended
+    /// This is a utility function intended
     /// to be reused by a number of other functions.
     pub fn get_limbs_representations(
         elem: &TargetF,
