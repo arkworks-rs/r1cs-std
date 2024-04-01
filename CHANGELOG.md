@@ -23,6 +23,8 @@
     - Add `UInt::rotate_{left,right}_in_place`.
     - Add `{Boolean,UInt}::not_in_place`.
     - Add `UInt::{from_bytes_le, from_bytes_be, to_bytes_be}`.
+- [\#143](https://github.com/arkworks-rs/r1cs-std/pull/143)
+    - Add `AllocVar::new_variable_with_inferred_mode`.
 
 ### Improvements
 
