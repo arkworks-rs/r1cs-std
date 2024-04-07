@@ -28,6 +28,9 @@
 
 ### Bug Fixes
 
+- [\#145](https://github.com/arkworks-rs/r1cs-std/pull/145)
+    - Avoid deeply nested `LinearCombinations` in `EvaluationsVar::interpolate_and_evaluate` to fix the stack overflow issue when calling `.value()` on the evaluation result.
+
 ## 0.4.0
 
 - [\#117](https://github.com/arkworks-rs/r1cs-std/pull/117) Fix result of `precomputed_base_scalar_mul_le` to not discard previous value.
