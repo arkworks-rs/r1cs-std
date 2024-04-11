@@ -9,7 +9,7 @@ use ark_relations::{
     ns,
     r1cs::{ConstraintSystemRef, OptimizationGoal, Result as R1CSResult},
 };
-use ark_std::{marker::PhantomData, vec::Vec};
+use ark_std::marker::PhantomData;
 use num_bigint::BigUint;
 
 /// The allocated form of `MulResultVar` (introduced below)

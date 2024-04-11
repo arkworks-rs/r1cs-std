@@ -12,10 +12,7 @@ use crate::{
 };
 use ark_ff::{batch_inversion, PrimeField};
 use ark_relations::r1cs::SynthesisError;
-use ark_std::{
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
-    vec::Vec,
-};
+use ark_std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Clone)]
 /// Stores a UV polynomial in evaluation form.

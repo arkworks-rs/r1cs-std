@@ -1,6 +1,5 @@
 use ark_ff::Field;
 use ark_relations::r1cs::SynthesisError;
-use ark_std::vec::Vec;
 
 use crate::{boolean::Boolean, uint8::UInt8};
 

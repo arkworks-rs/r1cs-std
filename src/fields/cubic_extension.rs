@@ -5,12 +5,7 @@ use ark_ff::{
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
 
-use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::{fp::FpVar, FieldOpsBounds, FieldVar},
-    prelude::*,
-    Vec,
-};
+use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
 
 /// This struct is the `R1CS` equivalent of the cubic extension field type
 /// in `ark-ff`, i.e. `ark_ff::CubicExtField`.

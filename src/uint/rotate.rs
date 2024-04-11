@@ -111,13 +111,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_unary_exhaustive, run_unary_random},
-        R1CSVar,
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_unary_exhaustive, run_unary_random};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_rotate_left<T: PrimUInt, const N: usize, F: PrimeField>(

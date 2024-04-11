@@ -1,8 +1,4 @@
-use ark_ff::PrimeField;
-use ark_relations::r1cs::SynthesisError;
-
 use crate::uint::*;
-use crate::R1CSVar;
 
 impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     /// Compute `*self = self.wrapping_add(other)`.
@@ -45,13 +41,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive, run_binary_random},
-        R1CSVar,
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_wrapping_add<T: PrimUInt, const N: usize, F: PrimeField>(

@@ -11,7 +11,7 @@ use ark_relations::{
     ns,
     r1cs::{ConstraintSystemRef, Result as R1CSResult},
 };
-use ark_std::{cmp::min, marker::PhantomData, vec, vec::Vec};
+use ark_std::{cmp::min, marker::PhantomData, vec};
 use num_bigint::BigUint;
 use num_integer::Integer;
 

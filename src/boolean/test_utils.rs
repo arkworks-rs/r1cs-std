@@ -1,7 +1,7 @@
 use crate::test_utils;
 
 use super::*;
-use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
+use ark_relations::r1cs::ConstraintSystem;
 
 pub(crate) fn test_unary_op<F: Field>(
     a: bool,

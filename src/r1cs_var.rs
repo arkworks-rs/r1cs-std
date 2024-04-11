@@ -1,6 +1,5 @@
 use ark_ff::Field;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
-use ark_std::vec::Vec;
 
 /// This trait describes some core functionality that is common to high-level
 /// variables, such as `Boolean`s, `FieldVar`s, `GroupVar`s, etc.

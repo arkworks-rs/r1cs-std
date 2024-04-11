@@ -1,5 +1,4 @@
 use super::*;
-use ark_ff::AdditiveGroup;
 use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
@@ -239,7 +238,7 @@ mod test_non_zero_affine {
     };
     use ark_ec::{models::short_weierstrass::SWCurveConfig, CurveGroup};
     use ark_relations::r1cs::ConstraintSystem;
-    use ark_std::{vec::Vec, One};
+    use ark_std::One;
     use ark_test_curves::bls12_381::{g1::Config as G1Config, Fq};
 
     #[test]

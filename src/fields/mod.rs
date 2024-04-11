@@ -5,7 +5,6 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::convert::{ToBitsGadget, ToBytesGadget};
 use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field

@@ -1,10 +1,3 @@
-use ark_ff::PrimeField;
-use ark_relations::r1cs::SynthesisError;
-use ark_std::vec::Vec;
-
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
-
 use super::*;
 
 impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
@@ -68,13 +61,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive, run_binary_random},
-        R1CSVar,
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_eq<T: PrimUInt, const N: usize, F: PrimeField>(

@@ -6,12 +6,10 @@ use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 
 use crate::{
-    convert::ToBytesGadget,
-    fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
+    fields::{fp::FpVar, fp2::Fp2Var},
     groups::curves::short_weierstrass::ProjectiveVar,
     pairing::mnt4::PairingVar,
     prelude::*,
-    Vec,
 };
 use core::borrow::Borrow;
 

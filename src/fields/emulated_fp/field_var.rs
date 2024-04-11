@@ -1,17 +1,10 @@
 use super::{params::OptimizationType, AllocatedEmulatedFpVar, MulResultVar};
-use crate::{
-    boolean::Boolean,
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::{fp::FpVar, FieldVar},
-    prelude::*,
-    R1CSVar,
-};
+use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
 use ark_ff::{BigInteger, PrimeField};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};
 use ark_std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
-    vec::Vec,
 };
 
 /// A gadget for representing non-native (`TargetF`) field elements over the

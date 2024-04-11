@@ -2,14 +2,8 @@ use ark_ec::{
     bls12::{Bls12Config, G1Prepared, G2Prepared, TwistType},
     short_weierstrass::Affine as GroupAffine,
 };
-use ark_ff::{BitIteratorBE, Field, One};
-use ark_relations::r1cs::{Namespace, SynthesisError};
 
-use crate::{
-    fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
-    groups::curves::short_weierstrass::*,
-    Vec,
-};
+use crate::{fields::fp2::Fp2Var, groups::curves::short_weierstrass::*};
 use core::fmt::Debug;
 
 /// Represents a projective point in G1.

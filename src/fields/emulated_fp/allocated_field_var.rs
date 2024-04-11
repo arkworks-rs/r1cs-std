@@ -3,11 +3,7 @@ use super::{
     reduce::{bigint_to_basefield, limbs_to_bigint, Reducer},
     AllocatedMulResultVar,
 };
-use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::fp::FpVar,
-    prelude::*,
-};
+use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
 use ark_ff::{BigInteger, PrimeField};
 use ark_relations::{
     ns,
@@ -20,7 +16,6 @@ use ark_std::{
     cmp::{max, min},
     marker::PhantomData,
     vec,
-    vec::Vec,
 };
 
 /// The allocated version of `EmulatedFpVar` (introduced below)

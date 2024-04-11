@@ -1,4 +1,4 @@
-use crate::{prelude::*, Vec};
+use crate::prelude::*;
 use ark_ff::{Field, PrimeField};
 use ark_relations::r1cs::SynthesisError;
 

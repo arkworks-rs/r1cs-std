@@ -1,4 +1,3 @@
-use crate::Vec;
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
 use core::borrow::Borrow;

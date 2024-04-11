@@ -8,7 +8,7 @@ use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use non_zero_affine::NonZeroAffineVar;
 
 use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    convert::ToConstraintFieldGadget,
     fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
     prelude::*,
     Vec,
