@@ -6,7 +6,7 @@ use ark_relations::r1cs::{
 use core::borrow::Borrow;
 
 use crate::{boolean::AllocatedBool, convert::ToConstraintFieldGadget, prelude::*, Assignment};
-use ark_std::iter::Sum;
+use ark_std::{iter::Sum, vec::Vec};
 
 mod cmp;
 

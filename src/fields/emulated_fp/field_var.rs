@@ -5,6 +5,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, 
 use ark_std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
+    vec::Vec,
 };
 
 /// A gadget for representing non-native (`TargetF`) field elements over the

@@ -4,6 +4,7 @@ use ark_ec::mnt4::{
 };
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_std::vec::Vec;
 
 use crate::{
     fields::{fp::FpVar, fp2::Fp2Var},

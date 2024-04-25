@@ -16,6 +16,7 @@ use ark_std::{
     cmp::{max, min},
     marker::PhantomData,
     vec,
+    vec::Vec,
 };
 
 /// The allocated version of `EmulatedFpVar` (introduced below)

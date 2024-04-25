@@ -1,5 +1,6 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
+use ark_std::vec::Vec;
 
 use crate::fields::{fp::FpVar, FieldVar};
 

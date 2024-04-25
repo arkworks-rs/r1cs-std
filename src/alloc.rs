@@ -1,5 +1,6 @@
 use ark_ff::Field;
 use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_std::vec::Vec;
 use core::borrow::Borrow;
 
 /// Describes the mode that a variable should be allocated in within

@@ -1,6 +1,6 @@
 use ark_ff::{Field, PrimeField, ToConstraintField};
-
 use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_std::vec::Vec;
 
 use crate::{
     convert::ToConstraintFieldGadget,

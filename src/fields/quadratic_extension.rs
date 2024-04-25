@@ -3,6 +3,7 @@ use ark_ff::{
     Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_std::vec::Vec;
 use core::{borrow::Borrow, marker::PhantomData};
 
 use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};

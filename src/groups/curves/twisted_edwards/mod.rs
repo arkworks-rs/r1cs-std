@@ -11,7 +11,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use crate::{convert::ToConstraintFieldGadget, fields::emulated_fp::EmulatedFpVar, prelude::*};
 
 use crate::fields::fp::FpVar;
-use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul, vec::Vec};
 
 type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 
