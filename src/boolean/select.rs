@@ -94,12 +94,7 @@ impl<F: PrimeField> CondSelectGadget<F> for Boolean<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        boolean::test_utils::run_binary_exhaustive,
-        prelude::EqGadget,
-        R1CSVar,
-    };
+    use crate::boolean::test_utils::run_binary_exhaustive;
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

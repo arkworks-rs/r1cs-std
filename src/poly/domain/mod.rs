@@ -129,10 +129,7 @@ mod tests {
     use ark_relations::r1cs::ConstraintSystem;
     use ark_std::{rand::Rng, test_rng};
 
-    use crate::{
-        alloc::AllocVar, convert::ToBitsGadget, fields::fp::FpVar, poly::domain::Radix2DomainVar,
-        R1CSVar,
-    };
+    use crate::{fields::fp::FpVar, poly::domain::Radix2DomainVar};
 
     fn test_query_coset_template<F: PrimeField>() {
         const COSET_DIM: u64 = 7;

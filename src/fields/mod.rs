@@ -5,7 +5,6 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::convert::{ToBitsGadget, ToBytesGadget};
 use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field
@@ -116,7 +115,7 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
 
     /// Sets `self = self + self`.
     fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
-        *self += self.double()?;
+        *self = self.double()?;
         Ok(self)
     }
 

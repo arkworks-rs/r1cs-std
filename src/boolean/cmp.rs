@@ -1,7 +1,6 @@
 use crate::cmp::CmpGadget;
 
 use super::*;
-use ark_ff::PrimeField;
 
 impl<F: PrimeField> CmpGadget<F> for Boolean<F> {
     fn is_ge(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {

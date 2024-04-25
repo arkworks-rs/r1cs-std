@@ -19,13 +19,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField + From<T>> CmpGadget<F> for UInt
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive, run_binary_random},
-        R1CSVar,
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_gt<T: PrimUInt, const N: usize, F: PrimeField + From<T>>(

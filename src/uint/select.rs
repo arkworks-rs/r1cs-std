@@ -1,5 +1,4 @@
 use super::*;
-use crate::select::CondSelectGadget;
 
 impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> CondSelectGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
@@ -34,12 +33,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> CondSelectGadget<Cons
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive, run_binary_random},
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_select<T: PrimUInt, const N: usize, F: PrimeField>(

@@ -1,8 +1,3 @@
-use ark_relations::r1cs::SynthesisError;
-
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
-
 use super::*;
 
 impl<F: Field> EqGadget<F> for Boolean<F> {
@@ -83,12 +78,7 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        boolean::test_utils::{run_binary_exhaustive, run_unary_exhaustive},
-        prelude::EqGadget,
-        R1CSVar,
-    };
+    use crate::boolean::test_utils::{run_binary_exhaustive, run_unary_exhaustive};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

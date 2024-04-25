@@ -175,7 +175,6 @@ mod tests {
         uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both},
         R1CSVar,
     };
-    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_or<T: PrimUInt, const N: usize, F: PrimeField>(

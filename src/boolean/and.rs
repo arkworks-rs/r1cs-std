@@ -193,7 +193,6 @@ mod tests {
     use crate::{
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::run_binary_exhaustive,
-        prelude::EqGadget,
         R1CSVar,
     };
     use ark_relations::r1cs::ConstraintSystem;

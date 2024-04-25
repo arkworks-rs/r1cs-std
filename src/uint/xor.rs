@@ -1,5 +1,3 @@
-use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
 use ark_std::{ops::BitXor, ops::BitXorAssign};
 
 use super::*;
@@ -168,13 +166,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitXorAssign<&'a T> for UInt<N, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        alloc::{AllocVar, AllocationMode},
-        prelude::EqGadget,
-        uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both},
-        R1CSVar,
-    };
-    use ark_ff::PrimeField;
+    use crate::uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both};
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_xor<T: PrimUInt, const N: usize, F: PrimeField>(

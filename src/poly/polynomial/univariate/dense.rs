@@ -1,8 +1,8 @@
 use ark_ff::PrimeField;
 use ark_relations::r1cs::SynthesisError;
+use ark_std::vec::Vec;
 
 use crate::fields::{fp::FpVar, FieldVar};
-use ark_std::vec::Vec;
 
 /// Stores a polynomial in coefficient form, where coeffcient is represented by
 /// a list of `Fpvar<F>`.
@@ -47,7 +47,7 @@ mod tests {
     };
     use ark_poly::{polynomial::univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
     use ark_relations::r1cs::ConstraintSystem;
-    use ark_std::{test_rng, vec::Vec, UniformRand};
+    use ark_std::{test_rng, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

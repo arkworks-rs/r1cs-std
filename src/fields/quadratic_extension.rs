@@ -3,14 +3,10 @@ use ark_ff::{
     Zero,
 };
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_std::vec::Vec;
 use core::{borrow::Borrow, marker::PhantomData};
 
-use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::{fp::FpVar, FieldOpsBounds, FieldVar},
-    prelude::*,
-    Vec,
-};
+use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
 /// in `ark-ff`, i.e. `ark_ff::QuadExtField`.
