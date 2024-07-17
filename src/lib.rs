@@ -19,10 +19,6 @@ extern crate ark_ff;
 #[macro_use]
 extern crate ark_relations;
 
-#[doc(hidden)]
-#[macro_use]
-extern crate derivative;
-
 /// Some utility macros for making downstream impls easier.
 #[macro_use]
 pub mod macros;
