@@ -73,6 +73,9 @@ incremental = true
 debug-assertions = true
 debug = true
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
+
 [patch.crates-io]
 ark-ff = { git = "https://github.com/arkworks-rs/algebra/" }
 ark-ec = { git = "https://github.com/arkworks-rs/algebra/" }
