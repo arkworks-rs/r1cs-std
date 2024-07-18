@@ -4,8 +4,8 @@ use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed
 /// to *not* be the point at infinity.
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct NonZeroAffineVar<
     P: SWCurveConfig,
@@ -17,7 +17,7 @@ pub struct NonZeroAffineVar<
     pub x: F,
     /// The y-coordinate.
     pub y: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
