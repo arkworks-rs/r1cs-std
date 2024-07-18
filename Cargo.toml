@@ -90,3 +90,4 @@ ark-mnt4-753 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-mnt6-298 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-mnt6-753 = { git = "https://github.com/arkworks-rs/curves/" }
 ark-pallas = { git = "https://github.com/arkworks-rs/curves/" }
+ark-std = { git = "https://github.com/arkworks-rs/std/" }
