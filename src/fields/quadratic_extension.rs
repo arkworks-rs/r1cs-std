@@ -1,21 +1,21 @@
-use ark_ff::{
-    fields::{Field, QuadExtConfig, QuadExtField},
-    Zero,
-};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use core::{borrow::Borrow, marker::PhantomData};
-
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldOpsBounds, FieldVar},
     prelude::*,
     Vec,
 };
+use ark_ff::{
+    fields::{Field, QuadExtConfig, QuadExtField},
+    Zero,
+};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use core::{borrow::Borrow, marker::PhantomData};
+use educe::Educe;
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
 /// in `ark-ff`, i.e. `ark_ff::QuadExtField`.
-#[derive(Derivative)]
-#[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct QuadExtVar<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: QuadExtVarConfig<BF>>
 where
@@ -25,7 +25,7 @@ where
     pub c0: BF,
     /// The first coefficient of this field element.
     pub c1: BF,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
