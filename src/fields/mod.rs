@@ -5,7 +5,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::convert::{ToBitsGadget, ToBytesGadget};
+use crate::convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget};
 use crate::prelude::*;
 
 /// This module contains a generic implementation of cubic extension field
@@ -76,6 +76,7 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
     + AllocVar<F, ConstraintF>
     + ToBytesGadget<ConstraintF>
     + CondSelectGadget<ConstraintF>
+    + ToConstraintFieldGadget<ConstraintF>
     + for<'a> FieldOpsBounds<'a, F, Self>
     + for<'a> AddAssign<&'a Self>
     + for<'a> SubAssign<&'a Self>
