@@ -64,8 +64,11 @@ impl<F: PrimeField> EvaluationsVar<F> {
     /// ready to interpolate
     pub fn generate_interpolation_cache(&mut self) {
         if self.domain.offset().is_constant() {
-            let poly_evaluations_val: Vec<_> =
-                self.evals.iter().map(|v| v.value().unwrap()).collect();
+            let poly_evaluations_val: Vec<_> = self
+                .evals
+                .iter()
+                .map(|v| v.value().unwrap_or_default())
+                .collect();
             let domain = &self.domain;
             let lagrange_interpolator = if let &FpVar::Constant(x) = domain.offset() {
                 LagrangeInterpolator::new(x, domain.gen, domain.dim, poly_evaluations_val)
@@ -100,7 +103,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
             .expect("lagrange interpolator has not been initialized. \
             Call `self.generate_interpolation_cache` first or set `interpolate` to true in constructor. ");
         let lagrange_coeffs =
-            lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
+            lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap_or_default());
         let mut lagrange_coeffs_fg = Vec::new();
         // Now we convert these lagrange coefficients to gadgets, and then constrain
         // them. The i-th lagrange coefficients constraint is:
@@ -119,13 +122,15 @@ impl<F: PrimeField> EvaluationsVar<F> {
                     Ok(lagrange_coeffs[i])
                 })?;
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
-            assert_eq!(
-                (lagrange_interpolator.v_inv_elems[i] * t.value().unwrap()
-                    - lagrange_interpolator.v_inv_elems[i]
-                        * lagrange_interpolator.all_domain_elems[i])
-                    * lagrange_coeffs[i],
-                vp_t.value().unwrap()
-            );
+            if !cs.is_in_setup_mode() {
+                assert_eq!(
+                    (lagrange_interpolator.v_inv_elems[i] * t.value().unwrap_or_default()
+                        - lagrange_interpolator.v_inv_elems[i]
+                            * lagrange_interpolator.all_domain_elems[i])
+                        * lagrange_coeffs[i],
+                    vp_t.value().unwrap_or_default()
+                );
+            }
             a_element.mul_equals(&lag_coeff, &vp_t)?;
             lagrange_coeffs_fg.push(lag_coeff);
         }
@@ -344,12 +349,16 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         );
         let cs = self.evals[0].cs();
         // the prover can generate result = (1 / other) * self offline
-        let mut result_val: Vec<_> = other.evals.iter().map(|x| x.value().unwrap()).collect();
+        let mut result_val: Vec<_> = other
+            .evals
+            .iter()
+            .map(|x| x.value().unwrap_or_default())
+            .collect();
         batch_inversion(&mut result_val);
         result_val
             .iter_mut()
             .zip(&self.evals)
-            .for_each(|(a, self_var)| *a *= self_var.value().unwrap());
+            .for_each(|(a, self_var)| *a *= self_var.value().unwrap_or_default());
         let result_var: Vec<_> = result_val
             .iter()
             .map(|x| FpVar::new_witness(ns!(cs, "div result"), || Ok(*x)).unwrap())
