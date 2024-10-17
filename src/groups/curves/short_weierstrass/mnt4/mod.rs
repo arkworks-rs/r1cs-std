@@ -14,6 +14,7 @@ use crate::{
     Vec,
 };
 use core::borrow::Borrow;
+use educe::Educe;
 
 /// Represents a projective point in G1.
 pub type G1Var<P> = ProjectiveVar<<P as MNT4Config>::G1Config, FpVar<<P as MNT4Config>::Fp>>;
@@ -23,8 +24,8 @@ pub type G2Var<P> = ProjectiveVar<<P as MNT4Config>::G2Config, Fp2G<P>>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G1PreparedVar<P: MNT4Config> {
     #[doc(hidden)]
     pub x: FpVar<P::Fp>,
@@ -135,8 +136,8 @@ type Fp2G<P> = Fp2Var<<P as MNT4Config>::Fp2Config>;
 
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G2PreparedVar<P: MNT4Config> {
     #[doc(hidden)]
     pub x: Fp2Var<P::Fp2Config>,
@@ -340,8 +341,8 @@ impl<P: MNT4Config> G2PreparedVar<P> {
 }
 
 #[doc(hidden)]
-#[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct AteDoubleCoefficientsVar<P: MNT4Config> {
     pub c_h: Fp2Var<P::Fp2Config>,
     pub c_4c: Fp2Var<P::Fp2Config>,
@@ -425,8 +426,8 @@ impl<P: MNT4Config> AteDoubleCoefficientsVar<P> {
 }
 
 #[doc(hidden)]
-#[derive(Derivative)]
-#[derivative(Clone(bound = "P: MNT4Config"), Debug(bound = "P: MNT4Config"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct AteAdditionCoefficientsVar<P: MNT4Config> {
     pub c_l1: Fp2Var<P::Fp2Config>,
     pub c_rz: Fp2Var<P::Fp2Config>,
