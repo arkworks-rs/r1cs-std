@@ -1,5 +1,5 @@
 use crate::{
-    convert::{ToBitsGadget, ToBytesGadget},
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::emulated_fp::EmulatedFpVar,
     prelude::*,
 };
@@ -41,6 +41,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     + CondSelectGadget<ConstraintF>
     + AllocVar<C, ConstraintF>
     + AllocVar<C::Affine, ConstraintF>
+    + ToConstraintFieldGadget<ConstraintF>
     + for<'a> GroupOpsBounds<'a, C, Self>
     + for<'a> AddAssign<&'a Self>
     + for<'a> SubAssign<&'a Self>
