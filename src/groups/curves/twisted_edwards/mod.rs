@@ -17,6 +17,7 @@ use crate::{
 
 use crate::fields::fp::FpVar;
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+use educe::Educe;
 
 type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 
@@ -26,8 +27,8 @@ type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeFiel
 ///
 /// This is intended for use primarily for implementing efficient
 /// multi-scalar-multiplication in the Bowe-Hopwood-Pedersen hash.
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct MontgomeryAffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -37,7 +38,7 @@ where
     pub x: F,
     /// The y-coordinate.
     pub y: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
@@ -233,8 +234,8 @@ mod montgomery_affine_impl {
 /// An implementation of arithmetic for Twisted Edwards curves that relies on
 /// the complete formulae for the affine model, as outlined in the
 /// [EFD](https://www.hyperelliptic.org/EFD/g1p/auto-twisted.html).
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct AffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -244,7 +245,7 @@ where
     pub x: F,
     /// The y-coordinate.
     pub y: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
