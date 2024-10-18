@@ -23,8 +23,8 @@
     - Add `UInt::rotate_{left,right}_in_place`.
     - Add `{Boolean,UInt}::not_in_place`.
     - Add `UInt::{from_bytes_le, from_bytes_be, to_bytes_be}`.
-- [\#144](https://github.com/arkworks-rs/r1cs-std/pull/144)
-    - Add `ToConstraintFieldGadget` bounds to `CurveVar` and `FieldVar`
+- [\#143](https://github.com/arkworks-rs/r1cs-std/pull/143) Add `AllocVar::new_variable_with_inferred_mode`.
+- [\#144](https://github.com/arkworks-rs/r1cs-std/pull/144) Add `ToConstraintFieldGadget` bounds to `CurveVar` and `FieldVar`
 
 ### Improvements
 
