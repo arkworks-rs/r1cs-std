@@ -4,6 +4,16 @@
 
 ### Breaking changes
 
+### Features
+
+### Improvements
+
+### Bugfixes
+
+## v0.5.0
+
+### Breaking changes
+
 - [\#121](https://github.com/arkworks-rs/r1cs-std/pull/121)
     - Refactor `UInt{8,16,64,128}` into one struct `UInt`.
     - Remove `bits` module.
