@@ -1,6 +1,6 @@
 [package]
 name = "ark-r1cs-std"
-version = "0.5.0-alpha.0"
+version = "0.5.0"
 authors = [ "arkworks contributors" ]
 description = "A standard library for constraint system gadgets"
 homepage = "https://arkworks.rs"
@@ -14,10 +14,10 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
-ark-ff = { version = "0.5.0-alpha", default-features = false }
-ark-ec = { version = "0.5.0-alpha", default-features = false }
-ark-std = { version = "0.5.0-alpha", default-features = false }
-ark-relations = { version = "0.5.0-alpha", default-features = false }
+ark-ff = { version = "0.5.0", default-features = false }
+ark-ec = { version = "0.5.0", default-features = false }
+ark-std = { version = "0.5.0", default-features = false }
+ark-relations = { version = "0.5.0", default-features = false }
 
 educe = "0.6.0"
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
@@ -75,15 +75,3 @@ debug = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
-
-[patch.crates-io]
-ark-bn254 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-bls12-377 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-bls12-381 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-mnt4-298 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-mnt4-753 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-mnt6-298 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-mnt6-753 = { git = "https://github.com/arkworks-rs/curves/" }
-ark-pallas = { git = "https://github.com/arkworks-rs/curves/" }
-ark-std = { git = "https://github.com/arkworks-rs/std/" }
-ark-relations = { git = "https://github.com/arkworks-rs/snark" }
