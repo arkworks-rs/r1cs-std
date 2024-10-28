@@ -10,7 +10,6 @@ use crate::{
     groups::curves::short_weierstrass::*,
     Vec,
 };
-use core::fmt::Debug;
 
 /// Represents a projective point in G1.
 pub type G1Var<P> = ProjectiveVar<<P as Bls12Config>::G1Config, FpVar<<P as Bls12Config>::Fp>>;
@@ -29,8 +28,8 @@ pub type G2AffineVar<P> = AffineVar<<P as Bls12Config>::G2Config, Fp2G<P>>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(Clone(bound = "G1Var<P>: Clone"), Debug(bound = "G1Var<P>: Debug"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G1PreparedVar<P: Bls12Config>(pub AffineVar<P::G1Config, FpVar<P::Fp>>);
 
 impl<P: Bls12Config> G1PreparedVar<P> {
@@ -103,11 +102,8 @@ type Fp2G<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(
-    Clone(bound = "Fp2Var<P::Fp2Config>: Clone"),
-    Debug(bound = "Fp2Var<P::Fp2Config>: Debug")
-)]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G2PreparedVar<P: Bls12Config> {
     #[doc(hidden)]
     pub ell_coeffs: Vec<LCoeff<P>>,

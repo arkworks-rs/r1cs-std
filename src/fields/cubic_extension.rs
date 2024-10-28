@@ -1,21 +1,21 @@
-use ark_ff::{
-    fields::{CubicExtField, Field},
-    CubicExtConfig, Zero,
-};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use core::{borrow::Borrow, marker::PhantomData};
-
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
     fields::{fp::FpVar, FieldOpsBounds, FieldVar},
     prelude::*,
     Vec,
 };
+use ark_ff::{
+    fields::{CubicExtField, Field},
+    CubicExtConfig, Zero,
+};
+use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use core::{borrow::Borrow, marker::PhantomData};
+use educe::Educe;
 
 /// This struct is the `R1CS` equivalent of the cubic extension field type
 /// in `ark-ff`, i.e. `ark_ff::CubicExtField`.
-#[derive(Derivative)]
-#[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct CubicExtVar<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>>
 where
@@ -27,7 +27,7 @@ where
     pub c1: BF,
     /// The second coefficient of this field element.
     pub c2: BF,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 

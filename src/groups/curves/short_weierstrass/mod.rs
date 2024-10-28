@@ -5,6 +5,7 @@ use ark_ec::{
 use ark_ff::{AdditiveGroup, BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+use educe::Educe;
 use non_zero_affine::NonZeroAffineVar;
 
 use crate::{
@@ -42,8 +43,8 @@ type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeFiel
 /// An implementation of arithmetic for Short Weierstrass curves that relies on
 /// the complete formulae derived in the paper of
 /// [[Renes, Costello, Batina 2015]](<https://eprint.iacr.org/2015/1060>).
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct ProjectiveVar<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -55,13 +56,13 @@ where
     pub y: F,
     /// The z-coordinate.
     pub z: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
 /// An affine representation of a curve point.
-#[derive(Derivative)]
-#[derivative(Debug(bound = "F: ark_std::fmt::Debug"), Clone(bound = "F: Clone"))]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct AffineVar<P: SWCurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -73,7 +74,7 @@ where
     pub y: F,
     /// Is `self` the point at infinity.
     pub infinity: Boolean<BasePrimeField<P>>,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
