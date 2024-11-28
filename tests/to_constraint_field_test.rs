@@ -1,7 +1,7 @@
 use ark_r1cs_std::{
-    alloc::AllocVar, convert::ToConstraintFieldGadget, fields::emulated_fp::EmulatedFpVar, R1CSVar,
+    alloc::AllocVar, convert::ToConstraintFieldGadget, fields::emulated_fp::EmulatedFpVar, GR1CSVar,
 };
-use ark_relations::r1cs::ConstraintSystem;
+use ark_relations::gr1cs::ConstraintSystem;
 
 #[test]
 fn to_constraint_field_test() {

@@ -6,7 +6,8 @@ use ark_r1cs_std::{
 };
 use ark_relations::{
     ns,
-    r1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
+    gr1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
+
 };
 use ark_std::rand::RngCore;
 
@@ -19,9 +20,20 @@ fn get_density<BaseField: PrimeField>(cs: &ConstraintSystemRef<BaseField>) -> us
             let mut cs_bak = r.borrow().clone();
 
             cs_bak.finalize();
-            let matrices = cs_bak.to_matrices().unwrap();
+            let matrices_map = cs_bak.to_matrices().unwrap();
+            match matrices_map.get(ark_relations::gr1cs::R1CS_PREDICATE_LABEL) {
+                None => 0,
+                Some(matrices) => {
+                    let a = &matrices[0];
+                    let b = &matrices[1];
+                    let c = &matrices[2];
+                    let a_num_non_zero: usize = a.iter().map(|lc| lc.len()).sum();
+                    let b_num_non_zero: usize = b.iter().map(|lc| lc.len()).sum();
+                    let c_num_non_zero: usize = c.iter().map(|lc| lc.len()).sum();
 
-            matrices.a_num_non_zero + matrices.b_num_non_zero + matrices.c_num_non_zero
+                    a_num_non_zero + b_num_non_zero + c_num_non_zero
+                },
+            }
         },
     }
 }

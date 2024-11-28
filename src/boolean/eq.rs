@@ -1,4 +1,4 @@
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 
 use crate::boolean::Boolean;
 use crate::eq::EqGadget;
@@ -6,7 +6,7 @@ use crate::eq::EqGadget;
 use super::*;
 
 impl<F: Field> EqGadget<F> for Boolean<F> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         // self | other | XNOR(self, other) | self == other
         // -----|-------|-------------------|--------------
@@ -17,7 +17,7 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         Ok(!(self ^ other))
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -43,12 +43,12 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 
         if condition != &Constant(false) {
             let cs = self.cs().or(other.cs()).or(condition.cs());
-            cs.enforce_constraint(lc!() + difference, condition.lc(), lc!())?;
+            cs.enforce_r1cs_constraint(lc!() + difference, condition.lc(), lc!())?;
         }
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -74,7 +74,7 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 
         if should_enforce != &Constant(false) {
             let cs = self.cs().or(other.cs()).or(should_enforce.cs());
-            cs.enforce_constraint(sum, should_enforce.lc(), lc!() + one)?;
+            cs.enforce_r1cs_constraint(sum, should_enforce.lc(), lc!() + one)?;
         }
         Ok(())
     }
@@ -87,7 +87,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::{run_binary_exhaustive, run_unary_exhaustive},
         prelude::EqGadget,
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_test_curves::bls12_381::Fr;
 

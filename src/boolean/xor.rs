@@ -1,5 +1,5 @@
 use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::{ops::BitXor, ops::BitXorAssign};
 
 use super::Boolean;
@@ -24,10 +24,10 @@ impl<'a, F: Field> BitXor<Self> for &'a Boolean<F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -45,7 +45,7 @@ impl<'a, F: Field> BitXor<Self> for &'a Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor(self, other: Self) -> Self::Output {
         self._xor(other).unwrap()
     }
@@ -54,7 +54,7 @@ impl<'a, F: Field> BitXor<Self> for &'a Boolean<F> {
 impl<'a, F: Field> BitXor<&'a Self> for Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor(self, other: &Self) -> Self::Output {
         self._xor(&other).unwrap()
     }
@@ -63,7 +63,7 @@ impl<'a, F: Field> BitXor<&'a Self> for Boolean<F> {
 impl<'a, F: Field> BitXor<Boolean<F>> for &'a Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor(self, other: Boolean<F>) -> Self::Output {
         self._xor(&other).unwrap()
     }
@@ -72,7 +72,7 @@ impl<'a, F: Field> BitXor<Boolean<F>> for &'a Boolean<F> {
 impl<F: Field> BitXor<Self> for Boolean<F> {
     type Output = Self;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor(self, other: Self) -> Self::Output {
         self._xor(&other).unwrap()
     }
@@ -80,7 +80,7 @@ impl<F: Field> BitXor<Self> for Boolean<F> {
 
 impl<F: Field> BitXorAssign<Self> for Boolean<F> {
     /// Sets `self = self ^ other`.
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor_assign(&mut self, other: Self) {
         let result = self._xor(&other).unwrap();
         *self = result;
@@ -89,7 +89,7 @@ impl<F: Field> BitXorAssign<Self> for Boolean<F> {
 
 impl<'a, F: Field> BitXorAssign<&'a Self> for Boolean<F> {
     /// Sets `self = self ^ other`.
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitxor_assign(&mut self, other: &'a Self) {
         let result = self._xor(other).unwrap();
         *self = result;
@@ -103,7 +103,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::run_binary_exhaustive,
         prelude::EqGadget,
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_test_curves::bls12_381::Fr;
 

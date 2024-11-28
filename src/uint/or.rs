@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::{ops::BitOr, ops::BitOrAssign};
 
 use super::{PrimUInt, UInt};
@@ -29,10 +29,10 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for &'a UInt<N,
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -45,7 +45,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for &'a UInt<N,
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: Self) -> Self::Output {
         self._or(other).unwrap()
     }
@@ -54,7 +54,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for &'a UInt<N,
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a Self> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(mut self, other: &Self) -> Self::Output {
         self._or_in_place(&other).unwrap();
         self
@@ -64,7 +64,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a Self> for UInt<N,
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<UInt<N, T, F>> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: UInt<N, T, F>) -> Self::Output {
         other | self
     }
@@ -73,7 +73,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<UInt<N, T, F>> for &'
 impl<const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
     type Output = Self;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: Self) -> Self::Output {
         self | &other
     }
@@ -82,7 +82,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> BitOr<Self> for UInt<N, T, F> {
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<T> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: T) -> Self::Output {
         self | &UInt::constant(other)
     }
@@ -91,7 +91,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<T> for UInt<N, T, F> 
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: &'a T) -> Self::Output {
         self | &UInt::constant(*other)
     }
@@ -100,7 +100,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for UInt<N, T,
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: &'a T) -> Self::Output {
         self | &UInt::constant(*other)
     }
@@ -109,7 +109,7 @@ impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<&'a T> for &'a UInt<N
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOr<T> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: T) -> Self::Output {
         self | &UInt::constant(other)
     }
@@ -122,10 +122,10 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<Self> for UInt<N, T
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -139,28 +139,28 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<Self> for UInt<N, T
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: Self) {
         self._or_in_place(&other).unwrap();
     }
 }
 
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<&'a Self> for UInt<N, T, F> {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a Self) {
         self._or_in_place(other).unwrap();
     }
 }
 
 impl<const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<T> for UInt<N, T, F> {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: T) {
         *self |= &UInt::constant(other);
     }
 }
 
 impl<'a, const N: usize, T: PrimUInt, F: PrimeField> BitOrAssign<&'a T> for UInt<N, T, F> {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a T) {
         *self |= &UInt::constant(*other);
     }
@@ -173,7 +173,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         prelude::EqGadget,
         uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both},
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;

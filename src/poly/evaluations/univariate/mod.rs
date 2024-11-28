@@ -8,10 +8,10 @@ use crate::{
         domain::Radix2DomainVar,
         evaluations::univariate::lagrange_interpolator::LagrangeInterpolator,
     },
-    R1CSVar,
+    GR1CSVar,
 };
 use ark_ff::{batch_inversion, PrimeField};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
     vec::Vec,
@@ -368,11 +368,11 @@ mod tests {
         alloc::AllocVar,
         fields::{fp::FpVar, FieldVar},
         poly::{domain::Radix2DomainVar, evaluations::univariate::EvaluationsVar},
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::{FftField, Field, One, UniformRand};
     use ark_poly::{polynomial::univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_std::test_rng;
     use ark_test_curves::bls12_381::Fr;
 

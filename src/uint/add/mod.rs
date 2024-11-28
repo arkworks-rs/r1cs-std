@@ -13,7 +13,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     /// # Panics
     ///
     /// This method panics if the result of addition could possibly exceed the field size.
-    #[tracing::instrument(target = "r1cs", skip(operands, adder))]
+    #[tracing::instrument(target = "gr1cs", skip(operands, adder))]
     fn add_many_helper(
         operands: &[Self],
         adder: impl Fn(T, T) -> T,

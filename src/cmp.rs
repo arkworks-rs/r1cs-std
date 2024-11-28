@@ -1,10 +1,10 @@
 use ark_ff::{Field, PrimeField};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 
-use crate::{boolean::Boolean, eq::EqGadget, R1CSVar};
+use crate::{boolean::Boolean, eq::EqGadget, GR1CSVar};
 
 /// Specifies how to generate constraints for comparing two variables.
-pub trait CmpGadget<F: Field>: R1CSVar<F> + EqGadget<F> {
+pub trait CmpGadget<F: Field>: GR1CSVar<F> + EqGadget<F> {
     fn is_gt(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         other.is_lt(self)
     }

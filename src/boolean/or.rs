@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::{ops::BitOr, ops::BitOrAssign};
 
 use crate::{
@@ -22,10 +22,10 @@ impl<F: PrimeField> Boolean<F> {
     /// Outputs `bits[0] | bits[1] | ... | bits.last().unwrap()`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -42,7 +42,7 @@ impl<F: PrimeField> Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn kary_or(bits: &[Self]) -> Result<Self, SynthesisError> {
         assert!(!bits.is_empty());
         if bits.len() <= 3 {
@@ -74,10 +74,10 @@ impl<'a, F: PrimeField> BitOr<Self> for &'a Boolean<F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -95,7 +95,7 @@ impl<'a, F: PrimeField> BitOr<Self> for &'a Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: Self) -> Self::Output {
         self._or(other).unwrap()
     }
@@ -104,7 +104,7 @@ impl<'a, F: PrimeField> BitOr<Self> for &'a Boolean<F> {
 impl<'a, F: PrimeField> BitOr<&'a Self> for Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: &Self) -> Self::Output {
         self._or(&other).unwrap()
     }
@@ -113,7 +113,7 @@ impl<'a, F: PrimeField> BitOr<&'a Self> for Boolean<F> {
 impl<'a, F: PrimeField> BitOr<Boolean<F>> for &'a Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: Boolean<F>) -> Self::Output {
         self._or(&other).unwrap()
     }
@@ -122,7 +122,7 @@ impl<'a, F: PrimeField> BitOr<Boolean<F>> for &'a Boolean<F> {
 impl<F: PrimeField> BitOr<Self> for Boolean<F> {
     type Output = Self;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor(self, other: Self) -> Self::Output {
         self._or(&other).unwrap()
     }
@@ -130,7 +130,7 @@ impl<F: PrimeField> BitOr<Self> for Boolean<F> {
 
 impl<F: PrimeField> BitOrAssign<Self> for Boolean<F> {
     /// Sets `self = self | other`.
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: Self) {
         let result = self._or(&other).unwrap();
         *self = result;
@@ -139,7 +139,7 @@ impl<F: PrimeField> BitOrAssign<Self> for Boolean<F> {
 
 impl<'a, F: PrimeField> BitOrAssign<&'a Self> for Boolean<F> {
     /// Sets `self = self | other`.
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitor_assign(&mut self, other: &'a Self) {
         let result = self._or(other).unwrap();
         *self = result;
@@ -153,7 +153,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::run_binary_exhaustive,
         prelude::EqGadget,
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_test_curves::bls12_381::Fr;
 

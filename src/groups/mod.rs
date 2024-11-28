@@ -4,7 +4,7 @@ use crate::{
     prelude::*,
 };
 use ark_ff::PrimeField;
-use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_relations::gr1cs::{Namespace, SynthesisError};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use ark_ec::CurveGroup;
@@ -34,7 +34,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     + Sized
     + Clone
     + Debug
-    + R1CSVar<ConstraintF, Value = C>
+    + GR1CSVar<ConstraintF, Value = C>
     + ToBitsGadget<ConstraintF>
     + ToBytesGadget<ConstraintF>
     + EqGadget<ConstraintF>
@@ -57,7 +57,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     fn zero() -> Self;
 
     /// Returns a `Boolean` representing whether `self == Self::zero()`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_zero(&self) -> Result<Boolean<ConstraintF>, SynthesisError> {
         self.is_eq(&Self::zero())
     }
@@ -79,7 +79,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     fn enforce_prime_order(&self) -> Result<(), SynthesisError>;
 
     /// Computes `self + self`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn double(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         result.double_in_place()?;
@@ -94,7 +94,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
 
     /// Computes `bits * self`, where `bits` is a little-endian
     /// `Boolean` representation of a scalar.
-    #[tracing::instrument(target = "r1cs", skip(bits))]
+    #[tracing::instrument(target = "gr1cs", skip(bits))]
     fn scalar_mul_le<'a>(
         &self,
         bits: impl Iterator<Item = &'a Boolean<ConstraintF>>,
@@ -119,7 +119,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     ///
     /// The bases are precomputed power-of-two multiples of a single
     /// base.
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
+    #[tracing::instrument(target = "gr1cs", skip(scalar_bits_with_bases))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
         scalar_bits_with_bases: I,
@@ -148,7 +148,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     /// Computes `Σⱼ(scalarⱼ * baseⱼ)` for all j,
     /// where `scalarⱼ` is a `Boolean` *little-endian*
     /// representation of the j-th scalar.
-    #[tracing::instrument(target = "r1cs", skip(bases, scalars))]
+    #[tracing::instrument(target = "gr1cs", skip(bases, scalars))]
     fn precomputed_base_multiscalar_mul_le<'a, T, I, B>(
         bases: &[B],
         scalars: I,

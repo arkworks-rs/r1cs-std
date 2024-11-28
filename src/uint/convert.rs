@@ -36,10 +36,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -58,7 +58,7 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
         assert_eq!(bits.len(), N);
         let bits = <&[Boolean<F>; N]>::try_from(bits).unwrap().clone();
@@ -76,10 +76,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts a big-endian list of bytes into a `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -106,10 +106,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts a little-endian byte order list of bytes into a `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -161,7 +161,7 @@ impl<const N: usize, T: PrimUInt, F: Field> ToBitsGadget<F> for [UInt<N, T, F>] 
 impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<ConstraintF>>, SynthesisError> {
         Ok(self
             .to_bits_le()?
@@ -177,7 +177,7 @@ mod tests {
     use crate::{
         prelude::EqGadget,
         uint::test_utils::{run_unary_exhaustive, run_unary_random},
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;

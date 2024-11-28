@@ -4,12 +4,12 @@ use crate::{
     boolean::Boolean,
     eq::EqGadget,
     fields::{fp::FpVar, FieldVar},
-    R1CSVar,
+    GR1CSVar,
 };
 use ark_ff::{biginteger::BigInteger, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{
     ns,
-    r1cs::{ConstraintSystemRef, Result as R1CSResult},
+    gr1cs::{ConstraintSystemRef, Result as R1CSResult},
 };
 use ark_std::{cmp::min, marker::PhantomData, vec, vec::Vec};
 use num_bigint::BigUint;
@@ -62,7 +62,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
     /// usize - 1` bits) This implementation would be more efficient than
     /// the original `to_bits` or `to_non_unique_bits` since we enforce that
     /// some bits are always zero.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn limb_to_bits(limb: &FpVar<BaseF>, num_bits: usize) -> R1CSResult<Vec<Boolean<BaseF>>> {
         let cs = limb.cs();
 
@@ -109,7 +109,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
     }
 
     /// Reduction to the normal form
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn reduce(elem: &mut AllocatedEmulatedFpVar<TargetF, BaseF>) -> R1CSResult<()> {
         let new_elem = AllocatedEmulatedFpVar::new_witness(ns!(elem.cs(), "normal_form"), || {
             Ok(elem.value().unwrap_or_default())
@@ -121,7 +121,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
     }
 
     /// Reduction to be enforced after additions
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn post_add_reduce(elem: &mut AllocatedEmulatedFpVar<TargetF, BaseF>) -> R1CSResult<()> {
         let params = get_params(
             TargetF::MODULUS_BIT_SIZE as usize,
@@ -139,7 +139,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
 
     /// Reduction used before multiplication to reduce the representations in a
     /// way that allows efficient multiplication
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn pre_mul_reduce(
         elem: &mut AllocatedEmulatedFpVar<TargetF, BaseF>,
         elem_other: &mut AllocatedEmulatedFpVar<TargetF, BaseF>,
@@ -189,7 +189,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
     }
 
     /// Reduction to the normal form
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn pre_eq_reduce(elem: &mut AllocatedEmulatedFpVar<TargetF, BaseF>) -> R1CSResult<()> {
         if elem.is_in_the_normal_form {
             return Ok(());
@@ -199,7 +199,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
     }
 
     /// Group and check equality
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn group_and_check_equality(
         surfeit: usize,
         bits_per_limb: usize,

@@ -24,7 +24,7 @@
 //! following example:
 //!
 //! ```rust
-//! # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+//! # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
 //! # use ark_std::UniformRand;
 //! # use ark_relations::{ns, r1cs::ConstraintSystem};
 //! # use ark_r1cs_std::prelude::*;

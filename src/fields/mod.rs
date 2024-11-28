@@ -1,5 +1,5 @@
 use ark_ff::{prelude::*, BitIteratorBE};
-use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, SynthesisError};
 use core::{
     fmt::Debug,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
@@ -70,7 +70,7 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
     'static
     + Clone
     + From<Boolean<ConstraintF>>
-    + R1CSVar<ConstraintF, Value = F>
+    + GR1CSVar<ConstraintF, Value = F>
     + EqGadget<ConstraintF>
     + ToBitsGadget<ConstraintF>
     + AllocVar<F, ConstraintF>
