@@ -37,6 +37,7 @@ ark-mnt6-298 = { version = "0.5.0", default-features = false  }
 ark-mnt6-753 = { version = "0.5.0", default-features = false  }
 ark-pallas = { version = "0.5.0", features = ["curve"],  default-features = false  }
 ark-bn254 = { version = "0.5.0", features = ["curve"], default-features = false  }
+tracing-subscriber = { version = "0.3", default-features = true }
 
 [features]
 default = ["std"]
@@ -76,3 +77,5 @@ debug = true
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
 
+[patch.crates-io]
+ark-relations = { git = "https://github.com/alireza-shirzad/snark.git" }
