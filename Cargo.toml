@@ -17,7 +17,7 @@ resolver = "2"
 ark-ff = { version = "0.5.0", default-features = false }
 ark-ec = { version = "0.5.0", default-features = false }
 ark-std = { version = "0.5.0", default-features = false }
-ark-relations = {  git = "https://github.com/alireza-shirzad/snark.git", default-features = true }
+ark-relations = {  version = "0.5.0", default-features = true }
 
 educe = "0.6.0"
 tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
@@ -76,3 +76,6 @@ debug = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
+
+[patch.crates-io]
+ark-relations = {  git = "https://github.com/arkworks-rs/snark.git"}
