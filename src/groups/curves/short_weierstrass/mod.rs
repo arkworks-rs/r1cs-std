@@ -350,23 +350,39 @@ where
         // We can convert to projective safely because the result is guaranteed to be
         // non-zero by the condition on `affine_bits.len()`, and by the fact
         // that `accumulator` is non-zero
-        let result = accumulator.into_projective();
+        // that `accumulator` is non-zero
+        *mul_result += accumulator.into_projective();
         // If bits[0] is 0, then we have to subtract `self`; else, we subtract zero.
-        let subtrahend = bits[0].select(&Self::zero(), &initial_acc_value)?;
-        *mul_result += result - subtrahend;
+        let neg = NonZeroAffineVar::new(initial_acc_value.x, initial_acc_value.y.negate()?);
+        *mul_result = bits[0].select(mul_result, &mul_result.add_mixed(&neg)?)?;
 
         // Now, let's finish off the rest of the bits using our complete formulae
-        for bit in proj_bits {
+        for bit in proj_bits.iter().rev().skip(1).rev() {
             if bit.is_constant() {
                 if *bit == &Boolean::TRUE {
-                    *mul_result += &multiple_of_power_of_two.into_projective();
+                    *mul_result = mul_result.add_mixed(&multiple_of_power_of_two)?;
                 }
             } else {
-                let temp = &*mul_result + &multiple_of_power_of_two.into_projective();
+                let temp = mul_result.add_mixed(&multiple_of_power_of_two)?;
                 *mul_result = bit.select(&temp, &mul_result)?;
             }
             multiple_of_power_of_two.double_in_place()?;
         }
+
+        // last bit
+        // we don't need the last doubling of multiple_of_power_of_two
+        let n = proj_bits.len();
+        if n >= 1 {
+            if proj_bits[n - 1].is_constant() {
+                if proj_bits[n - 1] == &Boolean::TRUE {
+                    *mul_result = mul_result.add_mixed(&multiple_of_power_of_two)?;
+                }
+            } else {
+                let temp = mul_result.add_mixed(&multiple_of_power_of_two)?;
+                *mul_result = proj_bits[n - 1].select(&temp, &mul_result)?;
+            }
+        }
+
         Ok(())
     }
 }
@@ -499,6 +515,78 @@ where
 
     /// Computes `bits * self`, where `bits` is a little-endian
     /// `Boolean` representation of a scalar.
+    ///
+    /// [Joye07](<https://www.iacr.org/archive/ches2007/47270135/47270135.pdf>), Alg.1.
+    #[tracing::instrument(target = "r1cs", skip(bits))]
+    fn scalar_mul_joye_le<'a>(
+        &self,
+        bits: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
+    ) -> Result<Self, SynthesisError> {
+        if self.is_constant() {
+            if self.value().unwrap().is_zero() {
+                return Ok(self.clone());
+            }
+        }
+        let self_affine = self.to_affine()?;
+        let (x, y, infinity) = (self_affine.x, self_affine.y, self_affine.infinity);
+        // We first handle the non-zero case, and then later will conditionally select
+        // zero if `self` was zero. However, we also want to make sure that generated
+        // constraints are satisfiable in both cases.
+        //
+        // In particular, using non-sensible values for `x` and `y` in zero-case may
+        // cause `unchecked` operations to generate constraints that can never
+        // be satisfied, depending on the curve equation coefficients.
+        //
+        // The safest approach is to use coordinates of some point from the curve, thus
+        // not violating assumptions of `NonZeroAffine`. For instance, generator
+        // point.
+        let x = infinity.select(&F::constant(P::GENERATOR.x), &x)?;
+        let y = infinity.select(&F::constant(P::GENERATOR.y), &y)?;
+        let non_zero_self = NonZeroAffineVar::new(x, y);
+
+        let mut bits = bits.collect::<Vec<_>>();
+        if bits.len() == 0 {
+            return Ok(Self::zero());
+        }
+        // Remove unnecessary constant zeros in the most-significant positions.
+        bits = bits
+            .into_iter()
+            // We iterate from the MSB down.
+            .rev()
+            // Skip leading zeros, if they are constants.
+            .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
+            .collect();
+        // After collecting we are in big-endian form; we have to reverse to get back to
+        // little-endian.
+        bits.reverse();
+
+        // second bit
+        let mut acc = non_zero_self.triple()?;
+        let mut acc0 = bits[1].select(&acc, &non_zero_self)?;
+        let mut acc1 = bits[1].select(&non_zero_self, &acc)?;
+
+        for bit in bits.iter().skip(2).rev().skip(1).rev() {
+            acc = acc0.double_and_select_add_unchecked(bit, &acc1)?;
+            acc0 = bit.select(&acc, &acc0)?;
+            acc1 = bit.select(&acc1, &acc)?;
+        }
+
+        // last bit
+        let n = bits.len() - 1;
+        acc = acc0.double_and_select_add_unchecked(bits[n], &acc1)?;
+        acc0 = bits[n].select(&acc, &acc0)?;
+
+        // first bit
+        let temp = NonZeroAffineVar::new(non_zero_self.x, non_zero_self.y.negate()?);
+        acc1 = acc0.add_unchecked(&temp)?;
+        acc0 = bits[0].select(&acc0, &acc1)?;
+
+        let mul_result = acc0.into_projective();
+        infinity.select(&Self::zero(), &mul_result)
+    }
+
+    /// Computes `bits * self`, where `bits` is a little-endian
+    /// `Boolean` representation of a scalar.
     #[tracing::instrument(target = "r1cs", skip(bits))]
     fn scalar_mul_le<'a>(
         &self,
@@ -515,9 +603,9 @@ where
         // zero if `self` was zero. However, we also want to make sure that generated
         // constraints are satisfiable in both cases.
         //
-        // In particular, using non-sensible values for `x` and `y` in zero-case may cause
-        // `unchecked` operations to generate constraints that can never be satisfied, depending
-        // on the curve equation coefficients.
+        // In particular, using non-sensible values for `x` and `y` in zero-case may
+        // cause `unchecked` operations to generate constraints that can never
+        // be satisfied, depending on the curve equation coefficients.
         //
         // The safest approach is to use coordinates of some point from the curve, thus not
         // violating assumptions of `NonZeroAffine`. For instance, generator point.
@@ -555,6 +643,73 @@ where
         // The cost of this check should be less than the benefit of using
         // mixed addition in almost all cases.
         infinity.select(&Self::zero(), &mul_result)
+    }
+
+    /// Computes `bits1 * self + bits2 * p`, where `bits1` and `bits2` are
+    /// big-endian `Boolean` representation of the scalars.
+    ///
+    /// `self` and `p` are non-zero and `self` ≠ `-p`.
+    #[tracing::instrument(target = "r1cs", skip(bits1, bits2))]
+    fn joint_scalar_mul_be<'a>(
+        &self,
+        p: &Self,
+        bits1: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
+        bits2: impl Iterator<Item = &'a Boolean<<P::BaseField as Field>::BasePrimeField>>,
+    ) -> Result<Self, SynthesisError> {
+        // prepare bits decomposition
+        let mut bits1 = bits1.collect::<Vec<_>>();
+        if bits1.len() == 0 {
+            return Ok(Self::zero());
+        }
+        // Remove unnecessary constant zeros in the most-significant positions.
+        bits1 = bits1
+            .into_iter()
+            // We iterate from the MSB down.
+            .rev()
+            // Skip leading zeros, if they are constants.
+            .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
+            .collect();
+
+        let mut bits2 = bits2.collect::<Vec<_>>();
+        if bits2.len() == 0 {
+            return Ok(Self::zero());
+        }
+        // Remove unnecessary constant zeros in the most-significant positions.
+        bits2 = bits2
+            .into_iter()
+            // We iterate from the MSB down.
+            .rev()
+            // Skip leading zeros, if they are constants.
+            .skip_while(|b| b.is_constant() && (b.value().unwrap() == false))
+            .collect();
+
+        // precompute points
+        let aff1 = self.to_affine()?;
+        let nz_aff1 = NonZeroAffineVar::new(aff1.x, aff1.y);
+
+        let aff2 = p.to_affine()?;
+        let nz_aff2 = NonZeroAffineVar::new(aff2.x, aff2.y);
+
+        let mut aff1_neg = NonZeroAffineVar::new(nz_aff1.x.clone(), nz_aff1.y.negate()?);
+        let mut aff2_neg = NonZeroAffineVar::new(nz_aff2.x.clone(), nz_aff2.y.negate()?);
+        let mut acc = nz_aff1.add_unchecked(&nz_aff2.clone())?;
+
+        // double-and-add loop
+        for (bit1, bit2) in (bits1.iter().rev().skip(1).rev()).zip(bits2.iter().rev().skip(1).rev())
+        {
+            let mut b = bit1.select(&nz_aff1, &aff1_neg)?;
+            acc = acc.double_and_add_unchecked(&b)?;
+            b = bit2.select(&nz_aff2, &aff2_neg)?;
+            acc = acc.add_unchecked(&b)?;
+        }
+
+        // last bit
+        aff1_neg = aff1_neg.add_unchecked(&acc)?;
+        acc = bits1[bits1.len() - 1].select(&acc, &aff1_neg)?;
+        aff2_neg = aff2_neg.add_unchecked(&acc)?;
+        acc = bits2[bits1.len() - 1].select(&acc, &aff2_neg)?;
+
+        Ok(acc.into_projective())
     }
 
     #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]

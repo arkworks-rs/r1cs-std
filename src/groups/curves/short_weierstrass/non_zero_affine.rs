@@ -130,6 +130,79 @@ where
         }
     }
 
+    /// Conditionally computes `(self + other) + self` or `(self + other) +
+    /// other` depending on the value of `cond`.
+    ///
+    /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
+    #[tracing::instrument(target = "r1cs", skip(self))]
+    pub fn double_and_select_add_unchecked(
+        &self,
+        cond: &Boolean<<P::BaseField as Field>::BasePrimeField>,
+        other: &Self,
+    ) -> Result<Self, SynthesisError> {
+        if [self].is_constant() || other.is_constant() {
+            // /!\ TODO: correct constant case /!\
+            self.double()?.add_unchecked(other)
+        } else {
+            // It's okay to use `unchecked` the precondition is that `self != ±other` (i.e.
+            // same logic as in `add_unchecked`)
+            let (x1, y1) = (&self.x, &self.y);
+            let (x2, y2) = (&other.x, &other.y);
+
+            // Calculate self + other:
+            // slope lambda := (y2 - y1)/(x2 - x1);
+            // x3 = lambda^2 - x1 - x2;
+            // y3 = lambda * (x1 - x3) - y1
+            let numerator = y2 - y1;
+            let denominator = x2 - x1;
+            let lambda_1 = numerator.mul_by_inverse_unchecked(&denominator)?;
+
+            let x3 = lambda_1.square()? - x1 - x2;
+
+            let x = &F::conditionally_select(&cond, &x1, &x2)?;
+            let y = &F::conditionally_select(&cond, &y1, &y2)?;
+
+            // Calculate final addition slope:
+            let lambda_2 =
+                (lambda_1 + y.double()?.mul_by_inverse_unchecked(&(&x3 - x))?).negate()?;
+
+            // Calculate (self + other) + (self or other):
+            let x4 = lambda_2.square()? - x - x3;
+            let y4 = lambda_2 * &(x - &x4) - y;
+            Ok(Self::new(x4, y4))
+        }
+    }
+
+    /// Triples `self`.
+    ///
+    /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
+    #[tracing::instrument(target = "r1cs", skip(self))]
+    pub fn triple(&self) -> Result<Self, SynthesisError> {
+        if [self].is_constant() {
+            self.double()?.add_unchecked(self)
+        } else {
+            let (x1, y1) = (&self.x, &self.y);
+            let x1_sqr = x1.square()?;
+            // tangent lambda_1 := (3 * x1^2 + a) / (2 * y1);
+            // x3 = lambda_1^2 - 2x1
+            // y3 = lambda_1 * (x1 - x3) - y1
+            let numerator = x1_sqr.double()? + &x1_sqr + P::COEFF_A;
+            let denominator = y1.double()?;
+            // It's okay to use `unchecked` here, because the precondition of `double` is
+            // that self != zero.
+            let lambda_1 = numerator.mul_by_inverse_unchecked(&denominator)?;
+            let x3 = lambda_1.square()? - x1.double()?;
+
+            // Calculate final addition slope:
+            let lambda_2 =
+                (lambda_1 + y1.double()?.mul_by_inverse_unchecked(&(&x3 - x1))?).negate()?;
+
+            let x4 = lambda_2.square()? - x1 - x3;
+            let y4 = lambda_2 * &(x1 - &x4) - y1;
+            Ok(Self::new(x4, y4))
+        }
+    }
+
     /// Doubles `self` in place.
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn double_in_place(&mut self) -> Result<(), SynthesisError> {
@@ -387,5 +460,51 @@ mod test_non_zero_affine {
         }
 
         assert!(cs.is_satisfied().unwrap());
+    }
+
+    #[test]
+    fn correctness_double_and_add_select() {
+        let cs = ConstraintSystem::<Fq>::new_ref();
+
+        let x = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.x)).unwrap(),
+        );
+        let y = FpVar::Var(
+            AllocatedFp::<Fq>::new_witness(cs.clone(), || Ok(G1Config::GENERATOR.y)).unwrap(),
+        );
+
+        // The following code tests `double_and_add`.
+        let sum_a = {
+            let a = ProjectiveVar::<G1Config, FpVar<Fq>>::new(
+                x.clone(),
+                y.clone(),
+                FpVar::Constant(Fq::one()),
+            );
+
+            let mut cur = a.clone();
+            cur.double_in_place().unwrap();
+            for _ in 1..10 {
+                cur.double_in_place().unwrap();
+                cur = cur + &a;
+            }
+
+            let sum = cur.value().unwrap().into_affine();
+            (sum.x, sum.y)
+        };
+
+        let sum_b = {
+            let a = NonZeroAffineVar::<G1Config, FpVar<Fq>>::new(x, y);
+
+            let mut cur = a.double().unwrap();
+            for _ in 1..10 {
+                cur = cur.double_and_add_unchecked(&a).unwrap();
+            }
+
+            (cur.x.value().unwrap(), cur.y.value().unwrap())
+        };
+
+        assert!(cs.is_satisfied().unwrap());
+        assert_eq!(sum_a.0, sum_b.0);
+        assert_eq!(sum_a.1, sum_b.1);
     }
 }
