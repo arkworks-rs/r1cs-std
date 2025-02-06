@@ -2,6 +2,11 @@
 
 ## Pending
 
+- [\#155](https://github.com/arkworks-rs/r1cs-std/pull/155)
+    - Small optimizations for `scalar_mul_le()`.
+    - Implement ([Joye07], Alg.1) scalar multiplication.
+    - Implement `joint_scalar_mul` using Strauss-Shamir's trick.
+
 ### Breaking changes
 
 - [\#121](https://github.com/arkworks-rs/r1cs-std/pull/121)
