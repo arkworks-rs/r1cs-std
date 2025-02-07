@@ -218,7 +218,7 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
         Ok(res)
     }
 
-    /// Computes `self^S`, where S is interpreted as an little-endian
+    /// Computes `self^S`, where S is interpreted as a little-endian
     /// u64-decomposition of an integer.
     fn pow_by_constant<S: AsRef<[u64]>>(&self, exp: S) -> Result<Self, SynthesisError> {
         let mut res = Self::one();
