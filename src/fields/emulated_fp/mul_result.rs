@@ -1,6 +1,6 @@
 use super::{AllocatedMulResultVar, EmulatedFpVar};
 use ark_ff::PrimeField;
-use ark_relations::r1cs::Result as R1CSResult;
+use ark_relations::gr1cs::Result as R1CSResult;
 
 /// An intermediate representation especially for the result of a
 /// multiplication, containing more limbs. It is intended for advanced usage to
@@ -31,7 +31,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> MulResultVar<TargetF, BaseF> {
     }
 
     /// Reduce the `MulResultVar` back to EmulatedFpVar
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn reduce(&self) -> R1CSResult<EmulatedFpVar<TargetF, BaseF>> {
         match self {
             Self::Constant(c) => Ok(EmulatedFpVar::Constant(*c)),

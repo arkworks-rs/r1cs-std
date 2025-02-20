@@ -20,7 +20,7 @@ impl<F: PrimeField> Boolean<F> {
     /// `F::characteristic()`, That is, interpret bits as a little-endian
     /// integer, and enforce that this integer is "in the field Z_p", where
     /// `p = F::characteristic()` .
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn enforce_in_field_le(bits: &[Self]) -> Result<(), SynthesisError> {
         // `bits` < F::characteristic() <==> `bits` <= F::characteristic() -1
         let mut b = F::characteristic().to_vec();
@@ -38,7 +38,7 @@ impl<F: PrimeField> Boolean<F> {
 
     /// Enforces that `bits` is less than or equal to `element`,
     /// when both are interpreted as (little-endian) integers.
-    #[tracing::instrument(target = "r1cs", skip(element))]
+    #[tracing::instrument(target = "gr1cs", skip(element))]
     pub fn enforce_smaller_or_equal_than_le(
         bits: &[Self],
         element: impl AsRef<[u64]>,

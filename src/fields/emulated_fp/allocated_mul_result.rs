@@ -6,8 +6,8 @@ use super::{
 use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
 use ark_relations::{
+    gr1cs::{ConstraintSystemRef, OptimizationGoal, Result as R1CSResult},
     ns,
-    r1cs::{ConstraintSystemRef, OptimizationGoal, Result as R1CSResult},
 };
 use ark_std::{marker::PhantomData, vec::Vec};
 use num_bigint::BigUint;
@@ -227,7 +227,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedMulResultVar<TargetF, Base
     }
 
     /// Add unreduced elements.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn add(&self, other: &Self) -> R1CSResult<Self> {
         assert_eq!(self.get_optimization_type(), other.get_optimization_type());
 
@@ -248,7 +248,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedMulResultVar<TargetF, Base
     }
 
     /// Add native constant elem
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn add_constant(&self, other: &TargetF) -> R1CSResult<Self> {
         let mut other_limbs = AllocatedEmulatedFpVar::<TargetF, BaseF>::get_limbs_representations(
             other,

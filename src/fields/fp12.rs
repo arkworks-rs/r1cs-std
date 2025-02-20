@@ -4,7 +4,7 @@ use ark_ff::{
     fp6_3over2::Fp6Config,
     QuadExtConfig,
 };
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 
 /// A degree-12 extension field constructed as the tower of a
 /// quadratic extension over a cubic extension over a quadratic extension field.

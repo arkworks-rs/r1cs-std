@@ -5,10 +5,10 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     ///
     /// # Examples
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -20,7 +20,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     pub fn rotate_right(&self, by: usize) -> Self {
         let mut result = self.clone();
         result.rotate_right_in_place(by);
@@ -30,10 +30,10 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     ///
     /// # Examples
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -46,7 +46,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     pub fn rotate_right_in_place(&mut self, by: usize) {
         let by = by % N;
         // `[T]::rotate_left` corresponds to a `rotate_right` of the bits.
@@ -58,10 +58,10 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     ///
     /// # Examples
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -73,7 +73,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     pub fn rotate_left(&self, by: usize) -> Self {
         let mut result = self.clone();
         result.rotate_left_in_place(by);
@@ -84,10 +84,10 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> UInt<N, T, ConstraintF> {
     ///
     /// # Examples
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -115,7 +115,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         prelude::EqGadget,
         uint::test_utils::{run_unary_exhaustive, run_unary_random},
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;

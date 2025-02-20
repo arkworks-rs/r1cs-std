@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 
 use crate::fields::{fp::FpVar, FieldVar};
 use ark_std::vec::Vec;
@@ -43,10 +43,10 @@ impl<F: PrimeField> DensePolynomialVar<F> {
 mod tests {
     use crate::{
         alloc::AllocVar, fields::fp::FpVar,
-        poly::polynomial::univariate::dense::DensePolynomialVar, R1CSVar,
+        poly::polynomial::univariate::dense::DensePolynomialVar, GR1CSVar,
     };
     use ark_poly::{polynomial::univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_std::{test_rng, vec::Vec, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 

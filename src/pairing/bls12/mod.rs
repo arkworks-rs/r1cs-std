@@ -1,4 +1,4 @@
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 
 use super::PairingVar as PG;
 
@@ -17,7 +17,7 @@ type Fp2V<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 
 impl<P: Bls12Config> PairingVar<P> {
     // Evaluate the line function at point p.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn ell(
         f: &mut Fp12Var<P::Fp12Config>,
         coeffs: &(Fp2V<P>, Fp2V<P>),
@@ -49,7 +49,7 @@ impl<P: Bls12Config> PairingVar<P> {
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn exp_by_x(f: &Fp12Var<P::Fp12Config>) -> Result<Fp12Var<P::Fp12Config>, SynthesisError> {
         let mut result = f.optimized_cyclotomic_exp(P::X)?;
         if P::X_IS_NEGATIVE {
@@ -66,7 +66,7 @@ impl<P: Bls12Config> PG<Bls12<P>> for PairingVar<P> {
     type G2PreparedVar = G2PreparedVar<P>;
     type GTVar = Fp12Var<P::Fp12Config>;
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn miller_loop(
         ps: &[Self::G1PreparedVar],
         qs: &[Self::G2PreparedVar],
@@ -98,7 +98,7 @@ impl<P: Bls12Config> PG<Bls12<P>> for PairingVar<P> {
         Ok(f)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn final_exponentiation(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
         // Computing the final exponentation following
         // https://eprint.iacr.org/2016/130.pdf.
@@ -155,12 +155,12 @@ impl<P: Bls12Config> PG<Bls12<P>> for PairingVar<P> {
         })
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn prepare_g1(p: &Self::G1Var) -> Result<Self::G1PreparedVar, SynthesisError> {
         Self::G1PreparedVar::from_group_var(p)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn prepare_g2(q: &Self::G2Var) -> Result<Self::G2PreparedVar, SynthesisError> {
         Self::G2PreparedVar::from_group_var(q)
     }

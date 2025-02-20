@@ -1,7 +1,7 @@
 use ark_ff::{Field, PrimeField};
 use core::{borrow::Borrow, convert::TryFrom, fmt::Debug};
 
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{boolean::Boolean, prelude::*, Assignment, Vec};
 
@@ -25,7 +25,8 @@ pub use prim_uint::*;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-/// This struct represent an unsigned `N` bit integer as a sequence of `N` [`Boolean`]s.
+/// This struct represent an unsigned `N` bit integer as a sequence of `N`
+/// [`Boolean`]s.
 #[derive(Clone, Debug)]
 pub struct UInt<const N: usize, T: PrimUInt, F: Field> {
     #[doc(hidden)]
@@ -34,7 +35,7 @@ pub struct UInt<const N: usize, T: PrimUInt, F: Field> {
     pub value: Option<T>,
 }
 
-impl<const N: usize, T: PrimUInt, F: Field> R1CSVar<F> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> GR1CSVar<F> for UInt<N, T, F> {
     type Value = T;
 
     fn cs(&self) -> ConstraintSystemRef<F> {
@@ -62,10 +63,10 @@ impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
     /// This *does not* create new variables or constraints.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -96,10 +97,10 @@ impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
     ///
     /// This *does not* create any new variables or constraints.
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();

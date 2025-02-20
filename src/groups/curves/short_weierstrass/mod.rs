@@ -3,7 +3,7 @@ use ark_ec::{
     AffineRepr, CurveConfig, CurveGroup,
 };
 use ark_ff::{AdditiveGroup, BitIteratorBE, Field, One, PrimeField, Zero};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
 use educe::Educe;
 use non_zero_affine::NonZeroAffineVar;
@@ -121,7 +121,7 @@ where
     }
 }
 
-impl<P, F> R1CSVar<BasePrimeField<P>> for ProjectiveVar<P, F>
+impl<P, F> GR1CSVar<BasePrimeField<P>> for ProjectiveVar<P, F>
 where
     P: SWCurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
@@ -159,7 +159,7 @@ where
     }
 
     /// Convert this point into affine form.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn to_affine(&self) -> Result<AffineVar<P, F>, SynthesisError> {
         if self.is_constant() {
             let point = self.value()?.into_affine();
@@ -198,7 +198,7 @@ where
     /// Allocates a new variable without performing an on-curve check, which is
     /// useful if the variable is known to be on the curve (eg., if the point
     /// is a constant or is a public input).
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     pub fn new_variable_omit_on_curve_check(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<SWProjective<P>, SynthesisError>,
@@ -238,7 +238,7 @@ where
 
     /// Mixed addition, which is useful when `other = (x2, y2)` is known to have
     /// z = 1.
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     pub(crate) fn add_mixed(&self, other: &NonZeroAffineVar<P, F>) -> Result<Self, SynthesisError> {
         // Complete mixed addition formula from Renes-Costello-Batina 2015
         // Algorithm 2
@@ -281,7 +281,7 @@ where
     /// Computes a scalar multiplication with a little-endian scalar of size
     /// `P::ScalarField::MODULUS_BITS`.
     #[tracing::instrument(
-        target = "r1cs",
+        target = "gr1cs",
         skip(self, mul_result, multiple_of_power_of_two, bits)
     )]
     fn fixed_scalar_mul_le(
@@ -390,7 +390,7 @@ where
         self.z.is_zero()
     }
 
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_variable_omit_prime_order_check(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<SWProjective<P>, SynthesisError>,
@@ -433,7 +433,7 @@ where
     /// is unchanged.
     // TODO: at the moment this doesn't work, because the addition and doubling
     // formulae are incomplete for even-order points.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
         unimplemented!("cannot enforce prime order");
         // let r_minus_1 = (-P::ScalarField::one()).into_bigint();
@@ -451,7 +451,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn double_in_place(&mut self) -> Result<(), SynthesisError> {
         // Complete doubling formula from Renes-Costello-Batina 2015
         // Algorithm 3
@@ -492,14 +492,14 @@ where
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self::new(self.x.clone(), self.y.negate()?, self.z.clone()))
     }
 
     /// Computes `bits * self`, where `bits` is a little-endian
     /// `Boolean` representation of a scalar.
-    #[tracing::instrument(target = "r1cs", skip(bits))]
+    #[tracing::instrument(target = "gr1cs", skip(bits))]
     fn scalar_mul_le<'a>(
         &self,
         bits: impl Iterator<Item = &'a Boolean<BasePrimeField<P>>>,
@@ -515,12 +515,13 @@ where
         // zero if `self` was zero. However, we also want to make sure that generated
         // constraints are satisfiable in both cases.
         //
-        // In particular, using non-sensible values for `x` and `y` in zero-case may cause
-        // `unchecked` operations to generate constraints that can never be satisfied, depending
-        // on the curve equation coefficients.
+        // In particular, using non-sensible values for `x` and `y` in zero-case may
+        // cause `unchecked` operations to generate constraints that can never
+        // be satisfied, depending on the curve equation coefficients.
         //
-        // The safest approach is to use coordinates of some point from the curve, thus not
-        // violating assumptions of `NonZeroAffine`. For instance, generator point.
+        // The safest approach is to use coordinates of some point from the curve, thus
+        // not violating assumptions of `NonZeroAffine`. For instance, generator
+        // point.
         let x = infinity.select(&F::constant(P::GENERATOR.x), &x)?;
         let y = infinity.select(&F::constant(P::GENERATOR.y), &y)?;
         let non_zero_self = NonZeroAffineVar::new(x, y);
@@ -557,7 +558,7 @@ where
         infinity.select(&Self::zero(), &mul_result)
     }
 
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_bases))]
+    #[tracing::instrument(target = "gr1cs", skip(scalar_bits_with_bases))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
         scalar_bits_with_bases: I,
@@ -736,7 +737,7 @@ where
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<BasePrimeField<P>>,
         true_value: &Self,
@@ -756,7 +757,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         let x_equal = (&self.x * &other.z).is_eq(&(&other.x * &self.z))?;
         let y_equal = (&self.y * &other.z).is_eq(&(&other.y * &self.z))?;
@@ -766,7 +767,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -780,7 +781,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -926,7 +927,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bits = g.x.to_bits_le()?;
@@ -936,7 +937,7 @@ where
         Ok(bits)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bits = g.x.to_non_unique_bits_le()?;
@@ -953,7 +954,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bytes = g.x.to_bytes_le()?;
@@ -964,7 +965,7 @@ where
         Ok(bytes)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let g = self.to_affine()?;
         let mut bytes = g.x.to_non_unique_bytes_le()?;
@@ -990,7 +991,7 @@ mod test_sw_curve {
         CurveGroup,
     };
     use ark_ff::PrimeField;
-    use ark_relations::r1cs::{ConstraintSystem, Result};
+    use ark_relations::gr1cs::{ConstraintSystem, Result};
     use ark_std::UniformRand;
     use num_traits::Zero;
 

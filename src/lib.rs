@@ -26,8 +26,8 @@ pub mod macros;
 pub(crate) use ark_std::vec::Vec;
 
 #[doc(hidden)]
-pub mod r1cs_var;
-pub use r1cs_var::*;
+pub mod gr1cs_var;
+pub use gr1cs_var::*;
 
 /// This module contains `Boolean`, an R1CS equivalent of the `bool` type.
 pub mod boolean;
@@ -99,18 +99,18 @@ pub mod prelude {
         uint32::UInt32,
         uint64::UInt64,
         uint8::UInt8,
-        R1CSVar,
+        GR1CSVar,
     };
 }
 
 /// A utility trait to convert `Self` to `Result<T, SynthesisErrorA`.>
 pub trait Assignment<T> {
     /// Converts `self` to `Result`.
-    fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError>;
+    fn get(self) -> Result<T, ark_relations::gr1cs::SynthesisError>;
 }
 
 impl<T> Assignment<T> for Option<T> {
-    fn get(self) -> Result<T, ark_relations::r1cs::SynthesisError> {
-        self.ok_or(ark_relations::r1cs::SynthesisError::AssignmentMissing)
+    fn get(self) -> Result<T, ark_relations::gr1cs::SynthesisError> {
+        self.ok_or(ark_relations::gr1cs::SynthesisError::AssignmentMissing)
     }
 }

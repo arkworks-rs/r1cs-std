@@ -1,5 +1,5 @@
 use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::vec::Vec;
 
 use crate::{boolean::Boolean, uint8::UInt8};
@@ -150,5 +150,5 @@ pub trait ToConstraintFieldGadget<ConstraintF: ark_ff::PrimeField> {
     /// Converts `self` to `FpVar<ConstraintF>` variables.
     fn to_constraint_field(
         &self,
-    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::r1cs::SynthesisError>;
+    ) -> Result<Vec<crate::fields::fp::FpVar<ConstraintF>>, ark_relations::gr1cs::SynthesisError>;
 }
