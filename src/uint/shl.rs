@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
-use ark_std::{ops::Shl, ops::ShlAssign};
+use ark_std::ops::{Shl, ShlAssign};
 
 use crate::boolean::Boolean;
 

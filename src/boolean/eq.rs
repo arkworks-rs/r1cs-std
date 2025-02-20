@@ -1,7 +1,6 @@
 use ark_relations::gr1cs::SynthesisError;
 
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
+use crate::{boolean::Boolean, eq::EqGadget};
 
 use super::*;
 
@@ -26,8 +25,8 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         use Boolean::*;
         let one = Variable::One;
         // We will use the following trick: a == b <=> a - b == 0
-        // This works because a - b == 0 if and only if a = 0 and b = 0, or a = 1 and b = 1,
-        // which is exactly the definition of a == b.
+        // This works because a - b == 0 if and only if a = 0 and b = 0, or a = 1 and b
+        // = 1, which is exactly the definition of a == b.
         let difference = match (self, other) {
             // 1 == 1; 0 == 0
             (Constant(true), Constant(true)) | (Constant(false), Constant(false)) => return Ok(()),
@@ -57,8 +56,8 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         use Boolean::*;
         let one = Variable::One;
         // We will use the following trick: a != b <=> a + b == 1
-        // This works because a + b == 1 if and only if a = 0 and b = 1, or a = 1 and b = 0,
-        // which is exactly the definition of a != b.
+        // This works because a + b == 1 if and only if a = 0 and b = 1, or a = 1 and b
+        // = 0, which is exactly the definition of a != b.
         let sum = match (self, other) {
             // 1 != 0; 0 != 1
             (Constant(true), Constant(false)) | (Constant(false), Constant(true)) => return Ok(()),

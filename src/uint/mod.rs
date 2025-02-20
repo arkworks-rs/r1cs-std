@@ -25,7 +25,8 @@ pub use prim_uint::*;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-/// This struct represent an unsigned `N` bit integer as a sequence of `N` [`Boolean`]s.
+/// This struct represent an unsigned `N` bit integer as a sequence of `N`
+/// [`Boolean`]s.
 #[derive(Clone, Debug)]
 pub struct UInt<const N: usize, T: PrimUInt, F: Field> {
     #[doc(hidden)]

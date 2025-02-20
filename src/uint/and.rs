@@ -1,6 +1,6 @@
 use ark_ff::Field;
 use ark_relations::gr1cs::SynthesisError;
-use ark_std::{ops::BitAnd, ops::BitAndAssign};
+use ark_std::ops::{BitAnd, BitAndAssign};
 
 use super::*;
 

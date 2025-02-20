@@ -1,6 +1,6 @@
 use ark_ff::Field;
 use ark_relations::gr1cs::SynthesisError;
-use ark_std::{ops::BitXor, ops::BitXorAssign};
+use ark_std::ops::{BitXor, BitXorAssign};
 
 use super::Boolean;
 

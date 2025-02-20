@@ -2,8 +2,7 @@ use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
 use ark_std::vec::Vec;
 
-use crate::boolean::Boolean;
-use crate::eq::EqGadget;
+use crate::{boolean::Boolean, eq::EqGadget};
 
 use super::*;
 

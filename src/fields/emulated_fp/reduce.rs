@@ -8,8 +8,8 @@ use crate::{
 };
 use ark_ff::{biginteger::BigInteger, BitIteratorBE, One, PrimeField, Zero};
 use ark_relations::{
-    ns,
     gr1cs::{ConstraintSystemRef, Result as R1CSResult},
+    ns,
 };
 use ark_std::{cmp::min, marker::PhantomData, vec, vec::Vec};
 use num_bigint::BigUint;

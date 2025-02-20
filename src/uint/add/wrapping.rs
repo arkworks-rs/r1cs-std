@@ -1,8 +1,7 @@
 use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
 
-use crate::uint::*;
-use crate::GR1CSVar;
+use crate::{uint::*, GR1CSVar};
 
 impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     /// Compute `*self = self.wrapping_add(other)`.
@@ -19,7 +18,8 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     }
 
     /// Perform wrapping addition of `operands`.
-    /// Computes `operands[0].wrapping_add(operands[1]).wrapping_add(operands[2])...`.
+    /// Computes `operands[0].wrapping_add(operands[1]).
+    /// wrapping_add(operands[2])...`.
     ///
     /// The user must ensure that overflow does not occur.
     #[tracing::instrument(target = "gr1cs", skip(operands))]

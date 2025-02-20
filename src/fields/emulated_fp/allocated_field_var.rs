@@ -10,10 +10,10 @@ use crate::{
 };
 use ark_ff::{BigInteger, PrimeField};
 use ark_relations::{
-    ns,
     gr1cs::{
         ConstraintSystemRef, Namespace, OptimizationGoal, Result as R1CSResult, SynthesisError,
     },
+    ns,
 };
 use ark_std::{
     borrow::Borrow,
@@ -621,10 +621,10 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
     }
 
     /// Allocates a new non-native field witness with value given by the
-    /// function `f`.  Enforces that the field element has value in `[0, modulus)`,
-    /// and returns the bits of its binary representation.
-    /// The bits are in little-endian (i.e., the bit at index 0 is the LSB) and the
-    /// bit-vector is empty in non-witness allocation modes.
+    /// function `f`.  Enforces that the field element has value in `[0,
+    /// modulus)`, and returns the bits of its binary representation.
+    /// The bits are in little-endian (i.e., the bit at index 0 is the LSB) and
+    /// the bit-vector is empty in non-witness allocation modes.
     pub fn new_witness_with_le_bits<T: Borrow<TargetF>>(
         cs: impl Into<Namespace<BaseF>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,

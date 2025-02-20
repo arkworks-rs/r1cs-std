@@ -39,7 +39,8 @@ impl<F: Field> CmpGadget<F> for () {
     }
 }
 
-/// Mimics the lexicographic comparison behavior of `std::cmp::PartialOrd` for `[T]`.
+/// Mimics the lexicographic comparison behavior of `std::cmp::PartialOrd` for
+/// `[T]`.
 impl<T: CmpGadget<F>, F: PrimeField> CmpGadget<F> for [T] {
     fn is_ge(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         let mut result = Boolean::TRUE;

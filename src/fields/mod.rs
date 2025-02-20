@@ -5,8 +5,10 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget};
-use crate::prelude::*;
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    prelude::*,
+};
 
 /// This module contains a generic implementation of cubic extension field
 /// variables. That is, it implements the R1CS equivalent of
@@ -22,7 +24,8 @@ pub mod quadratic_extension;
 pub mod fp;
 
 /// This module contains a generic implementation of "emulated" prime field
-/// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p != q`.
+/// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p !=
+/// q`.
 pub mod emulated_fp;
 
 /// This module contains a generic implementation of the degree-12 tower

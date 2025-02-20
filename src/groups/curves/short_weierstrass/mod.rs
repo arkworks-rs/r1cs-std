@@ -515,12 +515,13 @@ where
         // zero if `self` was zero. However, we also want to make sure that generated
         // constraints are satisfiable in both cases.
         //
-        // In particular, using non-sensible values for `x` and `y` in zero-case may cause
-        // `unchecked` operations to generate constraints that can never be satisfied, depending
-        // on the curve equation coefficients.
+        // In particular, using non-sensible values for `x` and `y` in zero-case may
+        // cause `unchecked` operations to generate constraints that can never
+        // be satisfied, depending on the curve equation coefficients.
         //
-        // The safest approach is to use coordinates of some point from the curve, thus not
-        // violating assumptions of `NonZeroAffine`. For instance, generator point.
+        // The safest approach is to use coordinates of some point from the curve, thus
+        // not violating assumptions of `NonZeroAffine`. For instance, generator
+        // point.
         let x = infinity.select(&F::constant(P::GENERATOR.x), &x)?;
         let y = infinity.select(&F::constant(P::GENERATOR.y), &y)?;
         let non_zero_self = NonZeroAffineVar::new(x, y);

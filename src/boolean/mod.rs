@@ -202,8 +202,7 @@ impl<F: Field> AllocVar<bool, F> for Boolean<F> {
 #[cfg(test)]
 mod test {
     use super::Boolean;
-    use crate::convert::ToBytesGadget;
-    use crate::prelude::*;
+    use crate::{convert::ToBytesGadget, prelude::*};
     use ark_ff::{
         AdditiveGroup, BitIteratorBE, BitIteratorLE, Field, One, PrimeField, UniformRand,
     };

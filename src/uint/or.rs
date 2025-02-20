@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
-use ark_std::{ops::BitOr, ops::BitOrAssign};
+use ark_std::ops::{BitOr, BitOrAssign};
 
 use super::{PrimUInt, UInt};
 

@@ -5,9 +5,8 @@ use ark_r1cs_std::{
     fields::{emulated_fp::EmulatedFpVar, FieldVar},
 };
 use ark_relations::{
-    ns,
     gr1cs::{ConstraintSystem, ConstraintSystemRef, OptimizationGoal},
-
+    ns,
 };
 use ark_std::rand::RngCore;
 

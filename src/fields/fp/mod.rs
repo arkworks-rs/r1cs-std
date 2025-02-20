@@ -52,7 +52,8 @@ pub enum FpVar<F: PrimeField> {
 }
 
 impl<F: PrimeField> FpVar<F> {
-    /// Decomposes `self` into a vector of `bits` and a remainder `rest` such that
+    /// Decomposes `self` into a vector of `bits` and a remainder `rest` such
+    /// that
     /// * `bits.len() == size`, and
     /// * `rest == 0`.
     pub fn to_bits_le_with_top_bits_zero(
@@ -465,8 +466,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         // The high level logic is as follows:
         // We want to check that self - other != 0. We do this by checking that
         // (self - other).inverse() exists. In more detail, we check the following:
-        // If `should_enforce == true`, then we set `multiplier = (self - other).inverse()`,
-        // and check that (self - other) * multiplier == 1. (i.e., that the inverse exists)
+        // If `should_enforce == true`, then we set `multiplier = (self -
+        // other).inverse()`, and check that (self - other) * multiplier == 1.
+        // (i.e., that the inverse exists)
         //
         // If `should_enforce == false`, then we set `multiplier == 0`, and check that
         // (self - other) * 0 == 0, which is always satisfied.

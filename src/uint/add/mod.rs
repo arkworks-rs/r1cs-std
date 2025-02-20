@@ -6,13 +6,15 @@ mod saturating;
 mod wrapping;
 
 impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
-    /// Adds up `operands`, returning the bit decomposition of the result, along with
-    /// the value of the result. If all the operands are constant, then the bit decomposition
-    /// is empty, and the value is the constant value of the result.
+    /// Adds up `operands`, returning the bit decomposition of the result, along
+    /// with the value of the result. If all the operands are constant, then
+    /// the bit decomposition is empty, and the value is the constant value
+    /// of the result.
     ///
     /// # Panics
     ///
-    /// This method panics if the result of addition could possibly exceed the field size.
+    /// This method panics if the result of addition could possibly exceed the
+    /// field size.
     #[tracing::instrument(target = "gr1cs", skip(operands, adder))]
     fn add_many_helper(
         operands: &[Self],

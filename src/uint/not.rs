@@ -24,7 +24,8 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `!self`.
     ///
-    /// If `self` is a constant, then this method *does not* create any constraints or variables.
+    /// If `self` is a constant, then this method *does not* create any
+    /// constraints or variables.
     ///
     /// ```
     /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
@@ -53,7 +54,8 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
 
     /// Outputs `!self`.
     ///
-    /// If `self` is a constant, then this method *does not* create any constraints or variables.
+    /// If `self` is a constant, then this method *does not* create any
+    /// constraints or variables.
     ///
     /// ```
     /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {

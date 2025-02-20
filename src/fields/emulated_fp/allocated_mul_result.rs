@@ -6,8 +6,8 @@ use super::{
 use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
 use ark_relations::{
-    ns,
     gr1cs::{ConstraintSystemRef, OptimizationGoal, Result as R1CSResult},
+    ns,
 };
 use ark_std::{marker::PhantomData, vec::Vec};
 use num_bigint::BigUint;
