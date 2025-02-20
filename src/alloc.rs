@@ -90,8 +90,8 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
     /// variable, one can write:
     /// ```
     /// use ark_ff::PrimeField;
-    /// use ark_r1cs_std::{alloc::AllocVar, fields::{fp::FpVar, FieldVar}, R1CSVar};
-    /// use ark_relations::r1cs::SynthesisError;
+    /// use ark_r1cs_std::{alloc::AllocVar, fields::{fp::FpVar, FieldVar}, GR1CSVar};
+    /// use ark_relations::gr1cs::SynthesisError;
     ///
     /// fn div<F: PrimeField>(x_var: &FpVar<F>, y_var: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
     ///   let cs = x_var.cs().or(y_var.cs());
