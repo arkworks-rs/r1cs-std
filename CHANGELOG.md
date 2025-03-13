@@ -10,6 +10,8 @@
 
 ### Bugfixes
 
+- [\#156](https://github.com/arkworks-rs/r1cs-std/pull/156) Fix panic in `impl Sum for FpVar`
+
 ## v0.5.0
 
 ### Breaking changes
