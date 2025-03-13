@@ -94,6 +94,3 @@ debug = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
-
-[patch.crates-io]
-# ark-relations = {  git = "https://github.com/arkworks-rs/snark.git"}
