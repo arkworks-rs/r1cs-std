@@ -155,24 +155,34 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
             elem.get_optimization_type(),
         );
 
-        if 2 * params.bits_per_limb + ark_std::log2(params.num_limbs) as usize
-            > BaseF::MODULUS_BIT_SIZE as usize - 1
+        // `2 * params.bits_per_limb + ark_std::log2(params.num_limbs + 1)` needs to be `<= BaseF::MODULUS_BIT_SIZE as usize - 4`
+        // - see `group_and_check_equality` for more details
+        if 2 * params.bits_per_limb + ark_std::log2(params.num_limbs + 1) as usize
+            >= BaseF::MODULUS_BIT_SIZE as usize - 3
         {
             panic!("The current limb parameters do not support multiplication.");
         }
 
         loop {
+            // this needs to be adjusted if we modify `prod_of_num_of_additions` for `AllocatedMulResultVar`
+            // - see `mul_without_reduce` in `src/fields/emulated_fp/allocated_field_var.rs`
             let prod_of_num_of_additions = (elem.num_of_additions_over_normal_form + BaseF::one())
                 * (elem_other.num_of_additions_over_normal_form + BaseF::one());
-            let overhead_limb = overhead!(prod_of_num_of_additions.mul(
-                &BaseF::from_bigint(<BaseF as PrimeField>::BigInt::from(
-                    (params.num_limbs) as u64
-                ))
-                .unwrap()
-            ));
-            let bits_per_mulresult_limb = 2 * (params.bits_per_limb + 1) + overhead_limb;
+            let overhead_limb = overhead!(
+                BaseF::one()
+                    + prod_of_num_of_additions.mul(
+                        &BaseF::from_bigint(<BaseF as PrimeField>::BigInt::from(
+                            (params.num_limbs) as u64
+                        ))
+                        .unwrap()
+                    )
+            );
 
-            if bits_per_mulresult_limb < BaseF::MODULUS_BIT_SIZE as usize {
+            let bits_per_mulresult_limb = 2 * params.bits_per_limb + overhead_limb;
+
+            // we need `bits_per_mulresult_limb <= MODULUS_BIT_SIZE - 4`
+            // - see `group_and_check_equality` for more details
+            if bits_per_mulresult_limb < (BaseF::MODULUS_BIT_SIZE - 3) as usize {
                 break;
             }
 
@@ -211,6 +221,22 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
         let zero = FpVar::<BaseF>::zero();
 
         let mut limb_pairs = Vec::<(FpVar<BaseF>, FpVar<BaseF>)>::new();
+
+        // this size is closely related to the grouped limb size, padding size, pre_mul_reduce and post_add_reduce
+        //
+        // it should be carefully chosen so that 1) no overflow/underflow can happen in this function and 2) num_limb_in_a_group
+        // is always >=1.
+        //
+        // 1. for this function
+        // - pad_limb has bit size BaseF::MODULUS_BIT_SIZE - 1
+        // - left/right_total_limb has bit size BaseF::MODULUS_BIT_SIZE - 3
+        // - carry has even smaller size
+        // - so, their sum has bit size <= BaseF::MODULUS_BIT_SIZE - 1
+        //
+        // 2. for pre_mul_reduce
+        // - it enforces `2 * bits_per_limb + surfeit <= BaseF::MODULUS_BIT_SIZE - 4`
+        //   - 2 * bits_per_limb in that function == 2 * (bits_per_limb - shift_per_limb) == shift_per_limb
+        // - so, num_limb_in_a_group is >= 1 for mul
         let num_limb_in_a_group = (BaseF::MODULUS_BIT_SIZE as usize
             - 1
             - surfeit
@@ -240,6 +266,8 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
         let mut groupped_limb_pairs = Vec::<(FpVar<BaseF>, FpVar<BaseF>, usize)>::new();
 
         for limb_pairs_in_a_group in limb_pairs.chunks(num_limb_in_a_group) {
+            // bit size = num_limb_in_a_group * shift_per_limb + bits_per_limb + true surfeit + 1
+            //     <= BaseF::MODULUS_BIT_SIZE - 3
             let mut left_total_limb = zero.clone();
             let mut right_total_limb = zero.clone();
 
@@ -267,6 +295,9 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Reducer<TargetF, BaseF> {
         {
             let mut pad_limb_repr = BaseF::ONE.into_bigint();
 
+            // use padding to avoid underflow
+            //
+            // bit size = BaseF::MODULUS_BIT_SIZE - 1
             pad_limb_repr <<= (surfeit
                 + (bits_per_limb - shift_per_limb)
                 + shift_per_limb * num_limb_in_this_group
