@@ -38,6 +38,9 @@
 
 ### Improvements
 
+- [\#147](https://github.com/arkworks-rs/r1cs-std/pull/147) Remove dependency on
+  `ark-relations/std`.
+
 ### Bug Fixes
 
 - [\#145](https://github.com/arkworks-rs/r1cs-std/pull/145)
