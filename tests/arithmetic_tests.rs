@@ -13,9 +13,9 @@ use ark_r1cs_std::{
         emulated_fp::{AllocatedEmulatedFpVar, EmulatedFpVar},
         FieldVar,
     },
-    R1CSVar,
+    GR1CSVar,
 };
-use ark_relations::r1cs::{ConstraintSystem, ConstraintSystemRef};
+use ark_relations::gr1cs::{ConstraintSystem, ConstraintSystemRef};
 use ark_std::rand::RngCore;
 
 #[cfg(not(ci))]

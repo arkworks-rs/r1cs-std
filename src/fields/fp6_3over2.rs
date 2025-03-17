@@ -3,7 +3,7 @@ use ark_ff::{
     fields::{fp6_3over2::*, Fp2},
     CubicExtConfig,
 };
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::ops::MulAssign;
 
 /// A sextic extension field constructed as the tower of a

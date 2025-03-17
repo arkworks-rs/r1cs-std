@@ -1,6 +1,6 @@
 use crate::Vec;
 use ark_ff::Field;
-use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_relations::gr1cs::{Namespace, SynthesisError};
 use core::borrow::Borrow;
 
 /// Describes the mode that a variable should be allocated in within
@@ -49,7 +49,7 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
     /// Allocates a new constant of type `Self` in the `ConstraintSystem` `cs`.
     ///
     /// This should *not* allocate any new variables or constraints in `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, t))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, t))]
     fn new_constant(
         cs: impl Into<Namespace<F>>,
         t: impl Borrow<V>,
@@ -59,7 +59,7 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
 
     /// Allocates a new public input of type `Self` in the `ConstraintSystem`
     /// `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_input<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -69,7 +69,7 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
 
     /// Allocates a new private witness of type `Self` in the `ConstraintSystem`
     /// `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_witness<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -90,8 +90,8 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
     /// variable, one can write:
     /// ```
     /// use ark_ff::PrimeField;
-    /// use ark_r1cs_std::{alloc::AllocVar, fields::{fp::FpVar, FieldVar}, R1CSVar};
-    /// use ark_relations::r1cs::SynthesisError;
+    /// use ark_r1cs_std::{alloc::AllocVar, fields::{fp::FpVar, FieldVar}, GR1CSVar};
+    /// use ark_relations::gr1cs::SynthesisError;
     ///
     /// fn div<F: PrimeField>(x_var: &FpVar<F>, y_var: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
     ///   let cs = x_var.cs().or(y_var.cs());

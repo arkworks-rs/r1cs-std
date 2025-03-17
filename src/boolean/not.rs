@@ -1,5 +1,5 @@
 use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::ops::Not;
 
 use super::Boolean;
@@ -26,10 +26,10 @@ impl<'a, F: Field> Not for &'a Boolean<F> {
     ///
     /// This *does not* create any new variables or constraints.
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -47,7 +47,7 @@ impl<'a, F: Field> Not for &'a Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn not(self) -> Self::Output {
         self._not().unwrap()
     }
@@ -56,7 +56,7 @@ impl<'a, F: Field> Not for &'a Boolean<F> {
 impl<'a, F: Field> Not for &'a mut Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn not(self) -> Self::Output {
         self._not().unwrap()
     }
@@ -65,7 +65,7 @@ impl<'a, F: Field> Not for &'a mut Boolean<F> {
 impl<F: Field> Not for Boolean<F> {
     type Output = Boolean<F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn not(self) -> Self::Output {
         self._not().unwrap()
     }
@@ -78,7 +78,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::run_unary_exhaustive,
         prelude::EqGadget,
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_test_curves::bls12_381::Fr;
 
