@@ -100,7 +100,7 @@ mod tests {
             domain::Radix2DomainVar,
             evaluations::univariate::lagrange_interpolator::LagrangeInterpolator,
         },
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::{FftField, Field, One};
     use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial, Polynomial};

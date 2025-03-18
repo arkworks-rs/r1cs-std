@@ -5,7 +5,7 @@ use crate::{
     prelude::*,
 };
 use ark_ff::PrimeField;
-use ark_relations::r1cs::{SynthesisError, Variable};
+use ark_relations::gr1cs::{SynthesisError, Variable};
 use core::cmp::Ordering;
 
 impl<F: PrimeField> FpVar<F> {
@@ -14,7 +14,7 @@ impl<F: PrimeField> FpVar<F> {
     /// also be checked for equality, e.g. `self <= other` instead of `self <
     /// other`, set `should_also_check_quality` to `true`. This variant
     /// verifies `self` and `other` are `<= (p-1)/2`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn enforce_cmp(
         &self,
         other: &FpVar<F>,
@@ -31,7 +31,7 @@ impl<F: PrimeField> FpVar<F> {
     /// other`, set `should_also_check_quality` to `true`. This variant
     /// assumes `self` and `other` are `<= (p-1)/2` and does not generate
     /// constraints to verify that.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn enforce_cmp_unchecked(
         &self,
         other: &FpVar<F>,
@@ -48,7 +48,7 @@ impl<F: PrimeField> FpVar<F> {
     /// `self` should also be checked for equality, e.g. `self <= other`
     /// instead of `self < other`, set `should_also_check_quality` to
     /// `true`. This variant verifies `self` and `other` are `<= (p-1)/2`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn is_cmp(
         &self,
         other: &FpVar<F>,
@@ -66,7 +66,7 @@ impl<F: PrimeField> FpVar<F> {
     /// `self < other`, set `should_also_check_quality` to `true`. This
     /// variant assumes `self` and `other` are `<= (p-1)/2` and does not
     /// generate constraints to verify that.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn is_cmp_unchecked(
         &self,
         other: &FpVar<F>,
@@ -98,7 +98,7 @@ impl<F: PrimeField> FpVar<F> {
     }
 
     /// Helper function to enforce that `self <= (p-1)/2`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn enforce_smaller_or_equal_than_mod_minus_one_div_two(
         &self,
     ) -> Result<(), SynthesisError> {
@@ -147,7 +147,7 @@ impl<F: PrimeField> FpVar<F> {
         let lc_one = lc!() + Variable::One;
         [self, other]
             .cs()
-            .enforce_constraint(is_smaller_than.lc(), lc_one.clone(), lc_one)
+            .enforce_r1cs_constraint(is_smaller_than.lc(), lc_one.clone(), lc_one)
     }
 }
 
@@ -157,7 +157,7 @@ mod test {
 
     use crate::{alloc::AllocVar, fields::fp::FpVar};
     use ark_ff::{PrimeField, UniformRand};
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

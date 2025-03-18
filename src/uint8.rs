@@ -1,6 +1,6 @@
 use ark_ff::{Field, PrimeField, ToConstraintField};
 
-use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_relations::gr1cs::{Namespace, SynthesisError};
 
 use crate::{
     convert::{ToBitsGadget, ToConstraintFieldGadget},
@@ -21,10 +21,10 @@ impl<F: Field> UInt8<F> {
     /// verifier time and verification key size.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -77,7 +77,7 @@ impl<F: Field> UInt8<F> {
 /// This is the gadget counterpart to the `[u8]` implementation of
 /// [`ToConstraintField``].
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<ConstraintF>] {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
         let max_size = ((ConstraintF::MODULUS_BIT_SIZE - 1) / 8) as usize;
         self.chunks(max_size)
@@ -87,7 +87,7 @@ impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for [UInt8<Co
 }
 
 impl<ConstraintF: PrimeField> ToConstraintFieldGadget<ConstraintF> for Vec<UInt8<ConstraintF>> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<ConstraintF>>, SynthesisError> {
         self.as_slice().to_constraint_field()
     }
@@ -106,7 +106,7 @@ mod test {
         Vec,
     };
     use ark_ff::{PrimeField, ToConstraintField};
-    use ark_relations::r1cs::{ConstraintSystem, SynthesisError};
+    use ark_relations::gr1cs::{ConstraintSystem, SynthesisError};
     use ark_std::rand::{distributions::Uniform, Rng};
     use ark_test_curves::bls12_381::Fr;
 

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use ark_ff::Field;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::vec::Vec;
 /// Generates constraints for selecting between one of two values.
 pub trait CondSelectGadget<ConstraintF: Field>: Sized + Clone {
