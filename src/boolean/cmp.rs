@@ -16,7 +16,7 @@ impl<F: PrimeField> CmpGadget<F> for Boolean<F> {
 }
 
 impl<F: PrimeField> Boolean<F> {
-    /// Enforces that `bits`, when interpreted as a integer, is less than
+    /// Enforces that `bits`, when interpreted as an integer, is less than
     /// `F::characteristic()`, That is, interpret bits as a little-endian
     /// integer, and enforce that this integer is "in the field Z_p", where
     /// `p = F::characteristic()` .
