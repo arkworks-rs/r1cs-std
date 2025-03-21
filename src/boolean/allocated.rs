@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
 
 use ark_ff::{Field, PrimeField};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError, Variable};
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError, Variable};
 
 use crate::{
     alloc::{AllocVar, AllocationMode},
@@ -58,7 +58,7 @@ impl<F: Field> AllocatedBool<F> {
 
     /// Performs an XOR operation over the two operands, returning
     /// an `AllocatedBool`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn not(&self) -> Result<Self, SynthesisError> {
         let variable = self.cs.new_lc(lc!() + Variable::One - self.variable)?;
         Ok(Self {
@@ -69,7 +69,7 @@ impl<F: Field> AllocatedBool<F> {
 
     /// Performs an XOR operation over the two operands, returning
     /// an `AllocatedBool`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn xor(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
             Ok(self.value()? ^ b.value()?)
@@ -90,7 +90,7 @@ impl<F: Field> AllocatedBool<F> {
         // -2a * b = c - a - b
         // 2a * b = a + b - c
         // (a + a) * b = a + b - c
-        self.cs.enforce_constraint(
+        self.cs.enforce_r1cs_constraint(
             lc!() + self.variable + self.variable,
             lc!() + b.variable,
             lc!() + self.variable + b.variable - result.variable,
@@ -101,7 +101,7 @@ impl<F: Field> AllocatedBool<F> {
 
     /// Performs an AND operation over the two operands, returning
     /// an `AllocatedBool`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn and(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
             Ok(self.value()? & b.value()?)
@@ -109,7 +109,7 @@ impl<F: Field> AllocatedBool<F> {
 
         // Constrain (a) * (b) = (c), ensuring c is 1 iff
         // a AND b are both 1.
-        self.cs.enforce_constraint(
+        self.cs.enforce_r1cs_constraint(
             lc!() + self.variable,
             lc!() + b.variable,
             lc!() + result.variable,
@@ -120,7 +120,7 @@ impl<F: Field> AllocatedBool<F> {
 
     /// Performs an OR operation over the two operands, returning
     /// an `AllocatedBool`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn or(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
             Ok(self.value()? | b.value()?)
@@ -128,7 +128,7 @@ impl<F: Field> AllocatedBool<F> {
 
         // Constrain (1 - a) * (1 - b) = (1 - c), ensuring c is 0 iff
         // a and b are both false, and otherwise c is 1.
-        self.cs.enforce_constraint(
+        self.cs.enforce_r1cs_constraint(
             lc!() + Variable::One - self.variable,
             lc!() + Variable::One - b.variable,
             lc!() + Variable::One - result.variable,
@@ -138,7 +138,7 @@ impl<F: Field> AllocatedBool<F> {
     }
 
     /// Calculates `a AND (NOT b)`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn and_not(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
             Ok(self.value()? & !b.value()?)
@@ -146,7 +146,7 @@ impl<F: Field> AllocatedBool<F> {
 
         // Constrain (a) * (1 - b) = (c), ensuring c is 1 iff
         // a is true and b is false, and otherwise c is 0.
-        self.cs.enforce_constraint(
+        self.cs.enforce_r1cs_constraint(
             lc!() + self.variable,
             lc!() + Variable::One - b.variable,
             lc!() + result.variable,
@@ -156,7 +156,7 @@ impl<F: Field> AllocatedBool<F> {
     }
 
     /// Calculates `(NOT a) AND (NOT b)`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn nor(&self, b: &Self) -> Result<Self, SynthesisError> {
         let result = Self::new_witness_without_booleanity_check(self.cs.clone(), || {
             Ok(!(self.value()? | b.value()?))
@@ -164,7 +164,7 @@ impl<F: Field> AllocatedBool<F> {
 
         // Constrain (1 - a) * (1 - b) = (c), ensuring c is 1 iff
         // a and b are both false, and otherwise c is 0.
-        self.cs.enforce_constraint(
+        self.cs.enforce_r1cs_constraint(
             lc!() + Variable::One - self.variable,
             lc!() + Variable::One - b.variable,
             lc!() + result.variable,
@@ -205,7 +205,7 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
             // Constrain: (1 - a) * a = 0
             // This constrains a to be either 0 or 1.
 
-            cs.enforce_constraint(lc!() + Variable::One - variable, lc!() + variable, lc!())?;
+            cs.enforce_r1cs_constraint(lc!() + Variable::One - variable, lc!() + variable, lc!())?;
 
             Ok(Self { variable, cs })
         }
@@ -213,7 +213,7 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
 }
 
 impl<F: PrimeField> CondSelectGadget<F> for AllocatedBool<F> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<F>,
         true_val: &Self,
@@ -235,7 +235,7 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedBool<F> {
 mod test {
     use super::*;
 
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_test_curves::bls12_381::Fr;
     #[test]
     fn allocated_xor() -> Result<(), SynthesisError> {

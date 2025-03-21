@@ -8,10 +8,10 @@ use crate::{
         domain::Radix2DomainVar,
         evaluations::univariate::lagrange_interpolator::LagrangeInterpolator,
     },
-    R1CSVar,
+    GR1CSVar,
 };
 use ark_ff::{batch_inversion, PrimeField};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::{
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
     vec::Vec,
@@ -64,8 +64,11 @@ impl<F: PrimeField> EvaluationsVar<F> {
     /// ready to interpolate
     pub fn generate_interpolation_cache(&mut self) {
         if self.domain.offset().is_constant() {
-            let poly_evaluations_val: Vec<_> =
-                self.evals.iter().map(|v| v.value().unwrap()).collect();
+            let poly_evaluations_val: Vec<_> = self
+                .evals
+                .iter()
+                .map(|v| v.value().unwrap_or_default())
+                .collect();
             let domain = &self.domain;
             let lagrange_interpolator = if let &FpVar::Constant(x) = domain.offset() {
                 LagrangeInterpolator::new(x, domain.gen, domain.dim, poly_evaluations_val)
@@ -100,7 +103,7 @@ impl<F: PrimeField> EvaluationsVar<F> {
             .expect("lagrange interpolator has not been initialized. \
             Call `self.generate_interpolation_cache` first or set `interpolate` to true in constructor. ");
         let lagrange_coeffs =
-            lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap());
+            lagrange_interpolator.compute_lagrange_coefficients(t.value().unwrap_or_default());
         let mut lagrange_coeffs_fg = Vec::new();
         // Now we convert these lagrange coefficients to gadgets, and then constrain
         // them. The i-th lagrange coefficients constraint is:
@@ -119,13 +122,15 @@ impl<F: PrimeField> EvaluationsVar<F> {
                     Ok(lagrange_coeffs[i])
                 })?;
             // Enforce the actual constraint (A_element) * (lagrange_coeff) = 1/Z_I(t)
-            assert_eq!(
-                (lagrange_interpolator.v_inv_elems[i] * t.value().unwrap()
-                    - lagrange_interpolator.v_inv_elems[i]
-                        * lagrange_interpolator.all_domain_elems[i])
-                    * lagrange_coeffs[i],
-                vp_t.value().unwrap()
-            );
+            if !cs.is_in_setup_mode() {
+                assert_eq!(
+                    (lagrange_interpolator.v_inv_elems[i] * t.value().unwrap_or_default()
+                        - lagrange_interpolator.v_inv_elems[i]
+                            * lagrange_interpolator.all_domain_elems[i])
+                        * lagrange_coeffs[i],
+                    vp_t.value().unwrap_or_default()
+                );
+            }
             a_element.mul_equals(&lag_coeff, &vp_t)?;
             lagrange_coeffs_fg.push(lag_coeff);
         }
@@ -158,11 +163,13 @@ impl<F: PrimeField> EvaluationsVar<F> {
             .as_ref()
             .expect("lagrange interpolator has not been initialized. ");
         let lagrange_coeffs = self.compute_lagrange_coefficients(interpolation_point)?;
-        let mut interpolation: FpVar<F> = FpVar::zero();
-        for i in 0..lagrange_interpolator.domain_order {
-            let intermediate = &lagrange_coeffs[i] * &self.evals[i];
-            interpolation += &intermediate
-        }
+
+        let interpolation = lagrange_coeffs
+            .iter()
+            .zip(&self.evals)
+            .take(lagrange_interpolator.domain_order)
+            .map(|(coeff, eval)| coeff * eval)
+            .sum::<FpVar<F>>();
 
         Ok(interpolation)
     }
@@ -208,31 +215,33 @@ impl<F: PrimeField> EvaluationsVar<F> {
         let alpha_coset_offset_inv =
             interpolation_point.mul_by_inverse_unchecked(&self.domain.offset())?;
 
-        // `res` stores the sum of all lagrange polynomials evaluated at alpha
-        let mut res = FpVar::<F>::zero();
-
         let domain_size = self.domain.size() as usize;
-        for i in 0..domain_size {
-            // a'^{-1} where a is the base coset element
-            let subgroup_point_inv = subgroup_points[(domain_size - i) % domain_size];
-            debug_assert_eq!(subgroup_points[i] * subgroup_point_inv, F::one());
-            // alpha * offset^{-1} * a'^{-1} - 1
-            let lag_denom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
-            // lag_denom cannot be zero, so we use `unchecked`.
-            //
-            // Proof: lag_denom is zero if and only if alpha * (coset_offset *
-            // subgroup_point)^{-1} == 1. This can happen only if `alpha` is
-            // itself in the coset.
-            //
-            // Earlier we asserted that `lhs_numerator` is not zero.
-            // Since `lhs_numerator` is just the vanishing polynomial for the coset
-            // evaluated at `alpha`, and since this is non-zero, `alpha` is not
-            // in the coset.
-            let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_denom)?;
 
-            let lag_interpoland = &self.evals[i] * lag_coeff;
-            res += lag_interpoland
-        }
+        // `evals` stores all lagrange polynomials evaluated at alpha
+        let evals = (0..domain_size)
+            .map(|i| {
+                // a'^{-1} where a is the base coset element
+                let subgroup_point_inv = subgroup_points[(domain_size - i) % domain_size];
+                debug_assert_eq!(subgroup_points[i] * subgroup_point_inv, F::one());
+                // alpha * offset^{-1} * a'^{-1} - 1
+                let lag_denom = &alpha_coset_offset_inv * subgroup_point_inv - F::one();
+                // lag_denom cannot be zero, so we use `unchecked`.
+                //
+                // Proof: lag_denom is zero if and only if alpha * (coset_offset *
+                // subgroup_point)^{-1} == 1. This can happen only if `alpha` is
+                // itself in the coset.
+                //
+                // Earlier we asserted that `lhs_numerator` is not zero.
+                // Since `lhs_numerator` is just the vanishing polynomial for the coset
+                // evaluated at `alpha`, and since this is non-zero, `alpha` is not
+                // in the coset.
+                let lag_coeff = lhs.mul_by_inverse_unchecked(&lag_denom)?;
+
+                Ok(&self.evals[i] * lag_coeff)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let res = evals.iter().sum();
 
         Ok(res)
     }
@@ -340,12 +349,16 @@ impl<'a, F: PrimeField> DivAssign<&'a EvaluationsVar<F>> for EvaluationsVar<F> {
         );
         let cs = self.evals[0].cs();
         // the prover can generate result = (1 / other) * self offline
-        let mut result_val: Vec<_> = other.evals.iter().map(|x| x.value().unwrap()).collect();
+        let mut result_val: Vec<_> = other
+            .evals
+            .iter()
+            .map(|x| x.value().unwrap_or_default())
+            .collect();
         batch_inversion(&mut result_val);
         result_val
             .iter_mut()
             .zip(&self.evals)
-            .for_each(|(a, self_var)| *a *= self_var.value().unwrap());
+            .for_each(|(a, self_var)| *a *= self_var.value().unwrap_or_default());
         let result_var: Vec<_> = result_val
             .iter()
             .map(|x| FpVar::new_witness(ns!(cs, "div result"), || Ok(*x)).unwrap())
@@ -368,97 +381,97 @@ mod tests {
         alloc::AllocVar,
         fields::{fp::FpVar, FieldVar},
         poly::{domain::Radix2DomainVar, evaluations::univariate::EvaluationsVar},
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_ff::{FftField, Field, One, UniformRand};
     use ark_poly::{polynomial::univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_std::test_rng;
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
     fn test_interpolate_constant_offset() {
-        let mut rng = test_rng();
-        let poly = DensePolynomial::rand(15, &mut rng);
-        let gen = Fr::get_root_of_unity(1 << 4).unwrap();
-        assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let domain = Radix2DomainVar::new(
-            gen,
-            4, // 2^4 = 16
-            FpVar::constant(Fr::rand(&mut rng)),
-        )
-        .unwrap();
-        let mut coset_point = domain.offset().value().unwrap();
-        let mut oracle_evals = Vec::new();
-        for _ in 0..(1 << 4) {
-            oracle_evals.push(poly.evaluate(&coset_point));
-            coset_point *= gen;
+        for n in [11, 12, 13, 14] {
+            let mut rng = test_rng();
+
+            let poly = DensePolynomial::rand((1 << n) - 1, &mut rng);
+            let gen = Fr::get_root_of_unity(1 << n).unwrap();
+            assert_eq!(gen.pow(&[1 << n]), Fr::one());
+            let domain = Radix2DomainVar::new(gen, n, FpVar::constant(Fr::rand(&mut rng))).unwrap();
+            let mut coset_point = domain.offset().value().unwrap();
+            let mut oracle_evals = Vec::new();
+            for _ in 0..(1 << n) {
+                oracle_evals.push(poly.evaluate(&coset_point));
+                coset_point *= gen;
+            }
+            let cs = ConstraintSystem::new_ref();
+            let evaluations_fp: Vec<_> = oracle_evals
+                .iter()
+                .map(|x| FpVar::new_input(ns!(cs, "evaluations"), || Ok(x)).unwrap())
+                .collect();
+            let evaluations_var = EvaluationsVar::from_vec_and_domain(evaluations_fp, domain, true);
+
+            let interpolate_point = Fr::rand(&mut rng);
+            let interpolate_point_fp =
+                FpVar::new_input(ns!(cs, "interpolate point"), || Ok(interpolate_point)).unwrap();
+
+            let expected = poly.evaluate(&interpolate_point);
+
+            let actual = evaluations_var
+                .interpolate_and_evaluate(&interpolate_point_fp)
+                .unwrap()
+                .value()
+                .unwrap();
+
+            assert_eq!(actual, expected);
+            assert!(cs.is_satisfied().unwrap());
+            println!("number of constraints: {}", cs.num_constraints());
         }
-        let cs = ConstraintSystem::new_ref();
-        let evaluations_fp: Vec<_> = oracle_evals
-            .iter()
-            .map(|x| FpVar::new_input(ns!(cs, "evaluations"), || Ok(x)).unwrap())
-            .collect();
-        let evaluations_var = EvaluationsVar::from_vec_and_domain(evaluations_fp, domain, true);
-
-        let interpolate_point = Fr::rand(&mut rng);
-        let interpolate_point_fp =
-            FpVar::new_input(ns!(cs, "interpolate point"), || Ok(interpolate_point)).unwrap();
-
-        let expected = poly.evaluate(&interpolate_point);
-
-        let actual = evaluations_var
-            .interpolate_and_evaluate(&interpolate_point_fp)
-            .unwrap()
-            .value()
-            .unwrap();
-
-        assert_eq!(actual, expected);
-        assert!(cs.is_satisfied().unwrap());
-        println!("number of constraints: {}", cs.num_constraints())
     }
 
     #[test]
     fn test_interpolate_non_constant_offset() {
-        let mut rng = test_rng();
-        let poly = DensePolynomial::rand(15, &mut rng);
-        let gen = Fr::get_root_of_unity(1 << 4).unwrap();
-        assert_eq!(gen.pow(&[1 << 4]), Fr::one());
-        let cs = ConstraintSystem::new_ref();
-        let domain = Radix2DomainVar::new(
-            gen,
-            4, // 2^4 = 16
-            FpVar::new_witness(ns!(cs, "offset"), || Ok(Fr::rand(&mut rng))).unwrap(),
-        )
-        .unwrap();
-        let mut coset_point = domain.offset().value().unwrap();
-        let mut oracle_evals = Vec::new();
-        for _ in 0..(1 << 4) {
-            oracle_evals.push(poly.evaluate(&coset_point));
-            coset_point *= gen;
-        }
-
-        let evaluations_fp: Vec<_> = oracle_evals
-            .iter()
-            .map(|x| FpVar::new_input(ns!(cs, "evaluations"), || Ok(x)).unwrap())
-            .collect();
-        let evaluations_var = EvaluationsVar::from_vec_and_domain(evaluations_fp, domain, true);
-
-        let interpolate_point = Fr::rand(&mut rng);
-        let interpolate_point_fp =
-            FpVar::new_input(ns!(cs, "interpolate point"), || Ok(interpolate_point)).unwrap();
-
-        let expected = poly.evaluate(&interpolate_point);
-
-        let actual = evaluations_var
-            .interpolate_and_evaluate(&interpolate_point_fp)
-            .unwrap()
-            .value()
+        for n in [11, 12, 13, 14] {
+            let mut rng = test_rng();
+            let poly = DensePolynomial::rand((1 << n) - 1, &mut rng);
+            let gen = Fr::get_root_of_unity(1 << n).unwrap();
+            assert_eq!(gen.pow(&[1 << n]), Fr::one());
+            let cs = ConstraintSystem::new_ref();
+            let domain = Radix2DomainVar::new(
+                gen,
+                n,
+                FpVar::new_witness(ns!(cs, "offset"), || Ok(Fr::rand(&mut rng))).unwrap(),
+            )
             .unwrap();
+            let mut coset_point = domain.offset().value().unwrap();
+            let mut oracle_evals = Vec::new();
+            for _ in 0..(1 << n) {
+                oracle_evals.push(poly.evaluate(&coset_point));
+                coset_point *= gen;
+            }
 
-        assert_eq!(actual, expected);
-        assert!(cs.is_satisfied().unwrap());
-        println!("number of constraints: {}", cs.num_constraints())
+            let evaluations_fp: Vec<_> = oracle_evals
+                .iter()
+                .map(|x| FpVar::new_input(ns!(cs, "evaluations"), || Ok(x)).unwrap())
+                .collect();
+            let evaluations_var = EvaluationsVar::from_vec_and_domain(evaluations_fp, domain, true);
+
+            let interpolate_point = Fr::rand(&mut rng);
+            let interpolate_point_fp =
+                FpVar::new_input(ns!(cs, "interpolate point"), || Ok(interpolate_point)).unwrap();
+
+            let expected = poly.evaluate(&interpolate_point);
+
+            let actual = evaluations_var
+                .interpolate_and_evaluate(&interpolate_point_fp)
+                .unwrap()
+                .value()
+                .unwrap();
+
+            assert_eq!(actual, expected);
+            assert!(cs.is_satisfied().unwrap());
+            println!("number of constraints: {}", cs.num_constraints());
+        }
     }
 
     #[test]

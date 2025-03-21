@@ -3,14 +3,13 @@ use ark_ec::{
     short_weierstrass::Affine as GroupAffine,
 };
 use ark_ff::{BitIteratorBE, Field, One};
-use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_relations::gr1cs::{Namespace, SynthesisError};
 
 use crate::{
     fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
     groups::curves::short_weierstrass::*,
     Vec,
 };
-use core::fmt::Debug;
 
 /// Represents a projective point in G1.
 pub type G1Var<P> = ProjectiveVar<<P as Bls12Config>::G1Config, FpVar<<P as Bls12Config>::Fp>>;
@@ -29,8 +28,8 @@ pub type G2AffineVar<P> = AffineVar<<P as Bls12Config>::G2Config, Fp2G<P>>;
 
 /// Represents the cached precomputation that can be performed on a G1 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(Clone(bound = "G1Var<P>: Clone"), Debug(bound = "G1Var<P>: Debug"))]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G1PreparedVar<P: Bls12Config>(pub AffineVar<P::G1Config, FpVar<P::Fp>>);
 
 impl<P: Bls12Config> G1PreparedVar<P> {
@@ -78,7 +77,7 @@ impl<P: Bls12Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
 
 impl<P: Bls12Config> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
         let mut bytes = self.0.x.to_bytes_le()?;
         let y_bytes = self.0.y.to_bytes_le()?;
@@ -88,7 +87,7 @@ impl<P: Bls12Config> ToBytesGadget<P::Fp> for G1PreparedVar<P> {
         Ok(bytes)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
         let mut bytes = self.0.x.to_non_unique_bytes_le()?;
         let y_bytes = self.0.y.to_non_unique_bytes_le()?;
@@ -103,18 +102,15 @@ type Fp2G<P> = Fp2Var<<P as Bls12Config>::Fp2Config>;
 type LCoeff<P> = (Fp2G<P>, Fp2G<P>);
 /// Represents the cached precomputation that can be performed on a G2 element
 /// which enables speeding up pairing computation.
-#[derive(Derivative)]
-#[derivative(
-    Clone(bound = "Fp2Var<P::Fp2Config>: Clone"),
-    Debug(bound = "Fp2Var<P::Fp2Config>: Debug")
-)]
+#[derive(Educe)]
+#[educe(Clone, Debug)]
 pub struct G2PreparedVar<P: Bls12Config> {
     #[doc(hidden)]
     pub ell_coeffs: Vec<LCoeff<P>>,
 }
 
 impl<P: Bls12Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
-    #[tracing::instrument(target = "r1cs", skip(cs, f, mode))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f, mode))]
     fn new_variable<T: Borrow<G2Prepared<P>>>(
         cs: impl Into<Namespace<P::Fp>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -173,7 +169,7 @@ impl<P: Bls12Config> AllocVar<G2Prepared<P>, P::Fp> for G2PreparedVar<P> {
 
 impl<P: Bls12Config> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
         let mut bytes = Vec::new();
         for coeffs in &self.ell_coeffs {
@@ -183,7 +179,7 @@ impl<P: Bls12Config> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
         Ok(bytes)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::Fp>>, SynthesisError> {
         let mut bytes = Vec::new();
         for coeffs in &self.ell_coeffs {
@@ -196,7 +192,7 @@ impl<P: Bls12Config> ToBytesGadget<P::Fp> for G2PreparedVar<P> {
 
 impl<P: Bls12Config> G2PreparedVar<P> {
     /// Constructs `Self` from a `G2Var`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn from_group_var(q: &G2Var<P>) -> Result<Self, SynthesisError> {
         let q = q.to_affine()?;
         let two_inv = P::Fp::one().double().inverse().unwrap();
@@ -216,7 +212,7 @@ impl<P: Bls12Config> G2PreparedVar<P> {
         Ok(Self { ell_coeffs })
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn double(r: &mut G2AffineVar<P>, two_inv: &P::Fp) -> Result<LCoeff<P>, SynthesisError> {
         let a = r.y.inverse()?;
         let mut b = r.x.square()?;
@@ -240,7 +236,7 @@ impl<P: Bls12Config> G2PreparedVar<P> {
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn add(r: &mut G2AffineVar<P>, q: &G2AffineVar<P>) -> Result<LCoeff<P>, SynthesisError> {
         let a = (&q.x - &r.x).inverse()?;
         let b = &q.y - &r.y;

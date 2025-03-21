@@ -7,10 +7,10 @@ impl<F: PrimeField> Boolean<F> {
     /// If `self.is_eq(&Boolean::TRUE)`, this outputs `first`; else, it outputs
     /// `second`.
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -27,7 +27,7 @@ impl<F: PrimeField> Boolean<F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(first, second))]
+    #[tracing::instrument(target = "gr1cs", skip(first, second))]
     pub fn select<T: CondSelectGadget<F>>(
         &self,
         first: &T,
@@ -37,7 +37,7 @@ impl<F: PrimeField> Boolean<F> {
     }
 }
 impl<F: PrimeField> CondSelectGadget<F> for Boolean<F> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<F>,
         true_val: &Self,
@@ -78,7 +78,7 @@ impl<F: PrimeField> CondSelectGadget<F> for Boolean<F> {
                     //   0  |   1   |   0  |    1
                     //   1  |   0   |   0  |    0
                     //   1  |   1   |   0  |    1
-                    cs.enforce_constraint(
+                    cs.enforce_r1cs_constraint(
                         cond.lc(),
                         lc!() + a.lc() - b.lc(),
                         lc!() + result.lc() - b.lc(),
@@ -98,7 +98,7 @@ mod tests {
         alloc::{AllocVar, AllocationMode},
         boolean::test_utils::run_binary_exhaustive,
         prelude::EqGadget,
-        R1CSVar,
+        GR1CSVar,
     };
     use ark_test_curves::bls12_381::Fr;
 

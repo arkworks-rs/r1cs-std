@@ -6,7 +6,7 @@ use ark_ec::{
     AdditiveGroup, AffineRepr, CurveGroup,
 };
 use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
 use crate::{
     convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
@@ -17,6 +17,7 @@ use crate::{
 
 use crate::fields::fp::FpVar;
 use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+use educe::Educe;
 
 type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
 
@@ -26,8 +27,8 @@ type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeFiel
 ///
 /// This is intended for use primarily for implementing efficient
 /// multi-scalar-multiplication in the Bowe-Hopwood-Pedersen hash.
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct MontgomeryAffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -37,7 +38,7 @@ where
     pub x: F,
     /// The y-coordinate.
     pub y: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
@@ -47,7 +48,7 @@ mod montgomery_affine_impl {
     use ark_ff::Field;
     use core::ops::Add;
 
-    impl<P, F> R1CSVar<BasePrimeField<P>> for MontgomeryAffineVar<P, F>
+    impl<P, F> GR1CSVar<BasePrimeField<P>> for MontgomeryAffineVar<P, F>
     where
         P: TECurveConfig,
         F: FieldVar<P::BaseField, BasePrimeField<P>>,
@@ -81,7 +82,7 @@ mod montgomery_affine_impl {
 
         /// Converts a Twisted Edwards curve point to coordinates for the
         /// corresponding affine Montgomery curve point.
-        #[tracing::instrument(target = "r1cs")]
+        #[tracing::instrument(target = "gr1cs")]
         pub fn from_edwards_to_coords(
             p: &TEAffine<P>,
         ) -> Result<(P::BaseField, P::BaseField), SynthesisError> {
@@ -101,7 +102,7 @@ mod montgomery_affine_impl {
 
         /// Converts a Twisted Edwards curve point to coordinates for the
         /// corresponding affine Montgomery curve point.
-        #[tracing::instrument(target = "r1cs")]
+        #[tracing::instrument(target = "gr1cs")]
         pub fn new_witness_from_edwards(
             cs: ConstraintSystemRef<BasePrimeField<P>>,
             p: &TEAffine<P>,
@@ -113,7 +114,7 @@ mod montgomery_affine_impl {
         }
 
         /// Converts `self` into a Twisted Edwards curve point variable.
-        #[tracing::instrument(target = "r1cs")]
+        #[tracing::instrument(target = "gr1cs")]
         pub fn into_edwards(&self) -> Result<AffineVar<P, F>, SynthesisError> {
             let cs = self.cs();
 
@@ -168,7 +169,7 @@ mod montgomery_affine_impl {
     {
         type Output = MontgomeryAffineVar<P, F>;
 
-        #[tracing::instrument(target = "r1cs")]
+        #[tracing::instrument(target = "gr1cs")]
         fn add(self, other: &'a Self) -> Self::Output {
             let cs = [&self, other].cs();
             let mode = if cs.is_none() {
@@ -233,8 +234,8 @@ mod montgomery_affine_impl {
 /// An implementation of arithmetic for Twisted Edwards curves that relies on
 /// the complete formulae for the affine model, as outlined in the
 /// [EFD](https://www.hyperelliptic.org/EFD/g1p/auto-twisted.html).
-#[derive(Derivative)]
-#[derivative(Debug, Clone)]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct AffineVar<P: TECurveConfig, F: FieldVar<P::BaseField, BasePrimeField<P>>>
 where
@@ -244,7 +245,7 @@ where
     pub x: F,
     /// The y-coordinate.
     pub y: F,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
@@ -264,7 +265,7 @@ where
     /// Allocates a new variable without performing an on-curve check, which is
     /// useful if the variable is known to be on the curve (eg., if the point
     /// is a constant or is a public input).
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     pub fn new_variable_omit_on_curve_check<T: Into<TEAffine<P>>>(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -304,7 +305,7 @@ where
     /// which such that the first two bits are use to select one of the
     /// bases, while the third bit is used to conditionally negate the
     /// selection.
-    #[tracing::instrument(target = "r1cs", skip(bases, scalars))]
+    #[tracing::instrument(target = "gr1cs", skip(bases, scalars))]
     pub fn precomputed_base_3_bit_signed_digit_scalar_mul<J>(
         bases: &[impl Borrow<[TEProjective<P>]>],
         scalars: &[impl Borrow<[J]>],
@@ -380,7 +381,7 @@ where
     }
 }
 
-impl<P, F> R1CSVar<BasePrimeField<P>> for AffineVar<P, F>
+impl<P, F> GR1CSVar<BasePrimeField<P>> for AffineVar<P, F>
 where
     P: TECurveConfig,
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
@@ -420,7 +421,7 @@ where
         Ok(self.x.is_zero()? & &self.y.is_one()?)
     }
 
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_variable_omit_prime_order_check(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<TEProjective<P>, SynthesisError>,
@@ -452,7 +453,7 @@ where
     ///
     /// Does so by multiplying by the prime order, and checking that the result
     /// is unchanged.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn enforce_prime_order(&self) -> Result<(), SynthesisError> {
         let r_minus_1 = (-P::ScalarField::one()).into_bigint();
 
@@ -469,7 +470,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn double_in_place(&mut self) -> Result<(), SynthesisError> {
         if self.is_constant() {
             let value = self.value()?;
@@ -514,12 +515,12 @@ where
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self::new(self.x.negate()?, self.y.clone()))
     }
 
-    #[tracing::instrument(target = "r1cs", skip(scalar_bits_with_base_multiples))]
+    #[tracing::instrument(target = "gr1cs", skip(scalar_bits_with_base_multiples))]
     fn precomputed_base_scalar_mul_le<'a, I, B>(
         &mut self,
         scalar_bits_with_base_multiples: I,
@@ -561,7 +562,7 @@ where
         + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEProjective<P>>>(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<Point, SynthesisError>,
@@ -661,7 +662,7 @@ where
         + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_variable<Point: Borrow<TEAffine<P>>>(
         cs: impl Into<Namespace<BasePrimeField<P>>>,
         f: impl FnOnce() -> Result<Point, SynthesisError>,
@@ -840,7 +841,7 @@ where
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<BasePrimeField<P>>,
         true_value: &Self,
@@ -859,7 +860,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<BasePrimeField<P>>, SynthesisError> {
         let x_equal = self.x.is_eq(&other.x)?;
         let y_equal = self.y.is_eq(&other.y)?;
@@ -867,7 +868,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -879,7 +880,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -895,7 +896,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_bits_le()?;
         let y_bits = self.y.to_bits_le()?;
@@ -903,7 +904,7 @@ where
         Ok(x_bits)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bits = self.x.to_non_unique_bits_le()?;
         let y_bits = self.y.to_non_unique_bits_le()?;
@@ -919,7 +920,7 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'b> &'b F: FieldOpsBounds<'b, P::BaseField, F>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_bytes_le()?;
         let y_bytes = self.y.to_bytes_le()?;
@@ -927,7 +928,7 @@ where
         Ok(x_bytes)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<BasePrimeField<P>>>, SynthesisError> {
         let mut x_bytes = self.x.to_non_unique_bytes_le()?;
         let y_bytes = self.y.to_non_unique_bytes_le()?;
