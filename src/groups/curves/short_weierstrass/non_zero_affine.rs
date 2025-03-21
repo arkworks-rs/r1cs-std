@@ -1,5 +1,4 @@
 use super::*;
-use ark_ff::AdditiveGroup;
 use ark_std::ops::Add;
 
 /// An affine representation of a prime order curve point that is guaranteed

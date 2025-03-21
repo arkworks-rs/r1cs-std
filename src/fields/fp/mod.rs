@@ -5,14 +5,8 @@ use ark_relations::gr1cs::{
 
 use core::borrow::Borrow;
 
-use crate::{
-    boolean::AllocatedBool,
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::{FieldOpsBounds, FieldVar},
-    prelude::*,
-    Assignment, Vec,
-};
-use ark_std::iter::Sum;
+use crate::{boolean::AllocatedBool, convert::ToConstraintFieldGadget, prelude::*, Assignment};
+use ark_std::{iter::Sum, vec::Vec};
 
 mod cmp;
 

@@ -120,7 +120,7 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
 
     /// Sets `self = self + self`.
     fn double_in_place(&mut self) -> Result<&mut Self, SynthesisError> {
-        *self += self.double()?;
+        *self = self.double()?;
         Ok(self)
     }
 

@@ -102,7 +102,6 @@ mod tests {
         uint::test_utils::{run_binary_exhaustive_native_only, run_binary_random_native_only},
         GR1CSVar,
     };
-    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_shr<T: PrimUInt, const N: usize, F: PrimeField>(

@@ -4,14 +4,13 @@ use ark_ec::mnt4::{
 };
 use ark_ff::Field;
 use ark_relations::gr1cs::{Namespace, SynthesisError};
+use ark_std::vec::Vec;
 
 use crate::{
-    convert::ToBytesGadget,
-    fields::{fp::FpVar, fp2::Fp2Var, FieldVar},
+    fields::{fp::FpVar, fp2::Fp2Var},
     groups::curves::short_weierstrass::ProjectiveVar,
     pairing::mnt4::PairingVar,
     prelude::*,
-    Vec,
 };
 use core::borrow::Borrow;
 use educe::Educe;

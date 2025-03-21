@@ -1,6 +1,7 @@
-use crate::{prelude::*, Vec};
+use crate::prelude::*;
 use ark_ff::{Field, PrimeField};
 use ark_relations::gr1cs::SynthesisError;
+use ark_std::vec::Vec;
 
 /// Specifies how to generate constraints that check for equality for two
 /// variables of type `Self`.

@@ -1,4 +1,4 @@
-use crate::{convert::ToBytesGadget, prelude::*};
+use crate::prelude::*;
 use ark_ec::pairing::Pairing;
 use ark_relations::gr1cs::SynthesisError;
 use core::fmt::Debug;

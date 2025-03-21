@@ -1,8 +1,8 @@
 use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
+use ark_std::vec::Vec;
 
 use crate::fields::{fp::FpVar, FieldVar};
-use ark_std::vec::Vec;
 
 /// Stores a polynomial in coefficient form, where coeffcient is represented by
 /// a list of `Fpvar<F>`.

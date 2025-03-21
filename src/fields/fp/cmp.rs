@@ -1,9 +1,4 @@
-use crate::{
-    boolean::Boolean,
-    convert::ToBitsGadget,
-    fields::{fp::FpVar, FieldVar},
-    prelude::*,
-};
+use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
 use ark_relations::gr1cs::{SynthesisError, Variable};
 use core::cmp::Ordering;

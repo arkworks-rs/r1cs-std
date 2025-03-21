@@ -9,7 +9,7 @@ use educe::Educe;
 use non_zero_affine::NonZeroAffineVar;
 
 use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    convert::ToConstraintFieldGadget,
     fields::{emulated_fp::EmulatedFpVar, fp::FpVar},
     prelude::*,
     Vec,

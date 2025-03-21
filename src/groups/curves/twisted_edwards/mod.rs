@@ -8,15 +8,10 @@ use ark_ec::{
 use ark_ff::{BitIteratorBE, Field, One, PrimeField, Zero};
 use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 
-use crate::{
-    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
-    fields::emulated_fp::EmulatedFpVar,
-    prelude::*,
-    Vec,
-};
+use crate::{convert::ToConstraintFieldGadget, fields::emulated_fp::EmulatedFpVar, prelude::*};
 
 use crate::fields::fp::FpVar;
-use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul};
+use ark_std::{borrow::Borrow, marker::PhantomData, ops::Mul, vec::Vec};
 use educe::Educe;
 
 type BasePrimeField<P> = <<P as CurveConfig>::BaseField as Field>::BasePrimeField;
@@ -45,7 +40,6 @@ where
 mod montgomery_affine_impl {
     use super::*;
     use ark_ec::twisted_edwards::MontgomeryAffine as GroupAffine;
-    use ark_ff::Field;
     use core::ops::Add;
 
     impl<P, F> GR1CSVar<BasePrimeField<P>> for MontgomeryAffineVar<P, F>

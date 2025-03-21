@@ -1,5 +1,5 @@
 use super::*;
-use crate::convert::{ToBytesGadget, ToConstraintFieldGadget};
+use crate::convert::ToConstraintFieldGadget;
 
 impl<F: Field> ToBytesGadget<F> for Boolean<F> {
     /// Outputs `1u8` if `self` is true, and `0u8` otherwise.
