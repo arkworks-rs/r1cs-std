@@ -98,7 +98,7 @@ where
     /// constraints, less than the 7 required when computing via
     /// `self.double() + other`.
     ///
-    /// This follows the formulae from [\[ELM03\]](https://arxiv.org/abs/math/0208038).
+    /// This follows the formulae from [\[ELM03\]](<https://arxiv.org/abs/math/0208038>).
     #[tracing::instrument(target = "gr1cs", skip(self))]
     pub fn double_and_add_unchecked(&self, other: &Self) -> Result<Self, SynthesisError> {
         if [self].is_constant() || other.is_constant() {
