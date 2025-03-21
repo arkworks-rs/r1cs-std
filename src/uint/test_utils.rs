@@ -1,4 +1,4 @@
-use ark_relations::r1cs::ConstraintSystem;
+use ark_relations::gr1cs::{ConstraintSystem, SynthesisError};
 use std::ops::RangeInclusive;
 
 use crate::test_utils::{self, modes};

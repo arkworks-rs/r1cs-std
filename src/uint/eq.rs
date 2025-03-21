@@ -1,9 +1,15 @@
+use ark_ff::PrimeField;
+use ark_relations::gr1cs::SynthesisError;
+use ark_std::vec::Vec;
+
+use crate::{boolean::Boolean, eq::EqGadget};
+
 use super::*;
 
 impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn is_eq(&self, other: &Self) -> Result<Boolean<ConstraintF>, SynthesisError> {
         let chunk_size = usize::try_from(ConstraintF::MODULUS_BIT_SIZE - 1).unwrap();
         let chunks_are_eq = self
@@ -19,7 +25,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
         Boolean::kary_and(&chunks_are_eq)
     }
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -38,7 +44,7 @@ impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -61,7 +67,13 @@ impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> EqGadget<ConstraintF>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        prelude::EqGadget,
+        uint::test_utils::{run_binary_exhaustive, run_binary_random},
+        GR1CSVar,
+    };
+    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_eq<T: PrimUInt, const N: usize, F: PrimeField>(

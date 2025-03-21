@@ -1,6 +1,6 @@
 use crate::fields::{fp::FpVar, FieldVar};
 use ark_ff::{Field, PrimeField};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::ops::Sub;
 
 /// Struct describing vanishing polynomial for a multiplicative coset H where
@@ -57,9 +57,9 @@ impl<F: PrimeField> VanishingPolynomial<F> {
 mod tests {
     use crate::{
         alloc::AllocVar, fields::fp::FpVar, poly::domain::vanishing_poly::VanishingPolynomial,
-        R1CSVar,
+        GR1CSVar,
     };
-    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::gr1cs::ConstraintSystem;
     use ark_std::{test_rng, UniformRand};
     use ark_test_curves::bls12_381::Fr;
 

@@ -1,5 +1,7 @@
-use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
-use core::usize;
+use core::{
+    ops::{Shl, ShlAssign, Shr, ShrAssign},
+    usize,
+};
 
 #[doc(hidden)]
 // Adapted from <https://github.com/rust-num/num-traits/pull/224>
@@ -41,7 +43,8 @@ pub trait PrimUInt:
     #[doc(hidden)]
     const MAX_VALUE_BIT_DECOMP: &'static [bool];
 
-    /// Return the memory representation of this number as a byte array in little-endian byte order.
+    /// Return the memory representation of this number as a byte array in
+    /// little-endian byte order.
     ///
     /// # Examples
     ///
@@ -53,7 +56,8 @@ pub trait PrimUInt:
     /// ```
     fn to_le_bytes(&self) -> Self::Bytes;
 
-    /// Return the memory representation of this number as a byte array in big-endian byte order.
+    /// Return the memory representation of this number as a byte array in
+    /// big-endian byte order.
     ///
     /// # Examples
     ///

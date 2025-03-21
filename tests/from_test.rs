@@ -1,9 +1,9 @@
 use ark_r1cs_std::{
     alloc::AllocVar,
     fields::emulated_fp::{EmulatedFpVar, MulResultVar},
-    R1CSVar,
+    GR1CSVar,
 };
-use ark_relations::r1cs::ConstraintSystem;
+use ark_relations::gr1cs::ConstraintSystem;
 use ark_std::UniformRand;
 
 #[test]

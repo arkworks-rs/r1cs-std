@@ -1,3 +1,5 @@
+use ark_ff::Field;
+use ark_relations::gr1cs::SynthesisError;
 use ark_std::ops::Not;
 
 use super::*;
@@ -22,13 +24,14 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
     /// Outputs `!self`.
     ///
-    /// If `self` is a constant, then this method *does not* create any constraints or variables.
+    /// If `self` is a constant, then this method *does not* create any
+    /// constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -40,7 +43,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for &'a UInt<N, T, F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn not(self) -> Self::Output {
         self._not().unwrap()
     }
@@ -51,13 +54,14 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
 
     /// Outputs `!self`.
     ///
-    /// If `self` is a constant, then this method *does not* create any constraints or variables.
+    /// If `self` is a constant, then this method *does not* create any
+    /// constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -69,7 +73,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn not(mut self) -> Self::Output {
         self._not_in_place().unwrap();
         self
@@ -79,7 +83,13 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> Not for UInt<N, T, F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uint::test_utils::{run_unary_exhaustive, run_unary_random};
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        prelude::EqGadget,
+        uint::test_utils::{run_unary_exhaustive, run_unary_random},
+        GR1CSVar,
+    };
+    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_not<T: PrimUInt, const N: usize, F: PrimeField>(

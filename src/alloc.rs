@@ -1,5 +1,5 @@
 use ark_ff::Field;
-use ark_relations::r1cs::{Namespace, SynthesisError};
+use ark_relations::gr1cs::{Namespace, SynthesisError};
 use ark_std::vec::Vec;
 use core::borrow::Borrow;
 
@@ -49,7 +49,7 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
     /// Allocates a new constant of type `Self` in the `ConstraintSystem` `cs`.
     ///
     /// This should *not* allocate any new variables or constraints in `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, t))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, t))]
     fn new_constant(
         cs: impl Into<Namespace<F>>,
         t: impl Borrow<V>,
@@ -59,7 +59,7 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
 
     /// Allocates a new public input of type `Self` in the `ConstraintSystem`
     /// `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_input<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
@@ -69,12 +69,59 @@ pub trait AllocVar<V: ?Sized, F: Field>: Sized {
 
     /// Allocates a new private witness of type `Self` in the `ConstraintSystem`
     /// `cs`.
-    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    #[tracing::instrument(target = "gr1cs", skip(cs, f))]
     fn new_witness<T: Borrow<V>>(
         cs: impl Into<Namespace<F>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
     ) -> Result<Self, SynthesisError> {
         Self::new_variable(cs, f, AllocationMode::Witness)
+    }
+
+    /// Allocates a new constant or private witness of type `Self` in the
+    /// `ConstraintSystem` `cs` with the allocation mode inferred from `cs`.
+    /// A constant is allocated if `cs` is `None`, and a private witness is
+    /// allocated otherwise.
+    ///
+    /// A common use case is the creation of non-deterministic advice (a.k.a.
+    /// hints) in the circuit, where this method can avoid boilerplate code
+    /// while allowing optimization on circuit size.
+    ///
+    /// For example, to compute `x_var / y_var` where `y_var` is a non-zero
+    /// variable, one can write:
+    /// ```
+    /// use ark_ff::PrimeField;
+    /// use ark_r1cs_std::{alloc::AllocVar, fields::{fp::FpVar, FieldVar}, GR1CSVar};
+    /// use ark_relations::gr1cs::SynthesisError;
+    ///
+    /// fn div<F: PrimeField>(x_var: &FpVar<F>, y_var: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
+    ///   let cs = x_var.cs().or(y_var.cs());
+    ///   let z_var = FpVar::new_variable_with_inferred_mode(cs, || Ok(x_var.value()? / y_var.value()?))?;
+    ///   z_var.mul_equals(y_var, x_var)?;
+    ///   Ok(z_var)
+    /// }
+    /// ```
+    /// In this example, if either `x_var` or `y_var` is a witness variable,
+    /// then `z_var` is also a witness variable. On the other hand, `z_var`
+    /// is a constant if both `x_var` and `y_var` are constants (i.e., `cs`
+    /// is `None`), and future operations on `z_var` do not generate any
+    /// constraints.
+    ///
+    /// (Note that we use division as an example for simplicity. You may
+    /// call `x_var.mul_by_inverse(y_var)?` directly, which internally works
+    /// similarly to the above code.)
+    #[tracing::instrument(target = "r1cs", skip(cs, f))]
+    fn new_variable_with_inferred_mode<T: Borrow<V>>(
+        cs: impl Into<Namespace<F>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+    ) -> Result<Self, SynthesisError> {
+        let ns: Namespace<F> = cs.into();
+        let cs = ns.cs();
+        let mode = if cs.is_none() {
+            AllocationMode::Constant
+        } else {
+            AllocationMode::Witness
+        };
+        Self::new_variable(cs, f, mode)
     }
 }
 

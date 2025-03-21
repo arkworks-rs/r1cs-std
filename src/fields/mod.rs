@@ -1,11 +1,14 @@
 use ark_ff::{prelude::*, BitIteratorBE};
-use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, SynthesisError};
 use core::{
     fmt::Debug,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
-use crate::prelude::*;
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    prelude::*,
+};
 
 /// This module contains a generic implementation of cubic extension field
 /// variables. That is, it implements the R1CS equivalent of
@@ -21,7 +24,8 @@ pub mod quadratic_extension;
 pub mod fp;
 
 /// This module contains a generic implementation of "emulated" prime field
-/// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p != q`.
+/// variables. It emulates `Fp` arithmetic using `Fq` operations, where `p !=
+/// q`.
 pub mod emulated_fp;
 
 /// This module contains a generic implementation of the degree-12 tower
@@ -69,12 +73,13 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
     'static
     + Clone
     + From<Boolean<ConstraintF>>
-    + R1CSVar<ConstraintF, Value = F>
+    + GR1CSVar<ConstraintF, Value = F>
     + EqGadget<ConstraintF>
     + ToBitsGadget<ConstraintF>
     + AllocVar<F, ConstraintF>
     + ToBytesGadget<ConstraintF>
     + CondSelectGadget<ConstraintF>
+    + ToConstraintFieldGadget<ConstraintF>
     + for<'a> FieldOpsBounds<'a, F, Self>
     + for<'a> AddAssign<&'a Self>
     + for<'a> SubAssign<&'a Self>

@@ -1,4 +1,7 @@
-use crate::uint::*;
+use ark_ff::PrimeField;
+use ark_relations::gr1cs::SynthesisError;
+
+use crate::{uint::*, GR1CSVar};
 
 impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     /// Compute `*self = self.wrapping_add(other)`.
@@ -15,10 +18,11 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
     }
 
     /// Perform wrapping addition of `operands`.
-    /// Computes `operands[0].wrapping_add(operands[1]).wrapping_add(operands[2])...`.
+    /// Computes `operands[0].wrapping_add(operands[1]).
+    /// wrapping_add(operands[2])...`.
     ///
     /// The user must ensure that overflow does not occur.
-    #[tracing::instrument(target = "r1cs", skip(operands))]
+    #[tracing::instrument(target = "gr1cs", skip(operands))]
     pub fn wrapping_add_many(operands: &[Self]) -> Result<Self, SynthesisError>
     where
         F: PrimeField,
@@ -41,7 +45,13 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uint::test_utils::{run_binary_exhaustive, run_binary_random};
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        prelude::EqGadget,
+        uint::test_utils::{run_binary_exhaustive, run_binary_random},
+        GR1CSVar,
+    };
+    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_wrapping_add<T: PrimUInt, const N: usize, F: PrimeField>(

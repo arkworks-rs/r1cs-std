@@ -1,5 +1,6 @@
 name: CI
 on:
+  merge_group:
   pull_request:
   push:
     branches:
@@ -48,7 +49,7 @@ jobs:
         id: toolchain
       - run: rustup override set ${{steps.toolchain.outputs.name}}
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -81,8 +82,7 @@ jobs:
         with:
             command: test
             args: "--all \
-                   --all-features \
-                   --exclude cp-benches "
+                   --all-features"
 
   docs:
     name: Check Documentation
@@ -109,13 +109,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        id: toolchain-thumbv6m
-        with:
-          target: thumbv6m-none-eabi
-      - run: rustup override set ${{steps.toolchain-thumbv6m.outputs.name}}
-
       - name: Install Rust ARM64
         uses: dtolnay/rust-toolchain@stable
         id: toolchain-aarch64
@@ -123,7 +116,7 @@ jobs:
           target: aarch64-unknown-none
       - run: rustup override set ${{steps.toolchain-aarch64.outputs.name}}
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry

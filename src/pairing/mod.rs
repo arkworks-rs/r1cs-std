@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use ark_ec::pairing::Pairing;
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::gr1cs::SynthesisError;
 use core::fmt::Debug;
 
 /// This module implements pairings for BLS12 bilinear groups.
@@ -53,7 +53,7 @@ pub trait PairingVar<E: Pairing> {
     fn final_exponentiation(p: &Self::GTVar) -> Result<Self::GTVar, SynthesisError>;
 
     /// Computes a pairing over `p` and `q`.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn pairing(
         p: Self::G1PreparedVar,
         q: Self::G2PreparedVar,
@@ -64,7 +64,7 @@ pub trait PairingVar<E: Pairing> {
 
     /// Computes a product of pairings over the elements in `p` and `q`.
     #[must_use]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn product_of_pairings(
         p: &[Self::G1PreparedVar],
         q: &[Self::G2PreparedVar],

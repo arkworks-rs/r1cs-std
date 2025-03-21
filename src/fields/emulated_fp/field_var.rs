@@ -1,7 +1,13 @@
 use super::{params::OptimizationType, AllocatedEmulatedFpVar, MulResultVar};
-use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
+use crate::{
+    boolean::Boolean,
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    fields::{fp::FpVar, FieldVar},
+    prelude::*,
+    GR1CSVar,
+};
 use ark_ff::{BigInteger, PrimeField};
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, Result as R1CSResult, SynthesisError};
 use ark_std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
@@ -35,7 +41,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Hash for EmulatedFpVar<TargetF, Bas
     }
 }
 
-impl<TargetF: PrimeField, BaseF: PrimeField> R1CSVar<BaseF> for EmulatedFpVar<TargetF, BaseF> {
+impl<TargetF: PrimeField, BaseF: PrimeField> GR1CSVar<BaseF> for EmulatedFpVar<TargetF, BaseF> {
     type Value = TargetF;
 
     fn cs(&self) -> ConstraintSystemRef<BaseF> {
@@ -102,7 +108,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> FieldVar<TargetF, BaseF>
         Self::Constant(v)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn negate(&self) -> R1CSResult<Self> {
         match self {
             Self::Constant(c) => Ok(Self::Constant(-*c)),
@@ -110,7 +116,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> FieldVar<TargetF, BaseF>
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn inverse(&self) -> R1CSResult<Self> {
         match self {
             Self::Constant(c) => Ok(Self::Constant(c.inverse().unwrap_or_default())),
@@ -118,7 +124,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> FieldVar<TargetF, BaseF>
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn frobenius_map(&self, power: usize) -> R1CSResult<Self> {
         match self {
             Self::Constant(c) => Ok(Self::Constant({
@@ -201,7 +207,7 @@ impl_bounded_ops!(
 /// *************************************************************************
 
 impl<TargetF: PrimeField, BaseF: PrimeField> EqGadget<BaseF> for EmulatedFpVar<TargetF, BaseF> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> R1CSResult<Boolean<BaseF>> {
         let cs = self.cs().or(other.cs());
 
@@ -218,7 +224,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> EqGadget<BaseF> for EmulatedFpVar<T
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -240,7 +246,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> EqGadget<BaseF> for EmulatedFpVar<T
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -264,7 +270,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> EqGadget<BaseF> for EmulatedFpVar<T
 }
 
 impl<TargetF: PrimeField, BaseF: PrimeField> ToBitsGadget<BaseF> for EmulatedFpVar<TargetF, BaseF> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseF>>> {
         match self {
             Self::Constant(_) => self.to_non_unique_bits_le(),
@@ -272,7 +278,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToBitsGadget<BaseF> for EmulatedFpV
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bits_le(&self) -> R1CSResult<Vec<Boolean<BaseF>>> {
         use ark_ff::BitIteratorLE;
         match self {
@@ -290,7 +296,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToBytesGadget<BaseF>
 {
     /// Outputs the unique byte decomposition of `self` in *little-endian*
     /// form.
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> R1CSResult<Vec<UInt8<BaseF>>> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
@@ -301,7 +307,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToBytesGadget<BaseF>
         }
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> R1CSResult<Vec<UInt8<BaseF>>> {
         match self {
             Self::Constant(c) => Ok(UInt8::constant_vec(
@@ -315,7 +321,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToBytesGadget<BaseF>
 impl<TargetF: PrimeField, BaseF: PrimeField> CondSelectGadget<BaseF>
     for EmulatedFpVar<TargetF, BaseF>
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<BaseF>,
         true_value: &Self,
@@ -347,7 +353,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> TwoBitLookupGadget<BaseF>
 {
     type TableConstant = TargetF;
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn two_bit_lookup(b: &[Boolean<BaseF>], c: &[Self::TableConstant]) -> R1CSResult<Self> {
         debug_assert_eq!(b.len(), 2);
         debug_assert_eq!(c.len(), 4);
@@ -369,7 +375,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ThreeBitCondNegLookupGadget<BaseF>
 {
     type TableConstant = TargetF;
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn three_bit_cond_neg_lookup(
         b: &[Boolean<BaseF>],
         b0b1: &Boolean<BaseF>,
@@ -421,7 +427,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocVar<TargetF, BaseF>
 impl<TargetF: PrimeField, BaseF: PrimeField> ToConstraintFieldGadget<BaseF>
     for EmulatedFpVar<TargetF, BaseF>
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_constraint_field(&self) -> R1CSResult<Vec<FpVar<BaseF>>> {
         // Use one group element to represent the optimization type.
         //
@@ -442,7 +448,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> ToConstraintFieldGadget<BaseF>
 
 impl<TargetF: PrimeField, BaseF: PrimeField> EmulatedFpVar<TargetF, BaseF> {
     /// The `mul_without_reduce` for `EmulatedFpVar`
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn mul_without_reduce(&self, other: &Self) -> R1CSResult<MulResultVar<TargetF, BaseF>> {
         match self {
             Self::Constant(c) => match other {

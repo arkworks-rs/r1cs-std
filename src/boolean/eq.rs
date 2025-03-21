@@ -1,7 +1,11 @@
+use ark_relations::gr1cs::SynthesisError;
+
+use crate::{boolean::Boolean, eq::EqGadget};
+
 use super::*;
 
 impl<F: Field> EqGadget<F> for Boolean<F> {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
         // self | other | XNOR(self, other) | self == other
         // -----|-------|-------------------|--------------
@@ -12,7 +16,7 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         Ok(!(self ^ other))
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -21,8 +25,8 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         use Boolean::*;
         let one = Variable::One;
         // We will use the following trick: a == b <=> a - b == 0
-        // This works because a - b == 0 if and only if a = 0 and b = 0, or a = 1 and b = 1,
-        // which is exactly the definition of a == b.
+        // This works because a - b == 0 if and only if a = 0 and b = 0, or a = 1 and b
+        // = 1, which is exactly the definition of a == b.
         let difference = match (self, other) {
             // 1 == 1; 0 == 0
             (Constant(true), Constant(true)) | (Constant(false), Constant(false)) => return Ok(()),
@@ -38,12 +42,12 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 
         if condition != &Constant(false) {
             let cs = self.cs().or(other.cs()).or(condition.cs());
-            cs.enforce_constraint(lc!() + difference, condition.lc(), lc!())?;
+            cs.enforce_r1cs_constraint(lc!() + difference, condition.lc(), lc!())?;
         }
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -52,8 +56,8 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
         use Boolean::*;
         let one = Variable::One;
         // We will use the following trick: a != b <=> a + b == 1
-        // This works because a + b == 1 if and only if a = 0 and b = 1, or a = 1 and b = 0,
-        // which is exactly the definition of a != b.
+        // This works because a + b == 1 if and only if a = 0 and b = 1, or a = 1 and b
+        // = 0, which is exactly the definition of a != b.
         let sum = match (self, other) {
             // 1 != 0; 0 != 1
             (Constant(true), Constant(false)) | (Constant(false), Constant(true)) => return Ok(()),
@@ -69,7 +73,7 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 
         if should_enforce != &Constant(false) {
             let cs = self.cs().or(other.cs()).or(should_enforce.cs());
-            cs.enforce_constraint(sum, should_enforce.lc(), lc!() + one)?;
+            cs.enforce_r1cs_constraint(sum, should_enforce.lc(), lc!() + one)?;
         }
         Ok(())
     }
@@ -78,7 +82,12 @@ impl<F: Field> EqGadget<F> for Boolean<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::boolean::test_utils::{run_binary_exhaustive, run_unary_exhaustive};
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        boolean::test_utils::{run_binary_exhaustive, run_unary_exhaustive},
+        prelude::EqGadget,
+        GR1CSVar,
+    };
     use ark_test_curves::bls12_381::Fr;
 
     #[test]

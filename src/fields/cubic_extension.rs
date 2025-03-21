@@ -1,17 +1,21 @@
+use crate::{
+    convert::{ToBitsGadget, ToBytesGadget, ToConstraintFieldGadget},
+    fields::{fp::FpVar, FieldOpsBounds, FieldVar},
+    prelude::*,
+    Vec,
+};
 use ark_ff::{
     fields::{CubicExtField, Field},
     CubicExtConfig, Zero,
 };
-use ark_relations::r1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use ark_std::vec::Vec;
+use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
-
-use crate::{convert::ToConstraintFieldGadget, fields::fp::FpVar, prelude::*};
+use educe::Educe;
 
 /// This struct is the `R1CS` equivalent of the cubic extension field type
 /// in `ark-ff`, i.e. `ark_ff::CubicExtField`.
-#[derive(Derivative)]
-#[derivative(Debug(bound = "BF: core::fmt::Debug"), Clone(bound = "BF: Clone"))]
+#[derive(Educe)]
+#[educe(Debug, Clone)]
 #[must_use]
 pub struct CubicExtVar<BF: FieldVar<P::BaseField, P::BasePrimeField>, P: CubicExtVarConfig<BF>>
 where
@@ -23,7 +27,7 @@ where
     pub c1: BF,
     /// The second coefficient of this field element.
     pub c2: BF,
-    #[derivative(Debug = "ignore")]
+    #[educe(Debug(ignore))]
     _params: PhantomData<P>,
 }
 
@@ -79,7 +83,7 @@ where
     }
 }
 
-impl<BF, P> R1CSVar<P::BasePrimeField> for CubicExtVar<BF, P>
+impl<BF, P> GR1CSVar<P::BasePrimeField> for CubicExtVar<BF, P>
 where
     BF: FieldVar<P::BaseField, P::BasePrimeField>,
     for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
@@ -157,7 +161,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn double(&self) -> Result<Self, SynthesisError> {
         let c0 = self.c0.double()?;
         let c1 = self.c1.double()?;
@@ -166,7 +170,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn negate(&self) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         result.c0.negate_in_place()?;
@@ -181,7 +185,7 @@ where
     /// Abstract Pairing-Friendly
     /// Fields.pdf; Section 4 (CH-SQR2))
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn square(&self) -> Result<Self, SynthesisError> {
         let a = self.c0.clone();
         let b = self.c1.clone();
@@ -201,7 +205,7 @@ where
         Ok(Self::new(c0, c1, c2))
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn mul_equals(&self, other: &Self, result: &Self) -> Result<(), SynthesisError> {
         // Karatsuba multiplication for cubic extensions:
         //     v0 = A.c0 * B.c0
@@ -251,7 +255,7 @@ where
         Ok(())
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn frobenius_map(&self, power: usize) -> Result<Self, SynthesisError> {
         let mut result = self.clone();
         result.c0.frobenius_map_in_place(power)?;
@@ -262,7 +266,7 @@ where
         Ok(result)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn inverse(&self) -> Result<Self, SynthesisError> {
         let mode = if self.is_constant() {
             AllocationMode::Constant
@@ -364,7 +368,7 @@ where
     for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
     P: CubicExtVarConfig<BF>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn is_eq(&self, other: &Self) -> Result<Boolean<P::BasePrimeField>, SynthesisError> {
         let b0 = self.c0.is_eq(&other.c0)?;
         let b1 = self.c1.is_eq(&other.c1)?;
@@ -373,7 +377,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_equal(
         &self,
         other: &Self,
@@ -386,7 +390,7 @@ where
     }
 
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditional_enforce_not_equal(
         &self,
         other: &Self,
@@ -403,7 +407,7 @@ where
     for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
     P: CubicExtVarConfig<BF>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
         let mut c0 = self.c0.to_bits_le()?;
         let mut c1 = self.c1.to_bits_le()?;
@@ -413,7 +417,7 @@ where
         Ok(c0)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bits_le(&self) -> Result<Vec<Boolean<P::BasePrimeField>>, SynthesisError> {
         let mut c0 = self.c0.to_non_unique_bits_le()?;
         let mut c1 = self.c1.to_non_unique_bits_le()?;
@@ -430,7 +434,7 @@ where
     for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
     P: CubicExtVarConfig<BF>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
         let mut c0 = self.c0.to_bytes_le()?;
         let mut c1 = self.c1.to_bytes_le()?;
@@ -441,7 +445,7 @@ where
         Ok(c0)
     }
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_non_unique_bytes_le(&self) -> Result<Vec<UInt8<P::BasePrimeField>>, SynthesisError> {
         let mut c0 = self.c0.to_non_unique_bytes_le()?;
         let mut c1 = self.c1.to_non_unique_bytes_le()?;
@@ -461,7 +465,7 @@ where
     P: CubicExtVarConfig<BF>,
     BF: ToConstraintFieldGadget<P::BasePrimeField>,
 {
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn to_constraint_field(&self) -> Result<Vec<FpVar<P::BasePrimeField>>, SynthesisError> {
         let mut res = Vec::new();
 
@@ -480,7 +484,7 @@ where
     P: CubicExtVarConfig<BF>,
 {
     #[inline]
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn conditionally_select(
         cond: &Boolean<P::BasePrimeField>,
         true_value: &Self,
@@ -502,7 +506,7 @@ where
 {
     type TableConstant = CubicExtField<P>;
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn two_bit_lookup(
         b: &[Boolean<P::BasePrimeField>],
         c: &[Self::TableConstant],
@@ -526,7 +530,7 @@ where
 {
     type TableConstant = CubicExtField<P>;
 
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     fn three_bit_cond_neg_lookup(
         b: &[Boolean<P::BasePrimeField>],
         b0b1: &Boolean<P::BasePrimeField>,

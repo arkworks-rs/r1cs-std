@@ -3,7 +3,7 @@ use super::*;
 impl<const N: usize, T: PrimUInt, ConstraintF: PrimeField> CondSelectGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
-    #[tracing::instrument(target = "r1cs", skip(cond, true_value, false_value))]
+    #[tracing::instrument(target = "gr1cs", skip(cond, true_value, false_value))]
     fn conditionally_select(
         cond: &Boolean<ConstraintF>,
         true_value: &Self,

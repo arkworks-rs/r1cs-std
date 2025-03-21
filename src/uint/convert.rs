@@ -1,14 +1,15 @@
-use crate::convert::*;
-use crate::fields::fp::FpVar;
+use crate::{convert::*, fields::fp::FpVar};
 
 use super::*;
 
 impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts `self` into a field element. The elements comprising `self` are
-    /// interpreted as a little-endian bit order representation of a field element.
+    /// interpreted as a little-endian bit order representation of a field
+    /// element.
     ///
     /// # Panics
-    /// Assumes that `N` is equal to at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
+    /// Assumes that `N` is equal to at most the number of bits in
+    /// `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
     pub fn to_fp(&self) -> Result<FpVar<F>, SynthesisError>
     where
         F: PrimeField,
@@ -18,11 +19,13 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
         Boolean::le_bits_to_fp(&self.bits)
     }
 
-    /// Converts a field element into its little-endian bit order representation.
+    /// Converts a field element into its little-endian bit order
+    /// representation.
     ///
     /// # Panics
     ///
-    /// Assumes that `N` is at most the number of bits in `F::MODULUS_BIT_SIZE - 1`, and panics otherwise.
+    /// Assumes that `N` is at most the number of bits in `F::MODULUS_BIT_SIZE -
+    /// 1`, and panics otherwise.
     pub fn from_fp(other: &FpVar<F>) -> Result<(Self, FpVar<F>), SynthesisError>
     where
         F: PrimeField,
@@ -36,10 +39,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -58,7 +61,7 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs")]
+    #[tracing::instrument(target = "gr1cs")]
     pub fn from_bits_le(bits: &[Boolean<F>]) -> Self {
         assert_eq!(bits.len(), N);
         let bits = <&[Boolean<F>; N]>::try_from(bits).unwrap().clone();
@@ -76,10 +79,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts a big-endian list of bytes into a `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -106,10 +109,10 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// Converts a little-endian byte order list of bytes into a `UInt`.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -154,14 +157,17 @@ impl<const N: usize, T: PrimUInt, F: Field> ToBitsGadget<F> for [UInt<N, T, F>] 
     }
 }
 
-/*****************************************************************************************/
-/********************************* Conversions to bytes. *********************************/
-/*****************************************************************************************/
+/// ****************************************************************************
+/// **********
+/// ******************************* Conversions to bytes.
+/// ********************************
+/// ****************************************************************************
+/// **********
 
 impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
     for UInt<N, T, ConstraintF>
 {
-    #[tracing::instrument(target = "r1cs", skip(self))]
+    #[tracing::instrument(target = "gr1cs", skip(self))]
     fn to_bytes_le(&self) -> Result<Vec<UInt8<ConstraintF>>, SynthesisError> {
         Ok(self
             .to_bits_le()?
@@ -174,7 +180,12 @@ impl<const N: usize, T: PrimUInt, ConstraintF: Field> ToBytesGadget<ConstraintF>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uint::test_utils::{run_unary_exhaustive, run_unary_random};
+    use crate::{
+        prelude::EqGadget,
+        uint::test_utils::{run_unary_exhaustive, run_unary_random},
+        GR1CSVar,
+    };
+    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_to_bytes_le<T: PrimUInt, const N: usize, F: PrimeField>(

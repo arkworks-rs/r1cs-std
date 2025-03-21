@@ -1,4 +1,6 @@
-use ark_std::{ops::BitAnd, ops::BitAndAssign};
+use ark_ff::Field;
+use ark_relations::gr1cs::SynthesisError;
+use ark_std::ops::{BitAnd, BitAndAssign};
 
 use super::*;
 
@@ -26,10 +28,10 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for &'a UInt<N, T, 
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -42,7 +44,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for &'a UInt<N, T, 
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: Self) -> Self::Output {
         self._and(other).unwrap()
     }
@@ -56,10 +58,10 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a Self> for UInt<N, T, 
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -72,7 +74,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a Self> for UInt<N, T, 
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(mut self, other: &Self) -> Self::Output {
         self._and_in_place(other).unwrap();
         self
@@ -88,10 +90,10 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<UInt<N, T, F>> for &'a UI
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -104,7 +106,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<UInt<N, T, F>> for &'a UI
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: UInt<N, T, F>) -> Self::Output {
         other & self
     }
@@ -119,10 +121,10 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for UInt<N, T, F> {
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -135,7 +137,7 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for UInt<N, T, F> {
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: Self) -> Self::Output {
         self & &other
     }
@@ -144,7 +146,7 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAnd<Self> for UInt<N, T, F> {
 impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<T> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: T) -> Self::Output {
         self & UInt::constant(other)
     }
@@ -153,7 +155,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<T> for UInt<N, T, F> {
 impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: &'a T) -> Self::Output {
         self & UInt::constant(*other)
     }
@@ -162,7 +164,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for UInt<N, T, F> 
 impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: &'a T) -> Self::Output {
         self & UInt::constant(*other)
     }
@@ -171,7 +173,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<&'a T> for &'a UInt<N, T,
 impl<'a, const N: usize, T: PrimUInt, F: Field> BitAnd<T> for &'a UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: T) -> Self::Output {
         self & UInt::constant(other)
     }
@@ -184,10 +186,10 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAndAssign<Self> for UInt<N, T, F>
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -201,7 +203,7 @@ impl<const N: usize, T: PrimUInt, F: Field> BitAndAssign<Self> for UInt<N, T, F>
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand_assign(&mut self, other: Self) {
         self._and_in_place(&other).unwrap();
     }
@@ -214,10 +216,10 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAndAssign<&'a Self> for UInt<
     /// *does not* create any constraints or variables.
     ///
     /// ```
-    /// # fn main() -> Result<(), ark_relations::r1cs::SynthesisError> {
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
     /// // We'll use the BLS12-381 scalar field for our constraints.
     /// use ark_test_curves::bls12_381::Fr;
-    /// use ark_relations::r1cs::*;
+    /// use ark_relations::gr1cs::*;
     /// use ark_r1cs_std::prelude::*;
     ///
     /// let cs = ConstraintSystem::<Fr>::new_ref();
@@ -231,21 +233,21 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAndAssign<&'a Self> for UInt<
     /// # Ok(())
     /// # }
     /// ```
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand_assign(&mut self, other: &'a Self) {
         self._and_in_place(&other).unwrap();
     }
 }
 
 impl<const N: usize, T: PrimUInt, F: Field> BitAndAssign<T> for UInt<N, T, F> {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand_assign(&mut self, other: T) {
         *self &= &Self::constant(other);
     }
 }
 
 impl<'a, const N: usize, T: PrimUInt, F: Field> BitAndAssign<&'a T> for UInt<N, T, F> {
-    #[tracing::instrument(target = "r1cs", skip(self, other))]
+    #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand_assign(&mut self, other: &'a T) {
         *self &= &Self::constant(*other);
     }
@@ -254,7 +256,13 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitAndAssign<&'a T> for UInt<N, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both};
+    use crate::{
+        alloc::{AllocVar, AllocationMode},
+        prelude::EqGadget,
+        uint::test_utils::{run_binary_exhaustive_both, run_binary_random_both},
+        GR1CSVar,
+    };
+    use ark_ff::PrimeField;
     use ark_test_curves::bls12_381::Fr;
 
     fn uint_and<T: PrimUInt, const N: usize, F: PrimeField>(
