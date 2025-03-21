@@ -302,9 +302,9 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         Ok(inverse)
     }
 
-    /// Convert a `TargetF` element into limbs (not constraints)
-    /// This is an internal function that would be reused by a number of other
-    /// functions
+    /// Convert a `TargetF` element into limbs (not constraints).
+    /// This is a utility function intended
+    /// to be reused by a number of other functions.
     pub fn get_limbs_representations(
         elem: &TargetF,
         optimization_type: OptimizationType,
@@ -453,18 +453,17 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         );
 
         // Get p
-        let p_representations =
-            AllocatedEmulatedFpVar::<TargetF, BaseF>::get_limbs_representations_from_big_integer(
-                &<TargetF as PrimeField>::MODULUS,
-                self.get_optimization_type(),
-            )?;
+        let p_representations = Self::get_limbs_representations_from_big_integer(
+            &<TargetF as PrimeField>::MODULUS,
+            self.get_optimization_type(),
+        )?;
         let p_bigint = limbs_to_bigint(params.bits_per_limb, &p_representations);
 
         let mut p_gadget_limbs = Vec::new();
         for limb in p_representations.iter() {
             p_gadget_limbs.push(FpVar::<BaseF>::Constant(*limb));
         }
-        let p_gadget = AllocatedEmulatedFpVar::<TargetF, BaseF> {
+        let p_gadget = Self {
             cs: self.cs(),
             limbs: p_gadget_limbs,
             num_of_additions_over_normal_form: BaseF::one(),
@@ -474,8 +473,8 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
 
         // Get delta = self - other
         let cs = self.cs().or(other.cs()).or(should_enforce.cs());
-        let mut delta = self.sub_without_reduce(other)?;
-        delta = should_enforce.select(&delta, &Self::zero(cs.clone())?)?;
+        let delta = self.sub_without_reduce(other)?;
+        let delta = should_enforce.select(&delta, &Self::zero(cs.clone())?)?;
 
         // Allocate k = delta / p
         let k_gadget = FpVar::<BaseF>::new_witness(ns!(cs, "k"), || {
@@ -621,8 +620,8 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
     }
 
     /// Allocates a new non-native field witness with value given by the
-    /// function `f`.  Enforces that the field element has value in `[0,
-    /// modulus)`, and returns the bits of its binary representation.
+    /// function `f`. Enforces that the field element has value
+    /// in `[0, modulus)`, and returns the bits of its binary representation.
     /// The bits are in little-endian (i.e., the bit at index 0 is the LSB) and
     /// the bit-vector is empty in non-witness allocation modes.
     pub fn new_witness_with_le_bits<T: Borrow<TargetF>>(
