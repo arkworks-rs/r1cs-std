@@ -1,6 +1,6 @@
 use crate::{fields::fp::FpVar, prelude::*};
 use ark_ff::PrimeField;
-use ark_relations::gr1cs::{SynthesisError, Variable};
+use ark_relations::gr1cs::SynthesisError;
 use core::cmp::Ordering;
 
 impl<F: PrimeField> FpVar<F> {
@@ -139,10 +139,7 @@ impl<F: PrimeField> FpVar<F> {
     /// verify that.
     fn enforce_smaller_than_unchecked(&self, other: &FpVar<F>) -> Result<(), SynthesisError> {
         let is_smaller_than = self.is_smaller_than_unchecked(other)?;
-        let lc_one = lc!() + Variable::One;
-        [self, other]
-            .cs()
-            .enforce_r1cs_constraint(is_smaller_than.lc(), lc_one.clone(), lc_one)
+        is_smaller_than.enforce_equal(&Boolean::TRUE)
     }
 }
 
