@@ -38,7 +38,7 @@ pub trait CondSelectGadget<ConstraintF: Field>: Sized + Clone {
         let mut cur_mux_values = values.to_vec();
 
         // Traverse the evaluation tree from bottom to top in level order traversal.
-        // This is method 5.1 from https://github.com/mir-protocol/r1cs-workshop/blob/master/workshop.pdf
+        // This is method 5.1 from https://github.com/0xPolygonZero/r1cs-workshop/blob/master/workshop.pdf
         // TODO: Add method 5.2/5.3
         for i in 0..n {
             // Size of current layer.
