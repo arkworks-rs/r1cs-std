@@ -151,7 +151,7 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     /// let bytes = UInt8::constant_vec(&(2 * (u8::MAX as u16)).to_be_bytes());
     /// let var_bytes = var.to_bytes_be()?;
     /// for (b1, b2) in var_bytes.iter().zip(bytes) {
-    ///     b1.enforce_equal(b2)?;
+    ///     b1.enforce_equal(&b2)?;
     /// }
     ///
     /// assert!(cs.is_satisfied().unwrap());
