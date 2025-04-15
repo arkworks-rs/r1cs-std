@@ -26,7 +26,9 @@ mod test_utils;
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[must_use]
 pub enum Boolean<F: Field> {
+    /// A variable boolean value.
     Var(AllocatedBool<F>),
+    /// A constant boolean value.
     Constant(bool),
 }
 

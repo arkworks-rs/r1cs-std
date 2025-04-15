@@ -131,7 +131,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// Returns the value assigned to `self` in the underlying constraint system
     /// (if a value was assigned).
     pub fn value(&self) -> Result<F, SynthesisError> {
-        self.cs.assigned_value(self.variable).get()
+        self.value.ok_or(SynthesisError::AssignmentMissing)
     }
 
     /// Outputs `self + other`.

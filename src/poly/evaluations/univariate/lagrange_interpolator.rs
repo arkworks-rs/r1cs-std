@@ -82,6 +82,7 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         lagrange_coeffs.iter().cloned().collect()
     }
 
+    /// Interpolate the polynomial at the given point.
     pub fn interpolate(&self, interpolation_point: F) -> F {
         let lagrange_coeffs = self.compute_lagrange_coefficients(interpolation_point);
         let mut interpolation = F::zero();

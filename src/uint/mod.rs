@@ -53,6 +53,7 @@ impl<const N: usize, T: PrimUInt, F: Field> GR1CSVar<F> for UInt<N, T, F> {
 }
 
 impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
+    /// The maximum value of the unsigned integer type.
     pub const MAX: Self = Self {
         bits: [Boolean::TRUE; N],
         value: Some(T::MAX),

@@ -11,6 +11,7 @@ impl<F: Field> Boolean<F> {
         Ok(result)
     }
 
+    /// Negates `self` in place.
     pub fn not_in_place(&mut self) -> Result<(), SynthesisError> {
         match *self {
             Boolean::Constant(ref mut c) => *c = !*c,

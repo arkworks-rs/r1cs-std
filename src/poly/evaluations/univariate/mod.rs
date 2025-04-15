@@ -1,3 +1,4 @@
+/// Lagrange interpolation for univariate polynomials
 pub mod lagrange_interpolator;
 
 use crate::{
