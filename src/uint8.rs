@@ -8,6 +8,8 @@ use crate::{
     prelude::*,
 };
 
+/// A `UInt8` is a variable that represents an 8-bit unsigned integer in
+/// R1CS.
 pub type UInt8<F> = super::uint::UInt<8, u8, F>;
 
 impl<F: Field> UInt8<F> {

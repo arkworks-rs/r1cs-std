@@ -26,6 +26,7 @@ where
     F: FieldVar<P::BaseField, <P::BaseField as Field>::BasePrimeField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
+    /// Creates a new non-zero affine point.
     pub fn new(x: F, y: F) -> Self {
         Self {
             x,

@@ -135,6 +135,29 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
         Ok(Self::from_bits_le(&bits))
     }
 
+    /// Converts a `UInt` into a big-endian byte order list of bytes.
+    ///
+    /// ```
+    /// # fn main() -> Result<(), ark_relations::gr1cs::SynthesisError> {
+    /// // We'll use the BLS12-381 scalar field for our constraints.
+    /// use ark_test_curves::bls12_381::Fr;
+    /// use ark_relations::gr1cs::*;
+    /// use ark_r1cs_std::prelude::*;
+    ///
+    /// let cs = ConstraintSystem::<Fr>::new_ref();
+    /// let var = UInt16::new_witness(cs.clone(), || Ok(2 * (u8::MAX as u16)))?;
+    ///
+    /// // Construct u8::MAX * 2
+    /// let bytes = UInt8::constant_vec(&(2 * (u8::MAX as u16)).to_be_bytes());
+    /// let var_bytes = var.to_bytes_be()?;
+    /// for (b1, b2) in var_bytes.iter().zip(bytes) {
+    ///     b1.enforce_equal(&b2)?;
+    /// }
+    ///
+    /// assert!(cs.is_satisfied().unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_bytes_be(&self) -> Result<Vec<UInt8<F>>, SynthesisError> {
         let mut bytes = self.to_bytes_le()?;
         bytes.reverse();

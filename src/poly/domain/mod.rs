@@ -7,6 +7,7 @@ use ark_ff::PrimeField;
 use ark_relations::gr1cs::SynthesisError;
 use ark_std::vec::Vec;
 
+/// The vanishing polynomial for a given domain.
 pub mod vanishing_poly;
 
 #[derive(Clone, Debug)]
