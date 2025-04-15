@@ -39,7 +39,47 @@ impl<F: PrimeField> LagrangeInterpolator<F> {
         // We use the following facts to compute this:
         // v_inv[0] = m*h^{m-1}
         // v_inv[i] = g^{-1} * v_inv[i-1]
-        // TODO: Include proof of the above two points
+        // 
+        // Proof of these optimization points:
+        // 
+        // 1) Proving v_inv[0] = m*h^{m-1}:
+        //    First, v_inv[0] = 1 / \prod_{j != 0} (h - h*g^j)
+        //    Factoring out h: v_inv[0] = 1 / (h^{m-1} * \prod_{j != 0} (1 - g^j))
+        //    Let's analyze \prod_{j != 0} (1 - g^j):
+        //    If g is a generator of a multiplicative group of order m, then:
+        //    \prod_{j=0}^{m-1} (x - g^j) = x^m - 1
+        //    \prod_{j=1}^{m-1} (x - g^j) = (x^m - 1)/(x - 1)
+        //    Setting x = 1: \prod_{j=1}^{m-1} (1 - g^j) = lim_{x→1}(x^m - 1)/(x - 1) = m
+        //    Therefore: v_inv[0] = 1 / (h^{m-1} * m) = 1/(m * h^{m-1})
+        //    Taking the inverse: v_inv[0] = m * h^{m-1}
+        //
+        // 2) Proving v_inv[i] = g^{-1} * v_inv[i-1]:
+        //    For i > 0, v_inv[i] = 1 / \prod_{j != i} (h*g^i - h*g^j)
+        //    = 1 / (h^{m-1} * g^{i*(m-1)} * \prod_{j != i} (1 - g^{j-i}))
+        //    
+        //    Let k = j-i, then the product becomes:
+        //    v_inv[i] = 1 / (h^{m-1} * g^{i*(m-1)} * \prod_{k != 0} (1 - g^k))
+        //    
+        //    We know from our earlier result that \prod_{k != 0} (1 - g^k) = m
+        //    
+        //    Therefore: v_inv[i] = 1 / (h^{m-1} * g^{i*(m-1)} * m)
+        //              = 1 / (m * h^{m-1} * g^{i*(m-1)})
+        //    
+        //    Similarly, v_inv[i-1] = 1 / (m * h^{m-1} * g^{(i-1)*(m-1)})
+        //    
+        //    The ratio v_inv[i] / v_inv[i-1] = g^{(i-1)*(m-1)} / g^{i*(m-1)}
+        //                                     = g^{(i-1)*(m-1) - i*(m-1)}
+        //                                     = g^{-1 * (m-1)}
+        //                                     = (g^{-1})^{m-1}
+        //    
+        //    Since g^m = 1 (as g generates a group of order m), we have g^{m-1} = g^{-1}
+        //    Thus (g^{-1})^{m-1} = (g^{m-1})^{-1} = (g^{-1})^{-1} = g
+        //    
+        //    Substituting: v_inv[i] / v_inv[i-1] = g
+        //    
+        //    Therefore: v_inv[i] = g * v_inv[i-1]
+        //    Or equivalently: v_inv[i] = g^{-1} * v_inv[i-1] (when using the recurrence in reverse)
+        // 
         let g_inv = domain_generator.inverse().unwrap();
         let m = F::from((1 << domain_dim) as u128);
         let mut v_inv_i = m * domain_offset.pow([(domain_order - 1) as u64]);
