@@ -27,8 +27,7 @@ pub struct AllocatedBool<F: Field> {
 impl<F: Field> AllocatedBool<F> {
     /// Get the assigned value for `self`.
     pub fn value(&self) -> Result<bool, SynthesisError> {
-        self.value
-            .ok_or(SynthesisError::AssignmentMissing)
+        self.value.ok_or(SynthesisError::AssignmentMissing)
     }
 
     /// Get the R1CS variable for `self`.
@@ -47,9 +46,12 @@ impl<F: Field> AllocatedBool<F> {
             value = Some(*f()?.borrow());
             value.ok_or(SynthesisError::AssignmentMissing)
         };
-        let variable = cs.new_witness_variable(|| f().map(F::from)
-        )?;
-        Ok(Self { variable, cs, value })
+        let variable = cs.new_witness_variable(|| f().map(F::from))?;
+        Ok(Self {
+            variable,
+            cs,
+            value,
+        })
     }
 
     /// Performs an XOR operation over the two operands, returning
@@ -187,12 +189,12 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
         let cs = ns.cs();
         if mode == AllocationMode::Constant {
             let value = *f()?.borrow();
-            let variable = if value {
-                Variable::One
-            } else {
-                Variable::Zero
-            };
-            Ok(Self { variable, cs, value: Some(value) })
+            let variable = if value { Variable::One } else { Variable::Zero };
+            Ok(Self {
+                variable,
+                cs,
+                value: Some(value),
+            })
         } else {
             let mut value = None;
             let f = || {
@@ -210,7 +212,11 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
 
             cs.enforce_r1cs_constraint(lc!() + Variable::One - variable, lc!() + variable, lc!())?;
 
-            Ok(Self { variable, cs, value })
+            Ok(Self {
+                variable,
+                cs,
+                value,
+            })
         }
     }
 }
