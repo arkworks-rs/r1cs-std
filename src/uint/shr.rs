@@ -14,7 +14,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField> UInt<N, T, F> {
                 *a = b.clone();
             }
 
-            let value = self.value.and_then(|a| Some(a >> other));
+            let value = self.value.map(|a| a >> other);
             Ok(Self { bits, value })
         } else {
             panic!("attempt to shift right with overflow")
@@ -53,7 +53,7 @@ impl<const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> Shr<T2> for UInt<
     }
 }
 
-impl<'a, const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> Shr<T2> for &'a UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: PrimeField, T2: PrimUInt> Shr<T2> for &UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]
