@@ -54,7 +54,7 @@ impl<F: PrimeField> FpVar<F> {
         &self,
         size: usize,
     ) -> Result<(Vec<Boolean<F>>, Self), SynthesisError> {
-        assert!(size <= F::MODULUS_BIT_SIZE as usize - 1);
+        assert!(size < F::MODULUS_BIT_SIZE as usize);
         let cs = self.cs();
         let mode = if self.is_constant() {
             AllocationMode::Constant
@@ -311,7 +311,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "gr1cs")]
     pub fn inverse(&self) -> Result<Self, SynthesisError> {
         let inverse = Self::new_witness(self.cs.clone(), || {
-            Ok(self.value.get()?.inverse().unwrap_or_else(F::zero))
+            Ok(self.value.get()?.inverse().unwrap_or(F::ZERO))
         })?;
 
         self.cs.enforce_r1cs_constraint(
@@ -372,8 +372,10 @@ impl<F: PrimeField> AllocatedFp<F> {
             || Ok(self.value.get()? != other.value.get()?),
         )?);
         let multiplier = self.cs.new_witness_variable(|| {
-            if is_not_equal.value()? {
-                (self.value.get()? - other.value.get()?).inverse().get()
+            let self_value = self.value.get()?;
+            let other_value = other.value.get()?;
+            if self_value != other_value {
+                Ok((self_value - other_value).inverse().unwrap_or(F::ZERO))
             } else {
                 Ok(F::one())
             }
@@ -472,7 +474,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         // (self - other) * 0 == 0, which is always satisfied.
         let multiplier = Self::new_witness(self.cs.clone(), || {
             if should_enforce.value()? {
-                (self.value.get()? - other.value.get()?).inverse().get()
+                Ok((self.value.get()? - other.value.get()?)
+                    .inverse()
+                    .unwrap_or(F::ZERO))
             } else {
                 Ok(F::zero())
             }
