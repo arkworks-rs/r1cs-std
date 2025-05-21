@@ -50,4 +50,4 @@ and donations from the Ethereum Foundation, the Interchain Foundation, and Qtum.
 
 An earlier version of this library was developed as part of the paper *"[ZEXE: Enabling Decentralized Private Computation][zexe]"*.
 
-[zexe]: https://ia.cr/2018/962
+[zexe]: https://eprint.iacr.org/2018/962
