@@ -26,16 +26,11 @@ impl<F: PrimeField> DensePolynomialVar<F> {
     /// the result. Caution for use in holographic lincheck: The output has
     /// 2 entries in one matrix
     pub fn evaluate(&self, point: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
-        let mut result: FpVar<F> = FpVar::zero();
-        // current power of point
-        let mut curr_pow_x: FpVar<F> = FpVar::one();
-        for i in 0..self.coeffs.len() {
-            let term = &curr_pow_x * &self.coeffs[i];
-            result += &term;
-            curr_pow_x *= point;
-        }
-
-        Ok(result)
+        // Horner's Method
+        Ok(self
+            .coeffs
+            .iter()
+            .rfold(FpVar::zero(), move |acc, coeff| acc * point + coeff))
     }
 }
 
