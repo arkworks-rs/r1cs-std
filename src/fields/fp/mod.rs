@@ -2,11 +2,10 @@ use ark_ff::{BigInteger, PrimeField};
 use ark_relations::gr1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
-
-use core::borrow::Borrow;
+use ark_std::{borrow::Borrow, iter::Sum, vec::Vec};
+use itertools::zip_eq;
 
 use crate::{boolean::AllocatedBool, convert::ToConstraintFieldGadget, prelude::*, Assignment};
-use ark_std::{iter::Sum, vec::Vec};
 
 mod cmp;
 
@@ -156,10 +155,8 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This does not create any constraints and only creates one linear
     /// combination.
     ///
-    /// # Panics
-    ///
-    /// Panics if you pass an empty iterator.
-    pub fn add_many<B: Borrow<Self>, I: Iterator<Item = B>>(iter: I) -> Self {
+    /// Returns `None` if you pass an empty iterator.
+    pub fn add_many<B: Borrow<Self>, I: IntoIterator<Item = B>>(iter: I) -> Option<Self> {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
         let mut value = F::zero();
@@ -179,14 +176,128 @@ impl<F: PrimeField> AllocatedFp<F> {
             new_lc = new_lc + variable.variable;
             num_iters += 1;
         }
-        assert_ne!(num_iters, 0);
+        if num_iters == 0 {
+            return None; // No elements to add
+        }
 
         let variable = cs.new_lc(new_lc).unwrap();
 
         if has_value {
-            AllocatedFp::new(Some(value), variable, cs)
+            Some(AllocatedFp::new(Some(value), variable, cs))
         } else {
-            AllocatedFp::new(None, variable, cs)
+            Some(AllocatedFp::new(None, variable, cs))
+        }
+    }
+
+    /// Computes the inner product of two iterators of `AllocatedFp` elements.
+    ///
+    ///
+    /// This does not create any constraints and only creates one linear
+    /// combination.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the iterators are of different lengths.
+    pub fn linear_combination<B1, B2, I1, I2>(this: I1, other: I2) -> Option<Self>
+    where
+        B1: Borrow<F>,
+        B2: Borrow<Self>,
+        I1: IntoIterator<Item = B1>,
+        I2: IntoIterator<Item = B2>,
+    {
+        let mut cs = ConstraintSystemRef::None;
+        let mut has_value = true;
+        let mut value = F::zero();
+        let mut new_lc = lc!();
+
+        let mut num_iters = 0;
+        for (coeff, variable) in zip_eq(this, other) {
+            let coeff = *coeff.borrow();
+            let variable = variable.borrow();
+            if !variable.cs.is_none() {
+                cs = cs.or(variable.cs.clone());
+            }
+            if variable.value.is_none() {
+                has_value = false;
+            } else {
+                value += coeff * variable.value.unwrap();
+            }
+            new_lc += (coeff, variable.variable);
+            num_iters += 1;
+        }
+        if num_iters == 0 {
+            return None; // No elements to add
+        }
+
+        let variable = cs.new_lc(new_lc).unwrap();
+
+        if has_value {
+            Some(AllocatedFp::new(Some(value), variable, cs))
+        } else {
+            Some(AllocatedFp::new(None, variable, cs))
+        }
+    }
+
+    /// Computes the inner product of two iterators of `AllocatedFp` elements.
+    ///
+    ///
+    /// This does not create any constraints and only creates one linear
+    /// combination.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the iterators are of different lengths.
+    pub fn inner_product<B1, B2, I1, I2>(this: I1, other: I2) -> Option<Self>
+    where
+        B1: Borrow<Self>,
+        B2: Borrow<Self>,
+        I1: IntoIterator<Item = B1>,
+        I2: IntoIterator<Item = B2>,
+    {
+        let mut cs = ConstraintSystemRef::None;
+        let mut has_value = true;
+        let mut value = F::zero();
+        let mut new_lc = lc!();
+
+        let mut num_iters = 0;
+        for (v1, v2) in zip_eq(this, other) {
+            let v1 = v1.borrow();
+            let v2 = v2.borrow();
+            cs = cs.or(v1.cs.clone()).or(v2.cs.clone());
+            match (v1.value, v2.value) {
+                (Some(val1), Some(val2)) => value += val1 * val2,
+                (..) => has_value = false,
+            }
+            if v1.cs.is_none() && v2.cs.is_none() {
+                // both v1 and v2 should be constants
+                let v1 = v1.value?;
+                let v2 = v2.value?;
+                let product = v1 * v2;
+                new_lc += (product, Variable::One);
+            }
+            if v1.cs.is_none() {
+                // v1 should be a constant
+                let v1 = v1.value?;
+                new_lc += (v1, v2.variable);
+            } else if v2.cs.is_none() {
+                // v2 should be a constant
+                let v2 = v2.value?;
+                new_lc += (v2, v1.variable);
+            } else {
+                let product = v1.mul(v2);
+                new_lc += (F::ONE, product.variable);
+            }
+            num_iters += 1;
+        }
+        if num_iters == 0 {
+            return None; // No elements to compute the inner product
+        }
+        let variable = cs.new_lc(new_lc).unwrap();
+
+        if has_value {
+            Some(AllocatedFp::new(Some(value), variable, cs))
+        } else {
+            Some(AllocatedFp::new(None, variable, cs))
         }
     }
 
@@ -800,6 +911,49 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
         }
     }
 
+    /// Computes the inner product of two slices of `FpVar`.
+    /// This is faster for the `ConstraintSystem` to process as it directly creates
+    /// the minimal number of linear combinations.
+    #[tracing::instrument(target = "gr1cs")]
+    fn inner_product(this: &[Self], other: &[Self]) -> Result<Self, SynthesisError> {
+        if this.len() != other.len() {
+            return Err(SynthesisError::Unsatisfiable);
+        }
+
+        let mut lc_vars = vec![];
+        let mut lc_coeffs = vec![];
+        let mut sum_constants = F::zero();
+        // constants, linear_combinations, and variables separately
+        let (vars_left, vars_right): (Vec<_>, Vec<_>) = this
+            .iter()
+            .zip(other)
+            .filter_map(|(x, y)| match (x, y) {
+                (FpVar::Constant(x), FpVar::Constant(y)) => {
+                    // If both are constants, we can sum them directly
+                    sum_constants += *x * y;
+                    None
+                },
+                (FpVar::Constant(x), FpVar::Var(y)) | (FpVar::Var(y), FpVar::Constant(x)) => {
+                    // If one is a constant, we can treat it as a linear combination
+                    lc_vars.push(y);
+                    lc_coeffs.push(*x);
+                    None
+                },
+                // If both are variables, we keep them for the inner product
+                (FpVar::Var(x), FpVar::Var(y)) => Some((x, y)),
+            })
+            .unzip();
+        let sum_constants = FpVar::Constant(sum_constants);
+        let sum_lc = AllocatedFp::linear_combination(lc_coeffs, lc_vars).map(FpVar::Var);
+        let sum_variables = AllocatedFp::inner_product(vars_left, vars_right).map(FpVar::Var);
+
+        match (sum_lc, sum_variables) {
+            (Some(a), Some(b)) => Ok(a + b + sum_constants),
+            (Some(a), None) | (None, Some(a)) => Ok(a + sum_constants),
+            (None, None) => Ok(sum_constants),
+        }
+    }
+
     #[tracing::instrument(target = "gr1cs")]
     fn frobenius_map(&self, power: usize) -> Result<Self, SynthesisError> {
         match self {
@@ -1107,8 +1261,9 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
         if variables.is_empty() {
             return FpVar::Constant(sum_constants);
         }
-        let sum_variables = FpVar::Var(AllocatedFp::<F>::add_many(variables.into_iter()));
-        sum_variables + sum_constants
+        AllocatedFp::add_many(variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
+            FpVar::Var(sum_vars) + sum_constants
+        })
     }
 }
 
@@ -1128,17 +1283,19 @@ impl<'a, F: PrimeField> Sum<FpVar<F>> for FpVar<F> {
         if variables.is_empty() {
             return FpVar::Constant(sum_constants);
         }
-        let sum_variables = FpVar::Var(AllocatedFp::<F>::add_many(variables.into_iter()));
-        sum_variables + sum_constants
+        AllocatedFp::add_many(variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
+            FpVar::Var(sum_vars) + sum_constants
+        })
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
-        alloc::{AllocVar, AllocationMode},
+        alloc::AllocVar,
         eq::EqGadget,
-        fields::fp::FpVar,
+        fields::{fp::FpVar, FieldVar},
+        test_utils::{combination, modes},
         GR1CSVar,
     };
     use ark_relations::gr1cs::ConstraintSystem;
@@ -1146,33 +1303,56 @@ mod test {
     use ark_test_curves::bls12_381::Fr;
 
     #[test]
+    fn test_inner_product() {
+        let mut rng = ark_std::test_rng();
+        let cs = ConstraintSystem::new_ref();
+
+        for (a_mode, b_mode) in combination(modes()) {
+            let a = (0..10)
+                .map(|_| FpVar::new_variable(cs.clone(), || Ok(Fr::rand(&mut rng)), a_mode).ok())
+                .collect::<Option<Vec<_>>>()
+                .unwrap();
+            let b = (0..10)
+                .map(|_| FpVar::new_variable(cs.clone(), || Ok(Fr::rand(&mut rng)), b_mode).ok())
+                .collect::<Option<Vec<_>>>()
+                .unwrap();
+            let a = [a, b].concat();
+            let b = a.iter().rev().cloned().collect::<Vec<_>>();
+            let inner_product: FpVar<Fr> = FpVar::inner_product(&a, &b).unwrap();
+            let mut expected = Fr::zero();
+            for (x, y) in a.iter().zip(b) {
+                expected += x.value().unwrap() * y.value().unwrap();
+            }
+            inner_product
+                .enforce_equal(&FpVar::Constant(expected))
+                .unwrap();
+
+            assert!(cs.is_satisfied().unwrap());
+        }
+    }
+
+    #[test]
     fn test_sum_fpvar() {
         let mut rng = ark_std::test_rng();
         let cs = ConstraintSystem::new_ref();
 
-        let mut sum_expected = Fr::zero();
+        for (a_mode, b_mode) in combination(modes()) {
+            let a = (0..10)
+                .map(|_| FpVar::new_variable(cs.clone(), || Ok(Fr::rand(&mut rng)), a_mode).ok())
+                .collect::<Option<Vec<_>>>()
+                .unwrap();
+            let b = (0..10)
+                .map(|_| FpVar::new_variable(cs.clone(), || Ok(Fr::rand(&mut rng)), b_mode).ok())
+                .collect::<Option<Vec<_>>>()
+                .unwrap();
+            let v = [a, b].concat();
+            let sum: FpVar<Fr> = v.iter().sum();
 
-        let mut v = Vec::new();
-        for _ in 0..10 {
-            let a = Fr::rand(&mut rng);
-            sum_expected += &a;
-            v.push(
-                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Constant).unwrap(),
-            );
+            let sum_expected = v.iter().map(|x| x.value().unwrap()).sum();
+            sum.enforce_equal(&FpVar::Constant(sum_expected)).unwrap();
+
+            assert!(cs.is_satisfied().unwrap());
+            assert_eq!(sum.value().unwrap(), sum_expected);
         }
-        for _ in 0..10 {
-            let a = Fr::rand(&mut rng);
-            sum_expected += &a;
-            v.push(
-                FpVar::<Fr>::new_variable(cs.clone(), || Ok(a), AllocationMode::Witness).unwrap(),
-            );
-        }
-
-        let sum: FpVar<Fr> = v.iter().sum();
-
-        sum.enforce_equal(&FpVar::Constant(sum_expected)).unwrap();
-
-        assert!(cs.is_satisfied().unwrap());
-        assert_eq!(sum.value().unwrap(), sum_expected);
     }
 }

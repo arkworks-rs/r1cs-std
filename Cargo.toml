@@ -21,6 +21,7 @@ ark-relations = { version = "0.5.0", default-features = false }
 
 educe = "0.6.0"
 tracing = { version = "^0.1.0", default-features = false, features = ["attributes"] }
+itertools = { version = "0.14.0", default-features = false, features = [ "use_alloc" ] }
 num-bigint = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 num-integer = { version = "0.1.44", default-features = false }
@@ -45,7 +46,7 @@ tracing-subscriber = { version = "0.3", default-features = true }
 
 [features]
 default = ["std"]
-std = ["ark-ff/std", "ark-relations/std", "ark-std/std", "num-bigint/std"]
+std = ["ark-ff/std", "ark-relations/std", "ark-std/std", "num-bigint/std", "itertools/use_std" ]
 parallel = ["std", "ark-ff/parallel", "ark-std/parallel"]
 
 [[bench]]
