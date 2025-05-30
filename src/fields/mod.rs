@@ -2,6 +2,7 @@ use ark_ff::{prelude::*, BitIteratorBE};
 use ark_relations::gr1cs::{ConstraintSystemRef, SynthesisError};
 use core::{
     fmt::Debug,
+    iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
 };
 
@@ -90,6 +91,8 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
     + AddAssign<F>
     + SubAssign<F>
     + MulAssign<F>
+    + Sum<Self>
+    + for<'a> Sum<&'a Self>
     + Debug
 {
     /// Returns the constant `F::zero()`.
@@ -197,6 +200,14 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
                 Ok(result)
             },
         }
+    }
+
+    /// Computes the inner product of `this` and `other`.
+    fn inner_product(this: &[Self], other: &[Self]) -> Result<Self, SynthesisError> {
+        if this.len() != other.len() {
+            return Err(SynthesisError::Unsatisfiable);
+        }
+        Ok(this.iter().zip(other).map(|(a, b)| a.clone() * b).sum())
     }
 
     /// Computes the frobenius map over `self`.

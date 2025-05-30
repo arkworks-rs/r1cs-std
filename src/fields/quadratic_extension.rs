@@ -9,7 +9,7 @@ use ark_ff::{
     Zero,
 };
 use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
-use core::{borrow::Borrow, marker::PhantomData};
+use core::{borrow::Borrow, iter::Sum, marker::PhantomData};
 use educe::Educe;
 
 /// This struct is the `R1CS` equivalent of the quadratic extension field type
@@ -556,5 +556,39 @@ where
         let c0 = BF::new_variable(ark_relations::ns!(cs, "c0"), || c0, mode)?;
         let c1 = BF::new_variable(ark_relations::ns!(cs, "c1"), || c1, mode)?;
         Ok(Self::new(c0, c1))
+    }
+}
+
+impl<BF, P> Sum<Self> for QuadExtVar<BF, P>
+where
+    BF: FieldVar<P::BaseField, P::BasePrimeField>,
+    for<'a> &'a BF: FieldOpsBounds<'a, P::BaseField, BF>,
+    P: QuadExtVarConfig<BF>,
+{
+    #[inline]
+    #[tracing::instrument(target = "gr1cs", skip(iter))]
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let (c0s, c1s): (Vec<_>, Vec<_>) = itertools::multiunzip(iter.map(|x| (x.c0, x.c1)));
+        let c0 = c0s.into_iter().sum();
+        let c1 = c1s.into_iter().sum();
+
+        Self::new(c0, c1)
+    }
+}
+
+impl<'a, BF, P> Sum<&'a Self> for QuadExtVar<BF, P>
+where
+    BF: FieldVar<P::BaseField, P::BasePrimeField>,
+    for<'b> &'b BF: FieldOpsBounds<'b, P::BaseField, BF>,
+    P: QuadExtVarConfig<BF>,
+{
+    #[inline]
+    #[tracing::instrument(target = "gr1cs", skip(iter))]
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        let (c0s, c1s): (Vec<_>, Vec<_>) = itertools::multiunzip(iter.map(|x| (&x.c0, &x.c1)));
+        let c0 = c0s.into_iter().sum();
+        let c1 = c1s.into_iter().sum();
+
+        Self::new(c0, c1)
     }
 }
