@@ -155,9 +155,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This does not create any constraints and only creates one linear
     /// combination.
     ///
-    /// # Panics
-    ///
-    /// Panics if you pass an empty iterator.
+    /// Returns `None` if you pass an empty iterator.
     pub fn add_many<B: Borrow<Self>, I: IntoIterator<Item = B>>(iter: I) -> Option<Self> {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
@@ -281,7 +279,7 @@ impl<F: PrimeField> AllocatedFp<F> {
                 // v1 should be a constant
                 let v1 = v1.value?;
                 new_lc += (v1, v2.variable);
-            } else if v1.cs.is_none() {
+            } else if v2.cs.is_none() {
                 // v2 should be a constant
                 let v2 = v2.value?;
                 new_lc += (v2, v1.variable);
