@@ -6,7 +6,7 @@ use crate::{
 };
 use ark_ff::{
     fields::{Field, QuadExtConfig, QuadExtField},
-    Zero,
+    AdditiveGroup,
 };
 use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
@@ -285,7 +285,7 @@ where
             self.cs(),
             || {
                 self.value()
-                    .map(|f| f.inverse().unwrap_or_else(QuadExtField::zero))
+                    .map(|f| f.inverse().unwrap_or(QuadExtField::ZERO))
             },
             mode,
         )?;

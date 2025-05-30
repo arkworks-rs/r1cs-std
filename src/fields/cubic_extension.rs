@@ -6,7 +6,7 @@ use crate::{
 };
 use ark_ff::{
     fields::{CubicExtField, Field},
-    CubicExtConfig, Zero,
+    AdditiveGroup, CubicExtConfig,
 };
 use ark_relations::gr1cs::{ConstraintSystemRef, Namespace, SynthesisError};
 use core::{borrow::Borrow, marker::PhantomData};
@@ -277,7 +277,7 @@ where
             self.cs(),
             || {
                 self.value()
-                    .map(|f| f.inverse().unwrap_or_else(CubicExtField::zero))
+                    .map(|f| f.inverse().unwrap_or(CubicExtField::ZERO))
             },
             mode,
         )?;

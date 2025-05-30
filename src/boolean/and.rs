@@ -107,7 +107,7 @@ impl<F: PrimeField> Boolean<F> {
     }
 }
 
-impl<'a, F: Field> BitAnd<Self> for &'a Boolean<F> {
+impl<F: Field> BitAnd<Self> for &Boolean<F> {
     type Output = Boolean<F>;
     /// Outputs `self & other`.
     ///
@@ -142,16 +142,16 @@ impl<'a, F: Field> BitAnd<Self> for &'a Boolean<F> {
     }
 }
 
-impl<'a, F: Field> BitAnd<&'a Self> for Boolean<F> {
+impl<F: Field> BitAnd<&Self> for Boolean<F> {
     type Output = Boolean<F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]
     fn bitand(self, other: &Self) -> Self::Output {
-        self._and(&other).unwrap()
+        self._and(other).unwrap()
     }
 }
 
-impl<'a, F: Field> BitAnd<Boolean<F>> for &'a Boolean<F> {
+impl<F: Field> BitAnd<Boolean<F>> for &Boolean<F> {
     type Output = Boolean<F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]

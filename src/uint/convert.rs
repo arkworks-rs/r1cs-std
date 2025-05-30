@@ -14,7 +14,7 @@ impl<const N: usize, F: Field, T: PrimUInt> UInt<N, T, F> {
     where
         F: PrimeField,
     {
-        assert!(N <= F::MODULUS_BIT_SIZE as usize - 1);
+        assert!(N < F::MODULUS_BIT_SIZE as usize);
 
         Boolean::le_bits_to_fp(&self.bits)
     }
