@@ -1,6 +1,5 @@
 use core::{
     ops::{Shl, ShlAssign, Shr, ShrAssign},
-    usize,
 };
 
 #[doc(hidden)]
