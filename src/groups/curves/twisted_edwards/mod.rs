@@ -81,7 +81,7 @@ mod montgomery_affine_impl {
             p: &TEAffine<P>,
         ) -> Result<(P::BaseField, P::BaseField), SynthesisError> {
             let montgomery_point: GroupAffine<P::MontCurveConfig> = if p.y == P::BaseField::one() {
-                return Err(SynthesisError::UnexpectedIdentity);
+                return Err(SynthesisError::Unsatisfiable);
             } else if p.x == P::BaseField::zero() {
                 GroupAffine::new(P::BaseField::zero(), P::BaseField::zero())
             } else {
