@@ -960,8 +960,8 @@ mod test {
         let l2 = l1.add(&l1).unwrap();
 
         // Increase l1's surfeit
-        // - The goal is to make the limbs, grouped by `group_and_check_equality` fall roughly on
-        //   the boundary between 17 and 18 limbs.
+        // - The goal is to ensure that the number of limbs, as grouped by `group_and_check_equality`,
+        //   falls near the threshold between 17 and 18 limbs.
         // - This increases the chance that accumulated error in `sub` causes an overflow within
         //   `group_and_check_equality`.
         let mut l1 = l1;
