@@ -923,6 +923,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Clone for AllocatedEmulatedFpVar<Ta
 #[cfg(test)]
 mod test {
     use ark_ec::{bls12::Bls12Config, pairing::Pairing};
+    use ark_ff::PrimeField;
     use ark_relations::gr1cs::ConstraintSystem;
 
     use crate::{
@@ -932,6 +933,45 @@ mod test {
             fp::FpVar,
         },
     };
+
+    #[test]
+    fn pr_157() {
+        type TargetF = <ark_bls12_381::Config as Bls12Config>::Fp;
+        type BaseF = <ark_bls12_377::Bls12_377 as Pairing>::ScalarField;
+
+        let cs = ConstraintSystem::new_ref();
+
+        let l0: AllocatedEmulatedFpVar<TargetF, BaseF> =
+            AllocatedEmulatedFpVar::new_input(cs.clone(), || {
+                Ok(TargetF::from(
+                    TargetF::from(1).into_bigint()
+                        << (<TargetF as PrimeField>::MODULUS_BIT_SIZE - 1),
+                ) + TargetF::from(-1))
+            })
+            .unwrap();
+
+        // Accumulate errors
+        let l1 = l0.sub(&l0).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+
+        let l2 = l1.add(&l1).unwrap();
+
+        // Increase l1's surfeit
+        // - The goal is to make the limbs, grouped by `group_and_check_equality` fall roughly on
+        //   the boundary between 17 and 18 limbs.
+        // - This increases the chance that accumulated error in `sub` causes an overflow within
+        //   `group_and_check_equality`.
+        let mut l1 = l1;
+        for _ in 0..(293 - 242) {
+            l1 = l1.add(&l0).unwrap();
+        }
+
+        let _ = l1.mul(&l2).unwrap();
+        assert!(cs.is_satisfied().unwrap());
+    }
 
     #[test]
     fn pr_157_sub() {
