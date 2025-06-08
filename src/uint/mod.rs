@@ -83,9 +83,9 @@ impl<const N: usize, T: PrimUInt, F: Field> UInt<N, T, F> {
         let mut bits = [Boolean::FALSE; N];
         let mut bit_values = value;
 
-        for i in 0..N {
-            bits[i] = Boolean::constant((bit_values & T::one()) == T::one());
-            bit_values = bit_values >> 1u8;
+        for bit in &mut bits {
+            *bit = Boolean::constant((bit_values & T::one()) == T::one());
+            bit_values >>= 1u8;
         }
 
         Self {

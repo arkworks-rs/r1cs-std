@@ -295,7 +295,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
     #[tracing::instrument(target = "gr1cs")]
     pub fn inverse(&self) -> R1CSResult<Self> {
         let inverse = Self::new_witness(self.cs(), || {
-            Ok(self.value()?.inverse().unwrap_or_else(TargetF::zero))
+            Ok(self.value()?.inverse().unwrap_or(TargetF::ZERO))
         })?;
 
         let actual_result = self.clone().mul(&inverse)?;
