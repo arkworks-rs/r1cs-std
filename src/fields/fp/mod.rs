@@ -557,15 +557,15 @@ impl<F: PrimeField> AllocatedFp<F> {
         // and constraint 2 enforces that if self != other, then `is_not_equal = 1`.
         // Since these are the only possible two cases, `is_not_equal` is always
         // constrained to 0 or 1.
-        let is_not_equal_lc = self.cs.new_lc(|| lc_diff![self.variable, other.variable])?;
+        let difference = self.cs.new_lc(|| lc_diff![self.variable, other.variable])?;
         self.cs.enforce_r1cs_constraint(
-            || is_not_equal_lc.into(),
+            || difference.into(),
             || multiplier.into(),
             || is_not_equal.lc(),
         )?;
         let is_equal = !&is_not_equal;
         self.cs
-            .enforce_r1cs_constraint(|| is_not_equal_lc.into(), || is_equal.lc(), || lc!())?;
+            .enforce_r1cs_constraint(|| difference.into(), || is_equal.lc(), || lc!())?;
         Ok(is_not_equal)
     }
 
