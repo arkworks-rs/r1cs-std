@@ -179,14 +179,14 @@ impl<F: PrimeField> AllocatedFp<F> {
 
         let variable = cs
             .new_lc(|| {
-                LinearCombination(
-                    iter.into_iter()
-                        .map(|v| v.borrow().variable)
-                        .chunk_by(|&x| x)
-                        .into_iter()
-                        .map(|(var, group)| (F::from(group.count() as u64), var))
-                        .collect(),
-                )
+                let lc = iter
+                    .into_iter()
+                    .map(|v| v.borrow().variable)
+                    .chunk_by(|&x| x)
+                    .into_iter()
+                    .map(|(var, group)| (F::from(group.count() as u64), var))
+                    .collect();
+                LinearCombination(lc)
             })
             .unwrap();
         if has_value {
@@ -226,7 +226,6 @@ impl<F: PrimeField> AllocatedFp<F> {
             } else {
                 value += coeff * variable.value.unwrap();
             }
-            // new_lc += (coeff, variable.variable);
             num_iters += 1;
         }
         if num_iters == 0 {
