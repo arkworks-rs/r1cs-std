@@ -235,15 +235,10 @@ impl<F: PrimeField> AllocatedFp<F> {
 
         let variable = cs
             .new_lc(|| {
-                let mut lc = LinearCombination(
-                    zipped
-                        .map(|(coeff, variable)| {
-                            let coeff = *coeff.borrow();
-                            let variable = variable.borrow();
-                            (coeff, variable.variable)
-                        })
-                        .collect::<Vec<_>>(),
-                );
+                let lc = zipped
+                    .map(|(coeff, variable)| (*coeff.borrow(), variable.borrow().variable))
+                    .collect::<Vec<_>>();
+                let mut lc = LinearCombination(lc);
                 // sorts and compacts
                 lc.compactify();
                 lc
