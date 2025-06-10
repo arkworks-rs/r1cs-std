@@ -58,10 +58,7 @@ impl<F: Field> AllocatedBool<F> {
     /// an `AllocatedBool`.
     #[tracing::instrument(target = "gr1cs")]
     pub fn not(&self) -> Result<Self, SynthesisError> {
-        let variable = self
-            .cs
-            .clone()
-            .new_lc(|| lc_diff![Variable::One, self.variable])?;
+        let variable = self.cs.new_lc(|| lc_diff![Variable::One, self.variable])?;
         Ok(Self {
             variable,
             cs: self.cs.clone(),
