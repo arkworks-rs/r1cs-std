@@ -58,7 +58,10 @@ impl<F: Field> AllocatedBool<F> {
     /// an `AllocatedBool`.
     #[tracing::instrument(target = "gr1cs")]
     pub fn not(&self) -> Result<Self, SynthesisError> {
-        let variable = self.cs.new_lc(lc!() + Variable::One - self.variable)?;
+        let variable = self
+            .cs
+            .clone()
+            .new_lc(|| lc_diff![Variable::One, self.variable])?;
         Ok(Self {
             variable,
             cs: self.cs.clone(),
@@ -90,9 +93,15 @@ impl<F: Field> AllocatedBool<F> {
         // 2a * b = a + b - c
         // (a + a) * b = a + b - c
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable + self.variable,
-            lc!() + b.variable,
-            lc!() + self.variable + b.variable - result.variable,
+            || (F::ONE.double(), self.variable).into(),
+            || b.variable.into(),
+            || {
+                lc![
+                    (F::ONE, self.variable),
+                    (F::ONE, b.variable),
+                    (-F::ONE, result.variable),
+                ]
+            },
         )?;
 
         Ok(result)
@@ -109,9 +118,9 @@ impl<F: Field> AllocatedBool<F> {
         // Constrain (a) * (b) = (c), ensuring c is 1 iff
         // a AND b are both 1.
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable,
-            lc!() + b.variable,
-            lc!() + result.variable,
+            || self.variable.into(),
+            || b.variable.into(),
+            || result.variable.into(),
         )?;
 
         Ok(result)
@@ -128,9 +137,9 @@ impl<F: Field> AllocatedBool<F> {
         // Constrain (1 - a) * (1 - b) = (1 - c), ensuring c is 0 iff
         // a and b are both false, and otherwise c is 1.
         self.cs.enforce_r1cs_constraint(
-            lc!() + Variable::One - self.variable,
-            lc!() + Variable::One - b.variable,
-            lc!() + Variable::One - result.variable,
+            || lc_diff![Variable::One, self.variable],
+            || lc_diff![Variable::One, b.variable],
+            || lc_diff![Variable::One, result.variable],
         )?;
 
         Ok(result)
@@ -146,9 +155,9 @@ impl<F: Field> AllocatedBool<F> {
         // Constrain (a) * (1 - b) = (c), ensuring c is 1 iff
         // a is true and b is false, and otherwise c is 0.
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable,
-            lc!() + Variable::One - b.variable,
-            lc!() + result.variable,
+            || lc!() + self.variable,
+            || lc_diff![Variable::One, b.variable],
+            || lc!() + result.variable,
         )?;
 
         Ok(result)
@@ -164,9 +173,9 @@ impl<F: Field> AllocatedBool<F> {
         // Constrain (1 - a) * (1 - b) = (c), ensuring c is 1 iff
         // a and b are both false, and otherwise c is 0.
         self.cs.enforce_r1cs_constraint(
-            lc!() + Variable::One - self.variable,
-            lc!() + Variable::One - b.variable,
-            lc!() + result.variable,
+            || lc_diff![Variable::One, self.variable],
+            || lc_diff![Variable::One, b.variable],
+            || result.variable.into(),
         )?;
 
         Ok(result)
@@ -210,7 +219,11 @@ impl<F: Field> AllocVar<bool, F> for AllocatedBool<F> {
             // Constrain: (1 - a) * a = 0
             // This constrains a to be either 0 or 1.
 
-            cs.enforce_r1cs_constraint(lc!() + Variable::One - variable, lc!() + variable, lc!())?;
+            cs.enforce_r1cs_constraint(
+                || lc_diff![Variable::One, variable],
+                || variable.into(),
+                || lc!(),
+            )?;
 
             Ok(Self {
                 variable,
