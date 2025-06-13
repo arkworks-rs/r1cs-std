@@ -3,7 +3,7 @@ use ark_relations::gr1cs::{
     ConstraintSystemRef, LinearCombination, Namespace, SynthesisError, Variable,
 };
 use ark_std::{borrow::Borrow, iter::Sum, vec::Vec};
-use itertools::{zip_eq, Itertools};
+use itertools::zip_eq;
 
 use crate::{boolean::AllocatedBool, convert::ToConstraintFieldGadget, prelude::*, Assignment};
 
@@ -180,13 +180,12 @@ impl<F: PrimeField> AllocatedFp<F> {
         let variable = cs
             .new_lc(|| {
                 let lc = iter
-                    .into_iter()
-                    .map(|v| v.borrow().variable)
-                    .chunk_by(|&x| x)
-                    .into_iter()
-                    .map(|(var, group)| (F::from(group.count() as u64), var))
+                    .iter()
+                    .map(|variable| (F::ONE, variable.borrow().variable))
                     .collect();
-                LinearCombination(lc)
+                let mut lc = LinearCombination(lc);
+                lc.compactify();
+                lc
             })
             .unwrap();
         if has_value {
