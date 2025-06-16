@@ -4,7 +4,7 @@ use ark_std::vec::Vec;
 
 use crate::fields::{fp::FpVar, FieldVar};
 
-/// Stores a polynomial in coefficient form, where coeffcient is represented by
+/// Stores a polynomial in coefficient form, where coefficient is represented by
 /// a list of `Fpvar<F>`.
 pub struct DensePolynomialVar<F: PrimeField> {
     /// The coefficient of `x^i` is stored at location `i` in `self.coeffs`.
