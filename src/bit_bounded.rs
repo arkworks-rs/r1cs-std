@@ -139,6 +139,7 @@ fn result_allocation_mode<F: PrimeField>(a: &FpVar<F>, b: &FpVar<F>) -> Allocati
 mod tests {
     use super::*;
     use crate::fields::fp::FpVar;
+    use crate::test_utils::modes;
     use crate::uint::PrimUInt;
     use crate::{test_utils, GR1CSVar};
     use ark_bls12_381::Fr;
@@ -221,8 +222,49 @@ mod tests {
         Ok(())
     }
 
+    fn run_random<
+        T: PrimUInt,
+        F: PrimeField + From<T>,
+        const BITS: usize,
+        const ITERATIONS: usize,
+    >() -> Result<(), SynthesisError> {
+        let mut rng = ark_std::test_rng();
+
+        for _ in 0..ITERATIONS {
+            for mode_a in modes() {
+                let a = T::rand(&mut rng);
+                for mode_b in modes() {
+                    let b = T::rand(&mut rng);
+                    check_min_max::<T, F, BITS>(a, b, mode_a, mode_b)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     #[test]
     fn u8() {
         run_exhaustive::<u8, Fr, 8>().unwrap()
+    }
+
+    #[test]
+    fn u16() {
+        run_random::<u16, Fr, 16, 1000>().unwrap()
+    }
+
+    #[test]
+    fn u32() {
+        run_random::<u16, Fr, 16, 1000>().unwrap()
+    }
+
+    #[test]
+    fn u64() {
+        run_random::<u16, Fr, 16, 1000>().unwrap()
+    }
+
+    #[test]
+    fn u128() {
+        run_random::<u16, Fr, 16, 1000>().unwrap()
     }
 }
