@@ -100,7 +100,7 @@ impl<P: Bls12Config> PG<Bls12<P>> for PairingVar<P> {
 
     #[tracing::instrument(target = "gr1cs")]
     fn final_exponentiation(f: &Self::GTVar) -> Result<Self::GTVar, SynthesisError> {
-        // Computing the final exponentation following
+        // Computing the final exponentiation following
         // https://eprint.iacr.org/2016/130.pdf.
         // We don't use their "faster" formula because it is difficult to make
         // it work for curves with odd `P::X`.
@@ -123,7 +123,7 @@ impl<P: Bls12Config> PG<Bls12<P>> for PairingVar<P> {
             // r = f^((p^6 - 1)(p^2 + 1))
             r *= &f2;
 
-            // Hard part of the final exponentation is below:
+            // Hard part of the final exponentiation is below:
             // From https://eprint.iacr.org/2016/130.pdf, Table 1
             let mut y0 = r.cyclotomic_square()?;
             y0 = y0.unitary_inverse()?;
