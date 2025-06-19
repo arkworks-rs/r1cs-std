@@ -143,7 +143,7 @@ mod tests {
     use crate::{test_utils, GR1CSVar};
     use ark_bls12_381::Fr;
     use ark_ff::PrimeField;
-    use ark_relations::gr1cs::{ConstraintSystem, SynthesisError};
+    use ark_relations::gr1cs::{ConstraintSystem, ConstraintSystemRef, SynthesisError};
     use std::ops::RangeInclusive;
 
     fn check_min_max<T: PrimUInt, F: PrimeField + From<T>, const BITS: usize>(
@@ -152,25 +152,60 @@ mod tests {
         mode_a: AllocationMode,
         mode_b: AllocationMode,
     ) -> Result<(), SynthesisError> {
+        // 1) Prepare R1CS
         let cs = ConstraintSystem::<F>::new_ref();
 
+        // 2) Allocate input variables
         let a_var = FpVar::<F>::new_variable(cs.clone(), || Ok(F::from(a)), mode_a)?;
         let b_var = FpVar::<F>::new_variable(cs.clone(), || Ok(F::from(b)), mode_b)?;
 
-        let min_result = min::<F, BITS>(&a_var, &b_var)?;
+        // 3) Run `min` gadget and check increase in constraints and variables
+        let min_result = run_and_check_cs_growth::<_, _, BITS>(cs.clone(), mode_a, mode_b, || {
+            min::<F, BITS>(&a_var, &b_var)
+        })?;
+
+        // 4) Validate the result both in R1CS and in native Rust
         let expected_min = FpVar::new_constant(cs.clone(), F::from(a.min(b)))?;
         min_result.enforce_equal(&expected_min)?;
         assert_eq!(min_result.value(), expected_min.value());
 
-        let max_result = max::<F, BITS>(&a_var, &b_var)?;
+        // 5) Run `max` gadget and check increase in constraints and variables
+        let max_result = run_and_check_cs_growth::<_, _, BITS>(cs.clone(), mode_a, mode_b, || {
+            max::<F, BITS>(&a_var, &b_var)
+        })?;
+
+        // 6) Validate the result both in R1CS and in native Rust
         let expected_max = FpVar::new_constant(cs.clone(), F::from(a.max(b)))?;
         max_result.enforce_equal(&expected_max)?;
         assert_eq!(max_result.value(), expected_max.value());
 
+        // 7) Ensure that the constraint system is satisfied
         if !cs.is_none() && !cs.is_in_setup_mode() {
             assert!(cs.is_satisfied().unwrap());
         }
         Ok(())
+    }
+
+    fn run_and_check_cs_growth<F: PrimeField, T, const BITS: usize>(
+        cs: ConstraintSystemRef<F>,
+        mode_a: AllocationMode,
+        mode_b: AllocationMode,
+        action: impl Fn() -> Result<T, SynthesisError>,
+    ) -> Result<T, SynthesisError> {
+        let n_constraints = cs.num_constraints();
+        let n_variables = cs.num_variables();
+
+        let result = action()?;
+
+        match (mode_a, mode_b) {
+            (AllocationMode::Constant, AllocationMode::Constant) => {},
+            _ => {
+                assert_eq!(cs.num_constraints(), n_constraints + 2 * BITS + 4);
+                assert_eq!(cs.num_variables(), n_variables + 2 * BITS + 2);
+            },
+        };
+
+        Ok(result)
     }
 
     fn run_exhaustive<T: PrimUInt, F: PrimeField + From<T>, const BITS: usize>(
