@@ -165,7 +165,7 @@ where
             let point = self.value()?.into_affine();
             let x = F::new_constant(ConstraintSystemRef::None, point.x)?;
             let y = F::new_constant(ConstraintSystemRef::None, point.y)?;
-            let infinity = Boolean::constant(point.infinity);
+            let infinity = Boolean::constant(point.is_zero());
             Ok(AffineVar::new(x, y, infinity))
         } else {
             let cs = self.cs();
