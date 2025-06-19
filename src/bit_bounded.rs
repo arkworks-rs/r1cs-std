@@ -27,8 +27,14 @@ pub fn to_bits<F: PrimeField, const BITS: usize>(
 ) -> Result<[Boolean<F>; BITS], SynthesisError> {
     assert_bits_fit::<F, BITS>();
     let mut bits = [Boolean::FALSE; BITS];
-    for (i, bit) in bits.iter_mut().enumerate() {
-        *bit = Boolean::new_witness(value.cs(), || Ok(value.value()?.into_bigint().get_bit(i)))?;
+    if !value.cs().is_in_setup_mode() {
+        for (i, bit) in bits.iter_mut().enumerate() {
+            *bit = Boolean::new_variable(
+                value.cs(),
+                || Ok(value.value()?.into_bigint().get_bit(i)),
+                result_allocation_mode(&value, &value),
+            )?;
+        }
     }
     Ok(bits)
 }
@@ -107,11 +113,6 @@ fn get_slacks_checked<F: PrimeField, const BITS: usize>(
 ///
 /// Warning: the value is not constrained in any way!
 fn get_slack<F: PrimeField>(from: &FpVar<F>, to: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
-    let expected_mode = match from.is_constant() && to.is_constant() {
-        true => AllocationMode::Constant,
-        false => AllocationMode::Witness,
-    };
-
     FpVar::new_variable(
         from.cs().or(to.cs()),
         || {
@@ -122,6 +123,71 @@ fn get_slack<F: PrimeField>(from: &FpVar<F>, to: &FpVar<F>) -> Result<FpVar<F>, 
                 Ok(F::zero())
             }
         },
-        expected_mode,
+        result_allocation_mode(&from, &to),
     )
+}
+
+/// Determines the allocation mode for the result based on whether `a` and `b` are constants or not.
+fn result_allocation_mode<F: PrimeField>(a: &FpVar<F>, b: &FpVar<F>) -> AllocationMode {
+    match a.is_constant() && b.is_constant() {
+        true => AllocationMode::Constant,
+        false => AllocationMode::Witness,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fields::fp::FpVar;
+    use crate::uint::PrimUInt;
+    use crate::{test_utils, GR1CSVar};
+    use ark_bls12_381::Fr;
+    use ark_ff::PrimeField;
+    use ark_relations::gr1cs::{ConstraintSystem, SynthesisError};
+    use std::ops::RangeInclusive;
+
+    fn check_min_max<T: PrimUInt, F: PrimeField + From<T>, const BITS: usize>(
+        a: T,
+        b: T,
+        mode_a: AllocationMode,
+        mode_b: AllocationMode,
+    ) -> Result<(), SynthesisError> {
+        let cs = ConstraintSystem::<F>::new_ref();
+
+        let a_var = FpVar::<F>::new_variable(cs.clone(), || Ok(F::from(a)), mode_a)?;
+        let b_var = FpVar::<F>::new_variable(cs.clone(), || Ok(F::from(b)), mode_b)?;
+
+        let min_result = min::<F, BITS>(&a_var, &b_var)?;
+        let expected_min = FpVar::new_constant(cs.clone(), F::from(a.min(b)))?;
+        min_result.enforce_equal(&expected_min)?;
+        assert_eq!(min_result.value(), expected_min.value());
+
+        let max_result = max::<F, BITS>(&a_var, &b_var)?;
+        let expected_max = FpVar::new_constant(cs.clone(), F::from(a.max(b)))?;
+        max_result.enforce_equal(&expected_max)?;
+        assert_eq!(max_result.value(), expected_max.value());
+
+        if !cs.is_none() && !cs.is_in_setup_mode() {
+            assert!(cs.is_satisfied().unwrap());
+        }
+        Ok(())
+    }
+
+    fn run_exhaustive<T: PrimUInt, F: PrimeField + From<T>, const BITS: usize>(
+    ) -> Result<(), SynthesisError>
+    where
+        RangeInclusive<T>: Iterator<Item = T>,
+    {
+        for (mode_a, a) in test_utils::combination(T::min_value()..=T::max_value()) {
+            for (mode_b, b) in test_utils::combination(T::min_value()..=T::max_value()) {
+                check_min_max::<T, F, BITS>(a, b, mode_a, mode_b)?;
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn u8() {
+        run_exhaustive::<u8, Fr, 8>().unwrap()
+    }
 }
