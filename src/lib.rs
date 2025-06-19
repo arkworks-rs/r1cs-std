@@ -61,6 +61,9 @@ pub mod poly;
 /// list of variables.
 pub mod select;
 
+/// Utilities for field elements with values bounded by a fixed number of bits.
+pub mod bit_bounded;
+
 #[cfg(test)]
 pub(crate) mod test_utils;
 
