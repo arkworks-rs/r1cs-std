@@ -53,7 +53,7 @@ pub fn min<F: PrimeField, const BITS: usize>(
     b: &FpVar<F>,
 ) -> Result<FpVar<F>, SynthesisError> {
     assert_bits_fit_for_sum::<F, BITS>();
-    let (_, a_over_b) = get_slacks_checked::<F, BITS>(a, b)?;
+    let (_, a_over_b) = get_slacks_constrained::<F, BITS>(a, b)?;
     Ok(a - a_over_b)
 }
 
@@ -71,7 +71,7 @@ pub fn max<F: PrimeField, const BITS: usize>(
     b: &FpVar<F>,
 ) -> Result<FpVar<F>, SynthesisError> {
     assert_bits_fit_for_sum::<F, BITS>();
-    let (b_over_a, _) = get_slacks_checked::<F, BITS>(a, b)?;
+    let (b_over_a, _) = get_slacks_constrained::<F, BITS>(a, b)?;
     Ok(a + b_over_a)
 }
 
@@ -89,7 +89,12 @@ fn assert_bits_fit_for_sum<F: PrimeField, const BITS: usize>() {
     );
 }
 
-fn get_slacks_checked<F: PrimeField, const BITS: usize>(
+/// Return a pair of slacks `(lt_slack, gt_slack)` such that:
+///  - `lt_slack` is the slack between `a` and `b` if `a < b`, otherwise zero.
+///  - `gt_slack` is the slack between `b` and `a` if `b < a`, otherwise zero.
+/// 
+/// The slacks are constrained to be within the range [0, 1 << BITS) and are mutually exclusive.
+fn get_slacks_constrained<F: PrimeField, const BITS: usize>(
     a: &FpVar<F>,
     b: &FpVar<F>,
 ) -> Result<(FpVar<F>, FpVar<F>), SynthesisError> {
