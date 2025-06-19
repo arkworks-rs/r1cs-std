@@ -152,6 +152,7 @@ macro_rules! overhead {
         use ark_ff::BigInteger;
         let num = $x;
         let num_bits = num.into_bigint().to_bits_be();
+
         let mut skipped_bits = 0;
         for b in num_bits.iter() {
             if *b == false {
@@ -168,10 +169,13 @@ macro_rules! overhead {
             }
         }
 
-        if is_power_of_2 {
-            num_bits.len() - skipped_bits
+        // let log(0) = 0 in our case
+        if num == BaseF::zero() {
+            0
+        } else if is_power_of_2 {
+            num_bits.len() - skipped_bits - 1
         } else {
-            num_bits.len() - skipped_bits + 1
+            num_bits.len() - skipped_bits
         }
     }};
 }
@@ -200,3 +204,45 @@ pub use field_var::*;
 
 mod mul_result;
 pub use mul_result::*;
+
+#[cfg(test)]
+mod test {
+    use ark_ff::PrimeField;
+
+    use crate::{
+        fields::emulated_fp::{params::get_params, AllocatedEmulatedFpVar},
+        GR1CSVar,
+    };
+
+    use super::AllocatedMulResultVar;
+
+    pub(crate) fn check_constraint<TargetF: PrimeField, BaseF: PrimeField>(
+        emulated_fpvar: &AllocatedEmulatedFpVar<TargetF, BaseF>,
+    ) -> bool {
+        let limb_values = emulated_fpvar.limbs.value().unwrap();
+        let params = get_params(
+            TargetF::MODULUS_BIT_SIZE as usize,
+            BaseF::MODULUS_BIT_SIZE as usize,
+            emulated_fpvar.get_optimization_type(),
+        );
+        let bits_per_limb = params.bits_per_limb;
+        let upper_bound = (emulated_fpvar.num_of_additions_over_normal_form + BaseF::one())
+            * (BaseF::from(BaseF::from(1).into_bigint() << bits_per_limb as u32) + BaseF::from(-1));
+        return !limb_values.iter().any(|value| value > &upper_bound);
+    }
+
+    pub(crate) fn check_mulres_constraint<TargetF: PrimeField, BaseF: PrimeField>(
+        emulated_fpvar: &AllocatedMulResultVar<TargetF, BaseF>,
+    ) -> bool {
+        let limb_values: Vec<_> = emulated_fpvar.limbs.value().unwrap();
+        let params = get_params(
+            TargetF::MODULUS_BIT_SIZE as usize,
+            BaseF::MODULUS_BIT_SIZE as usize,
+            emulated_fpvar.get_optimization_type(),
+        );
+        let bits_per_limb = params.bits_per_limb * 2;
+        let upper_bound = (emulated_fpvar.prod_of_num_of_additions + BaseF::one())
+            * (BaseF::from(BaseF::from(1).into_bigint() << bits_per_limb as u32) + BaseF::from(-1));
+        return !limb_values.iter().any(|value| value > &upper_bound);
+    }
+}

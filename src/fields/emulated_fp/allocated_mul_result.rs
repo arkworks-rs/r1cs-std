@@ -113,7 +113,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedMulResultVar<TargetF, Base
         };
 
         // Step 2: compute surfeit
-        let surfeit = overhead!(self.prod_of_num_of_additions + BaseF::one()) + 1 + 1;
+        let surfeit = overhead!(self.prod_of_num_of_additions + BaseF::one());
 
         // Step 3: allocate k
         let k_bits = {
@@ -282,5 +282,44 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedMulResultVar<TargetF, Base
             OptimizationGoal::Constraints => OptimizationType::Constraints,
             OptimizationGoal::Weight => OptimizationType::Weight,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use ark_ec::{bls12::Bls12Config, pairing::Pairing};
+    use ark_ff::PrimeField;
+    use ark_relations::gr1cs::ConstraintSystem;
+
+    use crate::{
+        alloc::AllocVar,
+        fields::emulated_fp::{
+            test::{check_constraint, check_mulres_constraint},
+            AllocatedEmulatedFpVar,
+        },
+    };
+
+    #[test]
+    fn pr_157_mul() {
+        type TargetF = <ark_bls12_381::Config as Bls12Config>::Fp;
+        type BaseF = <ark_bls12_377::Bls12_377 as Pairing>::ScalarField;
+
+        let cs = ConstraintSystem::new_ref();
+
+        let left: AllocatedEmulatedFpVar<TargetF, BaseF> =
+            AllocatedEmulatedFpVar::new_input(cs.clone(), || {
+                Ok(TargetF::from(
+                    TargetF::from(1).into_bigint()
+                        << (<TargetF as PrimeField>::MODULUS_BIT_SIZE - 1),
+                ) + TargetF::from(-1))
+            })
+            .unwrap();
+
+        let right: AllocatedEmulatedFpVar<TargetF, BaseF> = left.clone();
+
+        let result = left.mul_without_reduce(&right).unwrap();
+        assert!(check_constraint(&left));
+        assert!(check_constraint(&right));
+        assert!(check_mulres_constraint(&result));
     }
 }
