@@ -247,7 +247,7 @@ where
         // step(s) of the algorithm
         //
         // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/projective.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
         let (x1, y1, z1) = (&self.x, &self.y, &self.z);
         let (x2, y2) = (&other.x, &other.y);
@@ -460,7 +460,7 @@ where
         // step(s) of the algorithm
         //
         // Adapted from code in
-        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
+        // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
         let three_b = P::COEFF_B.double() + &P::COEFF_B;
 
         let xx = self.x.square()?; // 1
@@ -636,7 +636,7 @@ impl_bounded_ops!(
             // step(s) of the algorithm
             //
             // Adapted from code in
-            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic/projective.rs
+            // https://github.com/RustCrypto/elliptic-curves/blob/master/p256/src/arithmetic.rs
             let three_b = P::COEFF_B.double() + &P::COEFF_B;
             let (x1, y1, z1) = (&this.x, &this.y, &this.z);
             let (x2, y2, z2) = (&other.x, &other.y, &other.z);
