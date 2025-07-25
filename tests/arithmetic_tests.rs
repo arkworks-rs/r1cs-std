@@ -82,7 +82,7 @@ fn addition_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     let a_plus_b = a + &b;
 
     let a_plus_b_actual = a_plus_b.value().unwrap();
-    let a_plus_b_expected = a_native + &b_native;
+    let a_plus_b_expected = a_native + b_native;
     assert!(a_plus_b_actual.eq(&a_plus_b_expected), "a + b failed");
 }
 
@@ -107,7 +107,7 @@ fn multiplication_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     let a_times_b = a * &b;
 
     let a_times_b_actual = a_times_b.value().unwrap();
-    let a_times_b_expected = a_native * &b_native;
+    let a_times_b_expected = a_native * b_native;
 
     assert!(
         a_times_b_actual.eq(&a_times_b_expected),
@@ -161,7 +161,7 @@ fn equality_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
 
     let a_times_b = a * &b;
 
-    let a_times_b_expected = a_native * &b_native;
+    let a_times_b_expected = a_native * b_native;
     let a_times_b_expected_gadget = EmulatedFpVar::<TargetF, BaseField>::new_witness(
         ark_relations::ns!(cs, "alloc a * b"),
         || Ok(a_times_b_expected),
@@ -180,7 +180,7 @@ fn edge_cases_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     let one = EmulatedFpVar::<TargetF, BaseField>::one();
 
     let a_native = TargetF::rand(rng);
-    let minus_a_native = TargetF::zero() - &a_native;
+    let minus_a_native = TargetF::zero() - a_native;
     let a =
         EmulatedFpVar::<TargetF, BaseField>::new_witness(ark_relations::ns!(cs, "alloc a"), || {
             Ok(a_native)
@@ -265,11 +265,11 @@ fn distribution_law_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>
     let b_native = TargetF::rand(rng);
     let c_native = TargetF::rand(rng);
 
-    let a_plus_b_native = a_native.clone() + &b_native;
-    let a_times_c_native = a_native.clone() * &c_native;
-    let b_times_c_native = b_native.clone() * &c_native;
-    let a_plus_b_times_c_native = a_plus_b_native.clone() * &c_native;
-    let a_times_c_plus_b_times_c_native = a_times_c_native + &b_times_c_native;
+    let a_plus_b_native = a_native + b_native;
+    let a_times_c_native = a_native * c_native;
+    let b_times_c_native = b_native * c_native;
+    let a_plus_b_times_c_native = a_plus_b_native * c_native;
+    let a_times_c_plus_b_times_c_native = a_times_c_native + b_times_c_native;
 
     assert!(
         a_plus_b_times_c_native.eq(&a_times_c_plus_b_times_c_native),
@@ -442,7 +442,7 @@ fn mul_and_add_stress_test<TargetF: PrimeField, BaseField: PrimeField, R: RngCor
         )
         .unwrap();
 
-        num_native = num_native * &next_mul_native + &next_add_native;
+        num_native = num_native * next_mul_native + next_add_native;
         num = num * &next_mul + &next_add;
 
         assert!(num.value().unwrap().eq(&num_native));
@@ -473,7 +473,7 @@ fn square_mul_add_stress_test<TargetF: PrimeField, BaseField: PrimeField, R: Rng
         )
         .unwrap();
 
-        num_native = num_native * &num_native * &next_mul_native + &next_add_native;
+        num_native = num_native * num_native * next_mul_native + next_add_native;
         num = &num * &num * &next_mul + &next_add;
 
         assert!(num.value().unwrap().eq(&num_native));
@@ -494,7 +494,7 @@ fn double_stress_test_1<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     // overflowing
     for _ in 0..TEST_COUNT + BaseField::MODULUS_BIT_SIZE as usize {
         // double
-        num_native = num_native + &num_native;
+        num_native = num_native + num_native;
         num = &num + &num;
 
         assert!(num.value().unwrap().eq(&num_native), "result incorrect");
@@ -519,7 +519,7 @@ fn double_stress_test_2<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
         assert!(num.value().unwrap().eq(&num_native));
 
         // square
-        let num_square_native = num_native * &num_native;
+        let num_square_native = num_native * num_native;
         let num_square = &num * &num;
         assert!(num_square.value().unwrap().eq(&num_square_native));
     }
@@ -537,13 +537,13 @@ fn double_stress_test_3<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
     .unwrap();
     for _ in 0..TEST_COUNT {
         // double
-        num_native = num_native + &num_native;
+        num_native = num_native + num_native;
         num = &num + &num;
 
         assert!(num.value().unwrap().eq(&num_native));
 
         // square
-        let num_square_native = num_native * &num_native;
+        let num_square_native = num_native * num_native;
         let num_square = &num * &num;
         let num_square_native_gadget = EmulatedFpVar::<TargetF, BaseField>::new_witness(
             ark_relations::ns!(cs, "repetition: alloc_native num"),
