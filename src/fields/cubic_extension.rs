@@ -228,7 +228,7 @@ where
         // Devegili, OhEigeartaigh, Scott, Dahab
         //
         // This implementation adapted from
-        // https://github.com/ZencashOfficial/ginger-lib/blob/development/r1cs/gadgets/std/src/fields/fp3.rs
+        // https://github.com/HorizenOfficial/ginger-lib/blob/master/r1cs/gadgets/std/src/fields/fp3.rs
         let v0 = &self.c0 * &other.c0;
         let v1 = &self.c1 * &other.c1;
         let v2 = &self.c2 * &other.c2;
