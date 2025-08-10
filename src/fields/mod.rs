@@ -186,7 +186,10 @@ pub trait FieldVar<F: Field, ConstraintF: PrimeField>:
         match cs {
             // If we're in the constant case, we just allocate a new constant having value equalling
             // `self * d.inverse()`.
-            ConstraintSystemRef::None => Self::new_constant(
+            ConstraintSystemRef::None => {
+                let denom_inv = d.value()?.inverse().ok_or(SynthesisError::Unsatisfiable)?;
+                Self::new_constant(cs, self.value()? * denom_inv)
+            },
                 cs,
                 self.value()? * d.value()?.inverse().expect("division by zero"),
             ),
