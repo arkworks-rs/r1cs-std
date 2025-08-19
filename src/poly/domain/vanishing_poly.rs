@@ -1,7 +1,6 @@
 use crate::fields::{fp::FpVar, FieldVar};
 use ark_ff::{Field, PrimeField};
 use ark_relations::gr1cs::SynthesisError;
-use ark_std::ops::Sub;
 
 /// Struct describing vanishing polynomial for a multiplicative coset H where
 /// |H| is a power of 2. As H is a coset, every element can be described as
@@ -40,8 +39,9 @@ impl<F: PrimeField> VanishingPolynomial<F> {
     /// matrix
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
         if self.dim_h == 1 {
-            let result = x.sub(x);
-            return Ok(result);
+            let mut cur = x.square()?;
+            cur -= &FpVar::Constant(self.constant_term);
+            return Ok(cur);
         }
 
         let mut cur = x.square()?;
@@ -71,6 +71,20 @@ mod tests {
         let x = Fr::rand(&mut rng);
         let x_var = FpVar::new_witness(ns!(cs, "x_var"), || Ok(x)).unwrap();
         let vp = VanishingPolynomial::new(offset, 12);
+        let native = vp.evaluate(&x);
+        let result_var = vp.evaluate_constraints(&x_var).unwrap();
+        assert!(cs.is_satisfied().unwrap());
+        assert_eq!(result_var.value().unwrap(), native);
+    }
+
+    #[test]
+    fn constraints_test_dim1() {
+        let mut rng = test_rng();
+        let offset = Fr::rand(&mut rng);
+        let cs = ConstraintSystem::new_ref();
+        let x = Fr::rand(&mut rng);
+        let x_var = FpVar::new_witness(ns!(cs, "x_var"), || Ok(x)).unwrap();
+        let vp = VanishingPolynomial::new(offset, 1);
         let native = vp.evaluate(&x);
         let result_var = vp.evaluate_constraints(&x_var).unwrap();
         assert!(cs.is_satisfied().unwrap());
