@@ -543,7 +543,7 @@ fn double_stress_test_3<TargetF: PrimeField, BaseField: PrimeField, R: RngCore>(
         assert!(num.value().unwrap().eq(&num_native));
 
         // square
-        let num_square_native = num_native * num_native;
+        let num_square_native = num_native.square();
         let num_square = &num * &num;
         let num_square_native_gadget = EmulatedFpVar::<TargetF, BaseField>::new_witness(
             ark_relations::ns!(cs, "repetition: alloc_native num"),
