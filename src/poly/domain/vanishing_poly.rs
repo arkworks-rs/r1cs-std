@@ -38,12 +38,6 @@ impl<F: PrimeField> VanishingPolynomial<F> {
     /// Caution for use in holographic lincheck: The output has 2 entries in one
     /// matrix
     pub fn evaluate_constraints(&self, x: &FpVar<F>) -> Result<FpVar<F>, SynthesisError> {
-        if self.dim_h == 1 {
-            let mut cur = x.square()?;
-            cur -= &FpVar::Constant(self.constant_term);
-            return Ok(cur);
-        }
-
         let mut cur = x.square()?;
         for _ in 1..self.dim_h {
             cur.square_in_place()?;
