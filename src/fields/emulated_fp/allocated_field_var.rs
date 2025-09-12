@@ -238,12 +238,17 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
             }
         }
 
+        let padding_bit_len = {
+            let mut one = BaseF::ONE.into_bigint();
+            one <<= surfeit as u32;
+            BaseF::from(one)
+        };
         let result = AllocatedEmulatedFpVar::<TargetF, BaseF> {
             cs: self.cs(),
             limbs,
-            num_of_additions_over_normal_form: self.num_of_additions_over_normal_form
-                + (other.num_of_additions_over_normal_form + BaseF::one())
-                + (other.num_of_additions_over_normal_form + BaseF::one()),
+            num_of_additions_over_normal_form: self.num_of_additions_over_normal_form // this_limb
+                + padding_bit_len // pad_non_top_limb / pad_top_limb
+                + BaseF::one(), // pad_to_kp_limb
             is_in_the_normal_form: false,
             target_phantom: PhantomData,
         };
@@ -424,9 +429,19 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         Ok(AllocatedMulResultVar {
             cs: self.cs(),
             limbs: prod_limbs,
+            // New number is upper bounded by:
+            //
+            // (a+1)2^{bits_per_limb} * (b+1)2^{bits_per_limb} * m = (ab+a+b+1)*m*2^{2*bits_per_limb}
+            //
+            // where `a = self_reduced.num_of_additions_over_normal_form` and
+            //       `b = other_reduced.num_of_additions_over_normal_form`
+            // - why m pair: at cell m, there are m possible pairs (one limb from each var) that can add to cell m
+            //
+            // In theory, we can let `prod_of_num_of_additions = (m(ab+a+b+1)-1)`. But below, we use an overestimation.
             prod_of_num_of_additions: (self_reduced.num_of_additions_over_normal_form
                 + BaseF::one())
-                * (other_reduced.num_of_additions_over_normal_form + BaseF::one()),
+                * (other_reduced.num_of_additions_over_normal_form + BaseF::one())
+                * BaseF::from((params.num_limbs) as u32),
             target_phantom: PhantomData,
         })
     }
@@ -459,13 +474,6 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
         for limb in p_representations.iter() {
             p_gadget_limbs.push(FpVar::<BaseF>::Constant(*limb));
         }
-        let p_gadget = Self {
-            cs: self.cs(),
-            limbs: p_gadget_limbs,
-            num_of_additions_over_normal_form: BaseF::one(),
-            is_in_the_normal_form: false,
-            target_phantom: PhantomData,
-        };
 
         // Get delta = self - other
         let cs = self.cs().or(other.cs()).or(should_enforce.cs());
@@ -489,7 +497,7 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedEmulatedFpVar<TargetF, Bas
 
         // Compute k * p
         let mut kp_gadget_limbs = Vec::new();
-        for limb in p_gadget.limbs.iter() {
+        for limb in p_gadget_limbs.iter() {
             kp_gadget_limbs.push(limb * &k_gadget);
         }
 
@@ -909,5 +917,110 @@ impl<TargetF: PrimeField, BaseF: PrimeField> Clone for AllocatedEmulatedFpVar<Ta
             is_in_the_normal_form: self.is_in_the_normal_form,
             target_phantom: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use ark_ec::{bls12::Bls12Config, pairing::Pairing};
+    use ark_ff::PrimeField;
+    use ark_relations::gr1cs::ConstraintSystem;
+
+    use crate::{
+        alloc::AllocVar,
+        fields::{
+            emulated_fp::{test::check_constraint, AllocatedEmulatedFpVar},
+            fp::FpVar,
+        },
+    };
+
+    #[test]
+    fn pr_157() {
+        type TargetF = <ark_bls12_381::Config as Bls12Config>::Fp;
+        type BaseF = <ark_bls12_377::Bls12_377 as Pairing>::ScalarField;
+
+        let cs = ConstraintSystem::new_ref();
+
+        let l0: AllocatedEmulatedFpVar<TargetF, BaseF> =
+            AllocatedEmulatedFpVar::new_input(cs.clone(), || {
+                Ok(TargetF::from(
+                    TargetF::from(1).into_bigint()
+                        << (<TargetF as PrimeField>::MODULUS_BIT_SIZE - 1),
+                ) + TargetF::from(-1))
+            })
+            .unwrap();
+
+        // Accumulate errors
+        let l1 = l0.sub(&l0).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+        let l1 = l1.sub(&l1).unwrap();
+
+        let l2 = l1.add(&l1).unwrap();
+
+        // Increase l1's surfeit
+        // - The goal is to ensure that the number of limbs, as grouped by `group_and_check_equality`,
+        //   falls near the threshold between 17 and 18 limbs.
+        // - This increases the chance that accumulated error in `sub` causes an overflow within
+        //   `group_and_check_equality`.
+        let mut l1 = l1;
+        for _ in 0..(293 - 242) {
+            l1 = l1.add(&l0).unwrap();
+        }
+
+        let _ = l1.mul(&l2).unwrap();
+        assert!(cs.is_satisfied().unwrap());
+    }
+
+    #[test]
+    fn pr_157_sub() {
+        type TargetF = <ark_bls12_381::Config as Bls12Config>::Fp;
+        type BaseF = <ark_bls12_377::Bls12_377 as Pairing>::ScalarField;
+
+        let self_limb_values = [
+            100, 2618, 1428, 2152, 2602, 1242, 2823, 511, 1752, 2058, 3599, 1113, 3207, 3601, 2736,
+            435, 1108, 2965, 2685, 1705, 1016, 1343, 1760, 2039, 1355, 1767, 2355, 1945, 3594,
+            4066, 1913, 2646,
+        ];
+        let self_num_of_additions_over_normal_form = 1;
+        let self_is_in_the_normal_form = false;
+        let other_limb_values = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 4,
+        ];
+        let other_num_of_additions_over_normal_form = 1;
+        let other_is_in_the_normal_form = false;
+
+        let cs = ConstraintSystem::new_ref();
+
+        let left_limb = self_limb_values
+            .iter()
+            .map(|v| FpVar::new_input(cs.clone(), || Ok(BaseF::from(*v))).unwrap())
+            .collect();
+        let left: AllocatedEmulatedFpVar<TargetF, BaseF> = AllocatedEmulatedFpVar {
+            cs: cs.clone(),
+            limbs: left_limb,
+            num_of_additions_over_normal_form: BaseF::from(self_num_of_additions_over_normal_form),
+            is_in_the_normal_form: self_is_in_the_normal_form,
+            target_phantom: std::marker::PhantomData,
+        };
+
+        let other_limb = other_limb_values
+            .iter()
+            .map(|v| FpVar::new_input(cs.clone(), || Ok(BaseF::from(*v))).unwrap())
+            .collect();
+        let right: AllocatedEmulatedFpVar<TargetF, BaseF> = AllocatedEmulatedFpVar {
+            cs: cs.clone(),
+            limbs: other_limb,
+            num_of_additions_over_normal_form: BaseF::from(other_num_of_additions_over_normal_form),
+            is_in_the_normal_form: other_is_in_the_normal_form,
+            target_phantom: std::marker::PhantomData,
+        };
+
+        let result = left.sub_without_reduce(&right).unwrap();
+        assert!(check_constraint(&left));
+        assert!(check_constraint(&right));
+        assert!(check_constraint(&result));
     }
 }
