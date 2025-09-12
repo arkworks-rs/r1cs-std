@@ -120,8 +120,22 @@ impl<F: Field> Boolean<F> {
     pub fn lc(&self) -> LinearCombination<F> {
         match self {
             &Boolean::Constant(false) => lc!(),
-            &Boolean::Constant(true) => lc!() + Variable::One,
+            &Boolean::Constant(true) => Variable::One.into(),
             Boolean::Var(v) => v.variable().into(),
+        }
+    }
+
+    /// Constructs a `Variable` from `Self`'s variables according
+    /// to the following map.
+    ///
+    /// * `Boolean::TRUE => Variable::One`
+    /// * `Boolean::FALSE => Variable::Zero``
+    /// * `Boolean::Var(v) => v.variable()`
+    pub fn variable(&self) -> Variable {
+        match self {
+            &Boolean::Constant(false) => Variable::Zero,
+            &Boolean::Constant(true) => Variable::One,
+            Boolean::Var(v) => v.variable(),
         }
     }
 

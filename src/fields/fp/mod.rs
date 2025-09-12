@@ -99,7 +99,7 @@ impl<F: PrimeField> From<Boolean<F>> for FpVar<F> {
         } else {
             // `other` is a variable
             let cs = other.cs();
-            let variable = cs.new_lc(other.lc()).unwrap();
+            let variable = cs.new_lc(|| other.lc()).unwrap();
             Self::Var(AllocatedFp::new(
                 other.value().ok().map(|b| F::from(b as u8)),
                 variable,
@@ -123,7 +123,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// `zero`, else it outputs `one`.
     pub fn from(other: Boolean<F>) -> Self {
         let cs = other.cs();
-        let variable = cs.new_lc(other.lc()).unwrap();
+        let variable = cs.new_lc(|| other.lc()).unwrap();
         Self::new(other.value().ok().map(|b| F::from(b as u8)), variable, cs)
     }
 
@@ -145,7 +145,7 @@ impl<F: PrimeField> AllocatedFp<F> {
 
         let variable = self
             .cs
-            .new_lc(lc!() + self.variable + other.variable)
+            .new_lc(|| lc![self.variable, other.variable])
             .unwrap();
         AllocatedFp::new(value, variable, self.cs.clone())
     }
@@ -156,32 +156,38 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// combination.
     ///
     /// Returns `None` if you pass an empty iterator.
-    pub fn add_many<B: Borrow<Self>, I: IntoIterator<Item = B>>(iter: I) -> Option<Self> {
-        let mut cs = ConstraintSystemRef::None;
+    pub fn add_many<B: Borrow<Self>>(iter: &[B]) -> Option<Self> {
         let mut has_value = true;
         let mut value = F::zero();
-        let mut new_lc = lc!();
+        let mut cs = ConstraintSystemRef::None;
 
         let mut num_iters = 0;
+
         for variable in iter {
             let variable = variable.borrow();
-            if !variable.cs.is_none() {
-                cs = cs.or(variable.cs.clone());
-            }
+            cs = cs.or(variable.cs.clone());
             if variable.value.is_none() {
                 has_value = false;
             } else {
                 value += variable.value.unwrap();
             }
-            new_lc = new_lc + variable.variable;
             num_iters += 1;
         }
         if num_iters == 0 {
             return None; // No elements to add
         }
 
-        let variable = cs.new_lc(new_lc).unwrap();
-
+        let variable = cs
+            .new_lc(|| {
+                let lc = iter
+                    .iter()
+                    .map(|variable| (F::ONE, variable.borrow().variable))
+                    .collect();
+                let mut lc = LinearCombination(lc);
+                lc.compactify();
+                lc
+            })
+            .unwrap();
         if has_value {
             Some(AllocatedFp::new(Some(value), variable, cs))
         } else {
@@ -198,38 +204,44 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// # Panics
     ///
     /// Panics if the iterators are of different lengths.
-    pub fn linear_combination<B1, B2, I1, I2>(this: I1, other: I2) -> Option<Self>
+    pub fn linear_combination<B1, B2, I1>(this: I1, other: &[B2]) -> Option<Self>
     where
         B1: Borrow<F>,
         B2: Borrow<Self>,
-        I1: IntoIterator<Item = B1>,
-        I2: IntoIterator<Item = B2>,
+        I1: IntoIterator<Item = B1, IntoIter: Clone>,
     {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
         let mut value = F::zero();
-        let mut new_lc = lc!();
 
         let mut num_iters = 0;
-        for (coeff, variable) in zip_eq(this, other) {
+        let zipped = zip_eq(this, other);
+        for (coeff, variable) in zipped.clone() {
             let coeff = *coeff.borrow();
             let variable = variable.borrow();
-            if !variable.cs.is_none() {
-                cs = cs.or(variable.cs.clone());
-            }
+            cs = cs.or(variable.cs.clone());
             if variable.value.is_none() {
                 has_value = false;
             } else {
                 value += coeff * variable.value.unwrap();
             }
-            new_lc += (coeff, variable.variable);
             num_iters += 1;
         }
         if num_iters == 0 {
             return None; // No elements to add
         }
 
-        let variable = cs.new_lc(new_lc).unwrap();
+        let variable = cs
+            .new_lc(|| {
+                let lc = zipped
+                    .map(|(coeff, variable)| (*coeff.borrow(), variable.borrow().variable))
+                    .collect::<Vec<_>>();
+                let mut lc = LinearCombination(lc);
+                // sorts and compacts
+                lc.compactify();
+                lc
+            })
+            .unwrap();
 
         if has_value {
             Some(AllocatedFp::new(Some(value), variable, cs))
@@ -257,7 +269,8 @@ impl<F: PrimeField> AllocatedFp<F> {
         let mut cs = ConstraintSystemRef::None;
         let mut has_value = true;
         let mut value = F::zero();
-        let mut new_lc = lc!();
+        let this = this.into_iter();
+        let mut new_lc = Vec::with_capacity(this.size_hint().0);
 
         let mut num_iters = 0;
         for (v1, v2) in zip_eq(this, other) {
@@ -273,26 +286,33 @@ impl<F: PrimeField> AllocatedFp<F> {
                 let v1 = v1.value?;
                 let v2 = v2.value?;
                 let product = v1 * v2;
-                new_lc += (product, Variable::One);
+                new_lc.push((product, Variable::One));
             }
             if v1.cs.is_none() {
                 // v1 should be a constant
                 let v1 = v1.value?;
-                new_lc += (v1, v2.variable);
+                new_lc.push((v1, v2.variable));
             } else if v2.cs.is_none() {
                 // v2 should be a constant
                 let v2 = v2.value?;
-                new_lc += (v2, v1.variable);
+                new_lc.push((v2, v1.variable));
             } else {
                 let product = v1.mul(v2);
-                new_lc += (F::ONE, product.variable);
+                new_lc.push((F::ONE, product.variable));
             }
             num_iters += 1;
         }
         if num_iters == 0 {
             return None; // No elements to compute the inner product
         }
-        let variable = cs.new_lc(new_lc).unwrap();
+        let variable = cs
+            .new_lc(|| {
+                let mut lc = LinearCombination(new_lc);
+                // sorts and compacts
+                lc.compactify();
+                lc
+            })
+            .unwrap();
 
         if has_value {
             Some(AllocatedFp::new(Some(value), variable, cs))
@@ -313,7 +333,7 @@ impl<F: PrimeField> AllocatedFp<F> {
 
         let variable = self
             .cs
-            .new_lc(lc!() + self.variable - other.variable)
+            .new_lc(|| lc_diff![self.variable, other.variable])
             .unwrap();
         AllocatedFp::new(value, variable, self.cs.clone())
     }
@@ -329,9 +349,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         .unwrap();
         self.cs
             .enforce_r1cs_constraint(
-                lc!() + self.variable,
-                lc!() + other.variable,
-                lc!() + product.variable,
+                || self.variable.into(),
+                || other.variable.into(),
+                || product.variable.into(),
             )
             .unwrap();
         product
@@ -348,7 +368,7 @@ impl<F: PrimeField> AllocatedFp<F> {
             let value = self.value.map(|val| val + other);
             let variable = self
                 .cs
-                .new_lc(lc!() + self.variable + (other, Variable::One))
+                .new_lc(|| lc![(F::ONE, self.variable), (other, Variable::One)])
                 .unwrap();
             AllocatedFp::new(value, variable, self.cs.clone())
         }
@@ -371,7 +391,7 @@ impl<F: PrimeField> AllocatedFp<F> {
             self.clone()
         } else {
             let value = self.value.map(|val| val * other);
-            let variable = self.cs.new_lc(lc!() + (other, self.variable)).unwrap();
+            let variable = self.cs.new_lc(|| (other, self.variable).into()).unwrap();
             AllocatedFp::new(value, variable, self.cs.clone())
         }
     }
@@ -382,7 +402,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "gr1cs")]
     pub fn double(&self) -> Result<Self, SynthesisError> {
         let value = self.value.map(|val| val.double());
-        let variable = self.cs.new_lc(lc!() + self.variable + self.variable)?;
+        let variable = self.cs.new_lc(|| (F::ONE.double(), self.variable).into())?;
         Ok(Self::new(value, variable, self.cs.clone()))
     }
 
@@ -404,7 +424,7 @@ impl<F: PrimeField> AllocatedFp<F> {
         if let Some(val) = self.value.as_mut() {
             *val = -(*val);
         }
-        self.variable = self.cs.new_lc(lc!() - self.variable).unwrap();
+        self.variable = self.cs.new_lc(|| lc!() - self.variable).unwrap();
         self
     }
 
@@ -426,9 +446,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         })?;
 
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable,
-            lc!() + inverse.variable,
-            lc!() + Variable::One,
+            || self.variable.into(),
+            || inverse.variable.into(),
+            || Variable::One.into(),
         )?;
         Ok(inverse)
     }
@@ -445,9 +465,9 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "gr1cs")]
     pub fn mul_equals(&self, other: &Self, result: &Self) -> Result<(), SynthesisError> {
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable,
-            lc!() + other.variable,
-            lc!() + result.variable,
+            || self.variable.into(),
+            || other.variable.into(),
+            || result.variable.into(),
         )
     }
 
@@ -457,9 +477,9 @@ impl<F: PrimeField> AllocatedFp<F> {
     #[tracing::instrument(target = "gr1cs")]
     pub fn square_equals(&self, result: &Self) -> Result<(), SynthesisError> {
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable,
-            lc!() + self.variable,
-            lc!() + result.variable,
+            || self.variable.into(),
+            || self.variable.into(),
+            || result.variable.into(),
         )
     }
 
@@ -468,7 +488,7 @@ impl<F: PrimeField> AllocatedFp<F> {
     /// This requires two constraints.
     #[tracing::instrument(target = "gr1cs")]
     pub fn is_eq(&self, other: &Self) -> Result<Boolean<F>, SynthesisError> {
-        Ok(!self.is_neq(other)?)
+        self.is_neq(other).map(core::ops::Not::not)
     }
 
     /// Outputs the bit `self != other`.
@@ -536,16 +556,15 @@ impl<F: PrimeField> AllocatedFp<F> {
         // and constraint 2 enforces that if self != other, then `is_not_equal = 1`.
         // Since these are the only possible two cases, `is_not_equal` is always
         // constrained to 0 or 1.
+        let difference = self.cs.new_lc(|| lc_diff![self.variable, other.variable])?;
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable - other.variable,
-            lc!() + multiplier,
-            is_not_equal.lc(),
+            || difference.into(),
+            || multiplier.into(),
+            || is_not_equal.lc(),
         )?;
-        self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable - other.variable,
-            (!&is_not_equal).lc(),
-            lc!(),
-        )?;
+        let is_equal = !&is_not_equal;
+        self.cs
+            .enforce_r1cs_constraint(|| difference.into(), || is_equal.lc(), || lc!())?;
         Ok(is_not_equal)
     }
 
@@ -559,9 +578,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         should_enforce: &Boolean<F>,
     ) -> Result<(), SynthesisError> {
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable - other.variable,
-            lc!() + should_enforce.lc(),
-            lc!(),
+            || lc_diff![self.variable, other.variable],
+            || should_enforce.lc(),
+            || lc!(),
         )
     }
 
@@ -594,9 +613,9 @@ impl<F: PrimeField> AllocatedFp<F> {
         })?;
 
         self.cs.enforce_r1cs_constraint(
-            lc!() + self.variable - other.variable,
-            lc!() + multiplier.variable,
-            should_enforce.lc(),
+            || lc_diff![self.variable, other.variable],
+            || multiplier.variable.into(),
+            || should_enforce.lc(),
         )?;
         Ok(())
     }
@@ -643,18 +662,23 @@ impl<F: PrimeField> ToBitsGadget<F> for AllocatedFp<F> {
             .map(|b| Boolean::new_witness(cs.clone(), || b.get()))
             .collect::<Result<_, _>>()?;
 
-        let mut lc = LinearCombination::zero();
-        let mut coeff = F::one();
+        let lc = || {
+            let mut coeff = F::one();
+            let lc = bits
+                .iter()
+                .map(|bit| {
+                    let c = coeff;
+                    coeff.double_in_place();
+                    (c, bit.variable())
+                })
+                .chain([(-F::ONE, self.variable)])
+                .collect::<Vec<_>>();
+            let mut lc = LinearCombination(lc);
+            lc.compactify();
+            lc
+        };
 
-        for bit in bits.iter() {
-            lc = &lc + bit.lc() * coeff;
-
-            coeff.double_in_place();
-        }
-
-        lc = lc - &self.variable;
-
-        cs.enforce_r1cs_constraint(lc!(), lc!(), lc)?;
+        cs.enforce_r1cs_constraint(|| lc!(), || lc!(), lc)?;
 
         Ok(bits)
     }
@@ -723,9 +747,9 @@ impl<F: PrimeField> CondSelectGadget<F> for AllocatedFp<F> {
                 // r = b + c * (a - b)
                 // c * (a - b) = r - b
                 cs.enforce_r1cs_constraint(
-                    cond.lc(),
-                    lc!() + true_val.variable - false_val.variable,
-                    lc!() + result.variable - false_val.variable,
+                    || cond.lc(),
+                    || lc_diff![true_val.variable, false_val.variable],
+                    || lc_diff![result.variable, false_val.variable],
                 )?;
 
                 Ok(result)
@@ -750,9 +774,9 @@ impl<F: PrimeField> TwoBitLookupGadget<F> for AllocatedFp<F> {
         })?;
         let one = Variable::One;
         b.cs().enforce_r1cs_constraint(
-            lc!() + b[1].lc() * (c[3] - &c[2] - &c[1] + &c[0]) + (c[1] - &c[0], one),
-            lc!() + b[0].lc(),
-            lc!() + result.variable - (c[0], one) + b[1].lc() * (c[0] - &c[2]),
+            || b[1].lc() * (c[3] - &c[2] - &c[1] + &c[0]) + (c[1] - &c[0], one),
+            || b[0].lc(),
+            || lc!() + result.variable - (c[0], one) + b[1].lc() * (c[0] - &c[2]),
         )?;
 
         Ok(result)
@@ -785,15 +809,16 @@ impl<F: PrimeField> ThreeBitCondNegLookupGadget<F> for AllocatedFp<F> {
             Ok(y)
         })?;
 
-        let y_lc = b0b1.lc() * (c[3] - &c[2] - &c[1] + &c[0])
-            + b[0].lc() * (c[1] - &c[0])
-            + b[1].lc() * (c[2] - &c[0])
-            + (c[0], Variable::One);
         // enforce y * (1 - 2 * b_2) == res
         b.cs().enforce_r1cs_constraint(
-            y_lc.clone(),
-            b[2].lc() * F::from(2u64).neg() + (F::one(), Variable::One),
-            lc!() + result.variable,
+            || {
+                b0b1.lc() * (c[3] - &c[2] - &c[1] + &c[0])
+                    + b[0].lc() * (c[1] - &c[0])
+                    + b[1].lc() * (c[2] - &c[0])
+                    + (c[0], Variable::One)
+            },
+            || b[2].lc() * F::from(2u64).neg() + (F::one(), Variable::One),
+            || result.variable.into(),
         )?;
 
         Ok(result)
@@ -810,7 +835,7 @@ impl<F: PrimeField> AllocVar<F, F> for AllocatedFp<F> {
         let cs = ns.cs();
         if mode == AllocationMode::Constant {
             let v = *f()?.borrow();
-            let lc = cs.new_lc(lc!() + (v, Variable::One))?;
+            let lc = cs.new_lc(|| (v, Variable::One).into())?;
             Ok(Self::new(Some(v), lc, cs))
         } else {
             let mut value = None;
@@ -944,7 +969,7 @@ impl<F: PrimeField> FieldVar<F, F> for FpVar<F> {
             })
             .unzip();
         let sum_constants = FpVar::Constant(sum_constants);
-        let sum_lc = AllocatedFp::linear_combination(lc_coeffs, lc_vars).map(FpVar::Var);
+        let sum_lc = AllocatedFp::linear_combination(lc_coeffs, &lc_vars).map(FpVar::Var);
         let sum_variables = AllocatedFp::inner_product(vars_left, vars_right).map(FpVar::Var);
 
         match (sum_lc, sum_variables) {
@@ -1261,7 +1286,7 @@ impl<'a, F: PrimeField> Sum<&'a FpVar<F>> for FpVar<F> {
         if variables.is_empty() {
             return FpVar::Constant(sum_constants);
         }
-        AllocatedFp::add_many(variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
+        AllocatedFp::add_many(&variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
             FpVar::Var(sum_vars) + sum_constants
         })
     }
@@ -1283,7 +1308,7 @@ impl<'a, F: PrimeField> Sum<FpVar<F>> for FpVar<F> {
         if variables.is_empty() {
             return FpVar::Constant(sum_constants);
         }
-        AllocatedFp::add_many(variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
+        AllocatedFp::add_many(&variables).map_or(FpVar::Constant(sum_constants), |sum_vars| {
             FpVar::Var(sum_vars) + sum_constants
         })
     }

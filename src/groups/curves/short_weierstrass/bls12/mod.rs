@@ -67,7 +67,7 @@ impl<P: Bls12Config> AllocVar<G1Prepared<P>, P::Fp> for G1PreparedVar<P> {
         let y = FpVar::new_variable(ark_relations::ns!(cs, "y"), || g1_prep.map(|g| g.y), mode)?;
         let infinity = Boolean::new_variable(
             ark_relations::ns!(cs, "inf"),
-            || g1_prep.map(|g| g.infinity),
+            || g1_prep.map(|g| g.is_zero()),
             mode,
         )?;
         let g = AffineVar::new(x, y, infinity);
