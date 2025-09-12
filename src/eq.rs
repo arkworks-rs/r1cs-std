@@ -125,9 +125,9 @@ impl<T: EqGadget<F> + GR1CSVar<F>, F: PrimeField> EqGadget<F> for [T] {
         } else {
             let cs = [&some_are_different, should_enforce].cs();
             cs.enforce_r1cs_constraint(
-                some_are_different.lc(),
-                should_enforce.lc(),
-                should_enforce.lc(),
+                || some_are_different.lc(),
+                || should_enforce.variable().into(),
+                || should_enforce.variable().into(),
             )
         }
     }

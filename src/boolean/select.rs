@@ -79,9 +79,9 @@ impl<F: PrimeField> CondSelectGadget<F> for Boolean<F> {
                     //   1  |   0   |   0  |    0
                     //   1  |   1   |   0  |    1
                     cs.enforce_r1cs_constraint(
-                        cond.lc(),
-                        lc!() + a.lc() - b.lc(),
-                        lc!() + result.lc() - b.lc(),
+                        || cond.lc(),
+                        || lc_diff![a.variable(), b.variable()],
+                        || lc_diff![result.variable(), b.variable()],
                     )?;
 
                     Ok(result)

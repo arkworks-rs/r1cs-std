@@ -1,7 +1,4 @@
-use core::{
-    ops::{Shl, ShlAssign, Shr, ShrAssign},
-    usize,
-};
+use core::ops::{Shl, ShlAssign, Shr, ShrAssign};
 
 #[doc(hidden)]
 // Adapted from <https://github.com/rust-num/num-traits/pull/224>

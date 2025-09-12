@@ -60,7 +60,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<&'a Self> for UInt<N, T, 
     }
 }
 
-impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<UInt<N, T, F>> for &'a UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> BitXor<UInt<N, T, F>> for &UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]
@@ -78,7 +78,7 @@ impl<const N: usize, T: PrimUInt, F: Field> BitXor<Self> for UInt<N, T, F> {
     }
 }
 
-impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<T> for UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> BitXor<T> for UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]
@@ -105,7 +105,7 @@ impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<&'a T> for &'a UInt<N, T,
     }
 }
 
-impl<'a, const N: usize, T: PrimUInt, F: Field> BitXor<T> for &'a UInt<N, T, F> {
+impl<const N: usize, T: PrimUInt, F: Field> BitXor<T> for &UInt<N, T, F> {
     type Output = UInt<N, T, F>;
 
     #[tracing::instrument(target = "gr1cs", skip(self, other))]

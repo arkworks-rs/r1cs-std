@@ -1,3 +1,5 @@
+use core::iter::Sum;
+
 use super::{params::OptimizationType, AllocatedEmulatedFpVar, MulResultVar};
 use crate::{
     boolean::Boolean,
@@ -469,5 +471,19 @@ impl<TargetF: PrimeField, BaseF: PrimeField> EmulatedFpVar<TargetF, BaseF> {
                 Ok(MulResultVar::Var(v.mul_without_reduce(&other_v)?))
             },
         }
+    }
+}
+
+impl<TargetF: PrimeField, BaseF: PrimeField> Sum<Self> for EmulatedFpVar<TargetF, BaseF> {
+    #[tracing::instrument(target = "gr1cs", skip(iter))]
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |acc, x| acc + x)
+    }
+}
+
+impl<'a, TargetF: PrimeField, BaseF: PrimeField> Sum<&'a Self> for EmulatedFpVar<TargetF, BaseF> {
+    #[tracing::instrument(target = "gr1cs", skip(iter))]
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |acc, x| acc + x)
     }
 }

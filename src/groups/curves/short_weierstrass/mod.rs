@@ -165,7 +165,7 @@ where
             let point = self.value()?.into_affine();
             let x = F::new_constant(ConstraintSystemRef::None, point.x)?;
             let y = F::new_constant(ConstraintSystemRef::None, point.y)?;
-            let infinity = Boolean::constant(point.infinity);
+            let infinity = Boolean::constant(point.is_zero());
             Ok(AffineVar::new(x, y, infinity))
         } else {
             let cs = self.cs();
@@ -504,10 +504,8 @@ where
         &self,
         bits: impl Iterator<Item = &'a Boolean<BasePrimeField<P>>>,
     ) -> Result<Self, SynthesisError> {
-        if self.is_constant() {
-            if self.value().unwrap().is_zero() {
-                return Ok(self.clone());
-            }
+        if self.is_constant() && self.value().unwrap().is_zero() {
+            return Ok(self.clone());
         }
         let self_affine = self.to_affine()?;
         let (x, y, infinity) = (self_affine.x, self_affine.y, self_affine.infinity);
