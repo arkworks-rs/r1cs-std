@@ -58,7 +58,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         1 << self.dim
     }
 
-    /// Returns offset, offset*g, offset*g^2, ..., offset*g^{coset_size}
+    /// Returns offset, offset*g, offset*g^2, ..., offset*g^{coset_size-1}
     pub fn elements(&self) -> Vec<FpVar<F>> {
         let mut result = Vec::new();
         result.push(self.offset.clone());
@@ -75,13 +75,14 @@ impl<F: PrimeField> Radix2DomainVar<F> {
     }
 
     /// For domain `h<g>` with dimension `n`, `position` represented by
-    /// `query_pos` in big endian form, returns all points of
+    /// `query_pos` in little-endian (LSB-first) form, returns all points of
     /// `h*g^{position}<g^{2^{n-coset_dim}}>`. The result is the query coset at
     /// index `query_pos` for the FRI protocol.
     ///
     /// # Panics
-    /// This function panics when `query_pos.len() != coset_dim` or
-    /// `query_pos.len() != self.dim`.
+    /// This function panics when `query_pos.len() < (self.dim - coset_dim)`.
+    /// Only the lowest `(self.dim - coset_dim)` bits of `query_pos` are used to
+    /// determine the coset index; any higher bits are ignored.
     pub fn query_position_to_coset_elements(
         &self,
         query_pos: &[Boolean<F>],
@@ -93,11 +94,13 @@ impl<F: PrimeField> Radix2DomainVar<F> {
     }
 
     /// For domain `h<g>` with dimension `n`, `position` represented by
-    /// `query_pos` in big endian form, returns all points of
-    /// `h*g^{position}<g^{n-query_pos.len()}>`
+    /// `query_pos` in little-endian (LSB-first) form, returns all points of
+    /// `h*g^{position}<g^{n-query_pos.len()}>`.
     ///
     /// # Panics
-    /// This function panics when `query_pos.len() < log2_num_cosets`.
+    /// This function panics when `query_pos.len() < (self.dim - coset_dim)`.
+    /// Only the lowest `(self.dim - coset_dim)` bits of `query_pos` are used to
+    /// determine the coset index; any higher bits are ignored.
     pub fn query_position_to_coset(
         &self,
         query_pos: &[Boolean<F>],
@@ -106,7 +109,7 @@ impl<F: PrimeField> Radix2DomainVar<F> {
         let coset_index = truncate_to_coset_index(query_pos, self.dim, coset_dim);
         let offset_var = &self.offset * FpVar::Constant(self.gen).pow_le(&coset_index)?;
         Ok(Self {
-            gen: self.gen.pow(&[1 << (self.dim - coset_dim)]), // distance between coset
+            gen: self.gen.pow(&[1 << (self.dim - coset_dim)]), // spacing between elements within the coset
             offset: offset_var,
             dim: coset_dim,
         })
