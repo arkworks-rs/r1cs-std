@@ -641,7 +641,7 @@ where
                 if cofactor_weight < modulus_minus_1_weight {
                     Ok(result)
                 } else {
-                    ge.enforce_equal(&ge)?;
+                    ge.negate()?.enforce_equal(&result)?;
                     Ok(ge)
                 }
             },
