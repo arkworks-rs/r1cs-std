@@ -256,13 +256,14 @@ mod test {
 
     use ark_relations::gr1cs::ConstraintSystem;
     use ark_test_curves::bls12_381::Fr;
+    use crate::alloc::AllocationMode;
     #[test]
     fn allocated_xor() -> Result<(), SynthesisError> {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let a = AllocatedBool::new_variable(cs.clone(), || Ok(a_val), AllocationMode::Witness)?;
+                let b = AllocatedBool::new_variable(cs.clone(), || Ok(b_val), AllocationMode::Witness)?;
                 let c = AllocatedBool::xor(&a, &b)?;
                 assert_eq!(c.value()?, a_val ^ b_val);
 
@@ -280,8 +281,8 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let a = AllocatedBool::new_variable(cs.clone(), || Ok(a_val), AllocationMode::Witness)?;
+                let b = AllocatedBool::new_variable(cs.clone(), || Ok(b_val), AllocationMode::Witness)?;
                 let c = AllocatedBool::or(&a, &b)?;
                 assert_eq!(c.value()?, a_val | b_val);
 
@@ -299,8 +300,8 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let a = AllocatedBool::new_variable(cs.clone(), || Ok(a_val), AllocationMode::Witness)?;
+                let b = AllocatedBool::new_variable(cs.clone(), || Ok(b_val), AllocationMode::Witness)?;
                 let c = AllocatedBool::and(&a, &b)?;
                 assert_eq!(c.value()?, a_val & b_val);
 
@@ -318,8 +319,8 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let a = AllocatedBool::new_variable(cs.clone(), || Ok(a_val), AllocationMode::Witness)?;
+                let b = AllocatedBool::new_variable(cs.clone(), || Ok(b_val), AllocationMode::Witness)?;
                 let c = AllocatedBool::and_not(&a, &b)?;
                 assert_eq!(c.value()?, a_val & !b_val);
 
@@ -337,8 +338,8 @@ mod test {
         for a_val in [false, true].iter().copied() {
             for b_val in [false, true].iter().copied() {
                 let cs = ConstraintSystem::<Fr>::new_ref();
-                let a = AllocatedBool::new_witness(cs.clone(), || Ok(a_val))?;
-                let b = AllocatedBool::new_witness(cs.clone(), || Ok(b_val))?;
+                let a = AllocatedBool::new_variable(cs.clone(), || Ok(a_val), AllocationMode::Witness)?;
+                let b = AllocatedBool::new_variable(cs.clone(), || Ok(b_val), AllocationMode::Witness)?;
                 let c = AllocatedBool::nor(&a, &b)?;
                 assert_eq!(c.value()?, !a_val & !b_val);
 
