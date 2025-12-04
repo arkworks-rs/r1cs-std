@@ -142,23 +142,23 @@ impl<TargetF: PrimeField, BaseF: PrimeField> AllocatedMulResultVar<TargetF, Base
             let zero = FpVar::Constant(BaseF::zero());
             let mut limbs = Vec::new();
 
-            let mut k_bits_cur = k_bits.clone();
+            let k_bits_len = k_bits.len();
+            let mut bit_iter = k_bits.into_iter();
 
             for i in 0..params.num_limbs {
                 let this_limb_size = if i != params.num_limbs - 1 {
                     params.bits_per_limb
                 } else {
-                    k_bits.len() - (params.num_limbs - 1) * params.bits_per_limb
+                    k_bits_len - (params.num_limbs - 1) * params.bits_per_limb
                 };
-
-                let this_limb_bits = k_bits_cur[0..this_limb_size].to_vec();
-                k_bits_cur = k_bits_cur[this_limb_size..].to_vec();
 
                 let mut limb = zero.clone();
                 let mut cur = BaseF::one();
 
-                for bit in this_limb_bits.iter() {
-                    limb += &(FpVar::<BaseF>::from(bit.clone()) * cur);
+                for _ in 0..this_limb_size {
+                    if let Some(bit) = bit_iter.next() {
+                        limb += &(FpVar::<BaseF>::from(bit) * cur);
+                    }
                     cur.double_in_place();
                 }
                 limbs.push(limb);
