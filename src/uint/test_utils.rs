@@ -111,6 +111,8 @@ where
     for (mode_a, a) in test_utils::combination(T::min_value()..=T::max_value()) {
         for (mode_b, b) in test_utils::combination(T::min_value()..=T::max_value()) {
             test_binary_op(a, b, mode_a, mode_b, test)?;
+        }
+        for b in T::min_value()..=T::max_value() {
             test_binary_op_with_native(a, b, mode_a, test_native)?;
         }
     }
