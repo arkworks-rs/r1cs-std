@@ -53,6 +53,7 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     + for<'a> Mul<&'a EmulatedFpVar<C::ScalarField, ConstraintF>, Output = Self>
     + MulAssign<EmulatedFpVar<C::ScalarField, ConstraintF>>
 {
+    /// The base field of the coordinates.
     type BaseFieldVar: FieldVar<C::BaseField, ConstraintF>;
 
     /// Returns the constant `F::zero()`. This is the identity
