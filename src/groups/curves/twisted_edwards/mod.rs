@@ -402,6 +402,8 @@ where
         + TwoBitLookupGadget<BasePrimeField<P>, TableConstant = P::BaseField>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
+    type BaseFieldVar = F;
+
     fn constant(g: TEProjective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
         Self::new_variable_omit_on_curve_check(cs, || Ok(g), AllocationMode::Constant).unwrap()
@@ -546,6 +548,10 @@ where
         }
 
         Ok(())
+    }
+
+    fn affine_xy(&self) -> Result<(F, F), SynthesisError> {
+        Ok((self.x.clone(), self.y.clone()))
     }
 }
 

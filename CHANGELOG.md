@@ -38,6 +38,7 @@
     - Add `UInt::{from_bytes_le, from_bytes_be, to_bytes_be}`.
 - [\#143](https://github.com/arkworks-rs/r1cs-std/pull/143) Add `AllocVar::new_variable_with_inferred_mode`.
 - [\#144](https://github.com/arkworks-rs/r1cs-std/pull/144) Add `ToConstraintFieldGadget` bounds to `CurveVar` and `FieldVar`
+- [\#190](https://github.com/arkworks-rs/r1cs-std/pull/190) Add `affine_xy, affine_x, affine_y` functions to `CurveVar`
 
 ### Improvements
 

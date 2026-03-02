@@ -377,6 +377,8 @@ where
     F: FieldVar<P::BaseField, BasePrimeField<P>>,
     for<'a> &'a F: FieldOpsBounds<'a, P::BaseField, F>,
 {
+    type BaseFieldVar = F;
+
     fn constant(g: SWProjective<P>) -> Self {
         let cs = ConstraintSystemRef::None;
         Self::new_variable_omit_on_curve_check(cs, || Ok(g), AllocationMode::Constant).unwrap()
@@ -572,6 +574,11 @@ where
         let base = bases[0];
         *self += Self::constant(base).scalar_mul_le(bits.iter())?;
         Ok(())
+    }
+
+    fn affine_xy(&self) -> Result<(F, F), SynthesisError> {
+        let self_affine = self.to_affine()?;
+        Ok((self_affine.x, self_affine.y))
     }
 }
 

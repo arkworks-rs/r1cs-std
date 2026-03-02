@@ -53,6 +53,9 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     + for<'a> Mul<&'a EmulatedFpVar<C::ScalarField, ConstraintF>, Output = Self>
     + MulAssign<EmulatedFpVar<C::ScalarField, ConstraintF>>
 {
+    /// The base field of the coordinates.
+    type BaseFieldVar: FieldVar<C::BaseField, ConstraintF>;
+
     /// Returns the constant `F::zero()`. This is the identity
     /// of the group.
     fn zero() -> Self;
@@ -67,6 +70,19 @@ pub trait CurveVar<C: CurveGroup, ConstraintF: PrimeField>:
     ///
     /// This *should not* allocate any variables.
     fn constant(other: C) -> Self;
+
+    /// Returns the x and y coordinates in Affine representation.
+    fn affine_xy(&self) -> Result<(Self::BaseFieldVar, Self::BaseFieldVar), SynthesisError>;
+
+    /// Returns the x coordinate in Affine representation.
+    fn affine_x(&self) -> Result<Self::BaseFieldVar, SynthesisError> {
+        self.affine_xy().map(|(x, _)| x)
+    }
+
+    /// Returns the y coordinate in Affine representation.
+    fn affine_y(&self) -> Result<Self::BaseFieldVar, SynthesisError> {
+        self.affine_xy().map(|(_, y)| y)
+    }
 
     /// Allocates a variable in the subgroup without checking if it's in the
     /// prime-order subgroup.
