@@ -2,6 +2,8 @@
 
 ## Pending
 
+ - [\#179](https://github.com/arkworks-rs/r1cs-std/pull/179) Add `min` and `max` operations for a small field elements
+
 ### Breaking changes
 
 ### Features
