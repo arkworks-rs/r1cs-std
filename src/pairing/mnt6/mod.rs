@@ -97,8 +97,9 @@ impl<P: MNT6Config> PairingVar<P> {
 
         let mut add_idx: usize = 0;
 
-        // code below gets executed for all bits (EXCEPT the MSB itself) of
-        // mnt6_param_p (skipping leading zeros) in MSB to LSB order
+        // Iterate over P::ATE_LOOP_COUNT (signed in {-1, 0, 1}), skipping the MSB,
+        // in MSB-to-LSB order. Branches handle 1 and -1; a final correction is
+        // applied after the loop if P::ATE_IS_LOOP_COUNT_NEG.
         let y_over_twist_neg = &q.y_over_twist.negate()?;
         for (dbl_idx, bit) in P::ATE_LOOP_COUNT.iter().skip(1).enumerate() {
             let dc = &q.double_coefficients[dbl_idx];
