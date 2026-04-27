@@ -16,7 +16,7 @@ resolver = "2"
 [dependencies]
 ark-ff = { version = "0.5.0", default-features = false }
 ark-ec = { version = "0.5.0", default-features = false }
-ark-std = { version = "0.5.0", default-features = false }
+ark-std = { version = "0.6.0", default-features = false }
 ark-relations = { git = "https://github.com/arkworks-rs/snark.git", default-features = true }
 
 educe = "0.6.0"
