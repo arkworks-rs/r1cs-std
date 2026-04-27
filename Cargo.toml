@@ -37,7 +37,7 @@ paste = "1.0"
 ark-bls12-377 = { version = "0.5.0", features = ["curve"], default-features = false }
 ark-bls12-381 = { version = "0.5.0", features = ["curve"], default-features = false }
 ark-mnt4-298 = { version = "0.5.0", features = ["curve"], default-features = false }
-ark-mnt4-753 = { version = "0.5.0", features = ["curve"], default-features = false }
+ark-mnt4-753 = { version = "0.6.0", features = ["curve"], default-features = false }
 ark-mnt6-298 = { version = "0.5.0", default-features = false }
 ark-mnt6-753 = { version = "0.5.0", default-features = false }
 ark-pallas = { version = "0.5.0", features = ["curve"], default-features = false }
